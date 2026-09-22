@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TITKUL.PMTTCU.Web/TITKUL.PMTTCU.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TITKUL.PMTTCU.Web.Tests/TITKUL.PMTTCU.Web.Tests.csproj" />
+  </Folder>
+</Solution>

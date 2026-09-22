@@ -1,10 +1,24 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using TITKUL.PMTTCU.Web.ApiClients;
 using TITKUL.PMTTCU.Web.Health;
+using TITKUL.PMTTCU.Web.Observability;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorPages();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<CorrelationForwardingHandler>();
+builder.Services.AddHttpClient<BackendApiClient>(client =>
+{
+    var baseUrl = builder.Configuration["Backend:BaseUrl"];
+    if (!string.IsNullOrWhiteSpace(baseUrl))
+    {
+        client.BaseAddress = new Uri(baseUrl);
+    }
+
+    client.Timeout = TimeSpan.FromSeconds(10);
+}).AddHttpMessageHandler<CorrelationForwardingHandler>();
 builder.Services.AddHealthChecks()
     .AddCheck("self", () => HealthCheckResult.Healthy(), tags: ["live", "ready"]);
 
@@ -15,6 +29,7 @@ builder.WebHost.ConfigureKestrel(options =>
 
 var app = builder.Build();
 
+app.UseMiddleware<CorrelationMiddleware>();
 app.Use(async (context, next) =>
 {
     var headers = context.Response.Headers;

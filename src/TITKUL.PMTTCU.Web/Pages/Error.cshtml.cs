@@ -14,7 +14,13 @@ public class ErrorModel : PageModel
 
     public void OnGet()
     {
-        RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+        RequestId = Request.Query["traceId"].ToString();
+        if (string.IsNullOrWhiteSpace(RequestId))
+        {
+            RequestId = HttpContext.Items[Observability.CorrelationMiddleware.ItemKey] as string
+                ?? Activity.Current?.Id
+                ?? HttpContext.TraceIdentifier;
+        }
     }
 }
 

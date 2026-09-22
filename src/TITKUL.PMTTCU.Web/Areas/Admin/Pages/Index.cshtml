@@ -1,0 +1,14 @@
+@page "/admin"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.IndexModel
+@{
+    ViewData["Title"] = "Quản trị";
+}
+
+<h1>Khu vực quản trị</h1>
+<p>Khung quản trị đã sẵn sàng. Chức năng đăng nhập được bổ sung ở bước sau.</p>
+<ul>
+@foreach (var module in IndexModel.Modules)
+{
+    <li>@module</li>
+}
+</ul>

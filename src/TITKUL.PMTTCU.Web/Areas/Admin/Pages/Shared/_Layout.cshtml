@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Quản trị PMTTCU</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+</head>
+<body>
+    <a class="visually-hidden-focusable" href="#admin-main">Đi tới nội dung</a>
+    <header class="border-bottom">
+        <div class="container py-3 d-flex justify-content-between align-items-center">
+            <strong>Quản trị PMTTCU</strong>
+            <a href="/">Về cổng thông tin</a>
+        </div>
+    </header>
+    <main id="admin-main" class="container py-4">
+        @RenderBody()
+    </main>
+</body>
+</html>

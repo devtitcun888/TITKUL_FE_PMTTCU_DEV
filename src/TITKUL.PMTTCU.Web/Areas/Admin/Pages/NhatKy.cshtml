@@ -1,0 +1,44 @@
+@page "/admin/nhat-ky"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.NhatKyModel
+@{
+    ViewData["Title"] = "Nhật ký";
+}
+
+<section class="card stack">
+    <h1>Nhật ký</h1>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    else if (Model.Rows.Count == 0)
+    {
+        <p class="empty">Chưa có bản ghi nhật ký.</p>
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table>
+                <caption>20 bản ghi gần nhất</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Thời điểm</th>
+                        <th scope="col">Tài khoản</th>
+                        <th scope="col">Việc</th>
+                        <th scope="col">Mã theo dõi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <td>@row.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@row.Username</td>
+                        <td>@row.Action</td>
+                        <td>@row.TraceId</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

@@ -17,15 +17,18 @@ public sealed class AdminGateMiddleware
     {
         var path = context.Request.Path;
         var isAdmin = path.StartsWithSegments("/admin");
-        var isLogin = path.StartsWithSegments("/admin/dang-nhap");
-        if (isAdmin && !isLogin)
+        var isPublicAdmin = path.StartsWithSegments("/admin/dang-nhap") || path.StartsWithSegments("/admin/dang-xuat");
+        if (isAdmin && !isPublicAdmin)
         {
             var token = context.Request.Cookies[CookieName];
-            if (string.IsNullOrWhiteSpace(token) || !await api.HasSessionAsync(token))
+            var profile = string.IsNullOrWhiteSpace(token) ? null : await api.GetProfileAsync(token);
+            if (profile is null)
             {
                 context.Response.Redirect("/admin/dang-nhap");
                 return;
             }
+
+            context.Items["StaffProfile"] = profile;
         }
 
         await _next(context);

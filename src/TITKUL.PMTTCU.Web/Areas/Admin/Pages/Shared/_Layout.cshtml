@@ -1,21 +1,39 @@
+@using TITKUL.PMTTCU.Web.ApiClients
+@{
+    var profile = Context.Items["StaffProfile"] as StaffProfile;
+    var permissions = profile?.Permissions ?? [];
+}
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Quản trị PMTTCU</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/pmttcu.css" asp-append-version="true" />
 </head>
 <body>
-    <a class="visually-hidden-focusable" href="#admin-main">Đi tới nội dung</a>
-    <header class="border-bottom">
-        <div class="container py-3 d-flex justify-content-between align-items-center">
-            <strong>Quản trị PMTTCU</strong>
-            <a href="/">Về cổng thông tin</a>
+    <a class="skip-link" href="#noi-dung">Đi tới nội dung</a>
+    <div class="admin-shell">
+        <nav class="side-nav" aria-label="Quản trị">
+            <a href="/admin">Tổng quan</a>
+            @if (permissions.Contains("audit.view"))
+            {
+                <a href="/admin/nhat-ky">Nhật ký</a>
+            }
+            <a href="/admin/dang-xuat">Đăng xuất</a>
+        </nav>
+        <div>
+            <header class="admin-topbar">
+                <div class="admin-topbar-inner wrap">
+                    <strong>Quản trị PMTTCU</strong>
+                    <span>@(profile?.Roles?.FirstOrDefault() ?? "Đã đăng nhập")</span>
+                    <a href="/">Về cổng thông tin</a>
+                </div>
+            </header>
+            <main id="noi-dung" class="admin-main">
+                @RenderBody()
+            </main>
         </div>
-    </header>
-    <main id="admin-main" class="container py-4">
-        @RenderBody()
-    </main>
+    </div>
 </body>
 </html>

@@ -53,6 +53,8 @@ public sealed class HealthEndpointTests : IClassFixture<WebApplicationFactory<Pr
         Assert.Contains("Trung tâm cung ứng dịch vụ sự nghiệp công xã Tân Trụ", text, StringComparison.Ordinal);
         Assert.Contains("Cổng thông tin", text, StringComparison.Ordinal);
         Assert.Contains("Ứng dụng cổng thông tin đã sẵn sàng.", text, StringComparison.Ordinal);
+        Assert.Contains("Chưa có tin bài", text, StringComparison.Ordinal);
+        Assert.Contains("Đi tới nội dung", text, StringComparison.Ordinal);
     }
 
     [Fact]

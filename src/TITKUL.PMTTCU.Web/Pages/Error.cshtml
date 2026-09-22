@@ -4,9 +4,11 @@
     ViewData["Title"] = "Lỗi";
 }
 
-<h1>Đã xảy ra lỗi.</h1>
-<p>Yêu cầu chưa được xử lý xong.</p>
-@if (Model.ShowRequestId)
-{
-    <p><strong>Mã theo dõi:</strong> <code>@Model.RequestId</code></p>
-}
+<section class="card stack" role="alert">
+    <h1>Đã xảy ra lỗi.</h1>
+    <p>Yêu cầu chưa được xử lý xong.</p>
+    @if (Model.ShowRequestId)
+    {
+        <p><strong>Mã theo dõi:</strong> <code>@Model.RequestId</code></p>
+    }
+</section>

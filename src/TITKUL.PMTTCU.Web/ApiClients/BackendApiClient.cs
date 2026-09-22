@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace TITKUL.PMTTCU.Web.ApiClients;
 
@@ -24,24 +25,36 @@ public sealed class BackendApiClient
         return string.IsNullOrWhiteSpace(body?.Token) ? null : body.Token;
     }
 
-    public async Task<bool> HasSessionAsync(string token)
+    public async Task<StaffProfile?> GetProfileAsync(string token)
     {
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             using var response = await HttpClient.SendAsync(request);
-            return response.IsSuccessStatusCode;
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            return await response.Content.ReadFromJsonAsync<StaffProfile>(new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
         }
         catch (HttpRequestException)
         {
-            return false;
+            return null;
         }
         catch (TaskCanceledException)
         {
-            return false;
+            return null;
         }
     }
 
+    public async Task<bool> HasSessionAsync(string token) => await GetProfileAsync(token) is not null;
+
     private sealed record LoginResponse(string? Token);
 }
+
+public sealed record StaffProfile(IReadOnlyList<string>? Roles, IReadOnlyList<string>? Permissions);

@@ -2,10 +2,12 @@
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.DangNhapModel
 @{
     ViewData["Title"] = "Đăng nhập";
+    Layout = "/Areas/Admin/Pages/Shared/_AuthLayout.cshtml";
 }
 
+<section class="card login-card stack">
 <h1>Đăng nhập quản trị</h1>
-<form method="post">
+<form method="post" class="stack">
     <div>
         <label for="username">Tên đăng nhập</label>
         <input id="username" name="Username" autocomplete="username" />
@@ -18,5 +20,6 @@
 </form>
 @if (!string.IsNullOrEmpty(Model.ErrorMessage))
 {
-    <p role="alert">@Model.ErrorMessage</p>
+    <p class="alert" role="alert">@Model.ErrorMessage</p>
 }
+</section>

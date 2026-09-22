@@ -1,14 +1,11 @@
 @page "/admin"
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.IndexModel
 @{
-    ViewData["Title"] = "Quản trị";
+    ViewData["Title"] = "Tổng quan";
 }
 
-<h1>Khu vực quản trị</h1>
-<p>Khung quản trị đã sẵn sàng. Chức năng đăng nhập được bổ sung ở bước sau.</p>
-<ul>
-@foreach (var module in IndexModel.Modules)
-{
-    <li>@module</li>
-}
-</ul>
+<section class="card stack">
+    <h1>Khu vực quản trị</h1>
+    <p>Phiên quản trị đã được xác nhận.</p>
+    <p class="empty">Chưa có dữ liệu nghiệp vụ để hiển thị.</p>
+</section>

@@ -66,7 +66,7 @@ public sealed class HealthEndpointTests : IClassFixture<WebApplicationFactory<Pr
 
         Assert.True(string.IsNullOrEmpty(configuration["Database:Password"]));
         Assert.True(string.IsNullOrEmpty(configuration["ConnectionStrings:Default"]));
-        Assert.Equal("https://be.invalid", configuration["Backend:BaseUrl"]);
+        Assert.Equal("http://localhost:5068", configuration["Backend:BaseUrl"]);
         Assert.Equal(1_048_576, configuration.GetValue<long>("Http:MaxRequestBodyBytes"));
     }
 

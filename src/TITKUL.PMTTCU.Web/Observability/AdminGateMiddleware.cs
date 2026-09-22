@@ -17,7 +17,9 @@ public sealed class AdminGateMiddleware
     {
         var path = context.Request.Path;
         var isAdmin = path.StartsWithSegments("/admin");
-        var isPublicAdmin = path.StartsWithSegments("/admin/dang-nhap") || path.StartsWithSegments("/admin/dang-xuat");
+        var isPublicAdmin = path.StartsWithSegments("/admin/dang-nhap")
+            || path.StartsWithSegments("/admin/dang-xuat")
+            || path.StartsWithSegments("/admin/khong-quyen");
         if (isAdmin && !isPublicAdmin)
         {
             var token = context.Request.Cookies[CookieName];

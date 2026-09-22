@@ -30,7 +30,11 @@
 
 * { box-sizing: border-box; }
 
-html, body { margin: 0; padding: 0; }
+html, body {
+  margin: 0;
+  padding: 0;
+  max-width: 100%;
+}
 
 body {
   font-family: var(--font);
@@ -66,24 +70,34 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 .wrap {
   width: min(1120px, calc(100% - 32px));
   margin: 0 auto;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .portal-header .wrap, .admin-topbar .wrap, .admin-topbar-inner {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   min-height: 64px;
+  min-width: 0;
 }
 
-.brand { font-weight: 700; text-decoration: none; }
+.brand {
+  font-weight: 700;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
 
 .nav-list, .side-nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   list-style: none;
   margin: 0;
   padding: 0;
+  min-width: 0;
 }
 
 .nav-list a, .side-nav a, .button, button {
@@ -100,6 +114,17 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   border-radius: 12px;
   box-shadow: var(--shadow);
   padding: 24px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+code, td, th {
+  overflow-wrap: anywhere;
 }
 
 .page { padding: 24px 0 48px; }
@@ -152,8 +177,9 @@ th, td {
 
 .admin-shell {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: minmax(0, 240px) minmax(0, 1fr);
   min-height: 100vh;
+  max-width: 100%;
 }
 
 .side-nav {
@@ -165,7 +191,10 @@ th, td {
 
 .side-nav a { color: #fff; border-radius: 8px; }
 
-.admin-main { padding: 24px; }
+.admin-main {
+  padding: 24px;
+  min-width: 0;
+}
 
 .login-screen {
   min-height: 100vh;
@@ -177,8 +206,13 @@ th, td {
 .login-card { width: min(420px, 100%); }
 
 @media (max-width: 768px) {
-  .admin-shell { grid-template-columns: 1fr; }
+  .admin-shell { grid-template-columns: minmax(0, 1fr); }
   .side-nav { grid-auto-flow: column; overflow-x: auto; }
-  .portal-header .wrap { flex-wrap: wrap; padding: 8px 0; }
-  .table-scroll { overflow-x: auto; }
+  .portal-header .wrap { padding: 8px 0; }
+}
+
+@media (max-width: 390px) {
+  .nav-list { width: 100%; }
+  .admin-main, .card { padding: 16px; }
+  .login-screen { padding: 16px; }
 }

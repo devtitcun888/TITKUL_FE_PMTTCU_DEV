@@ -15,7 +15,22 @@ public sealed class BackendApiClient
 
     public async Task<string?> LoginAsync(string username, string password)
     {
-        using var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", new { username, password });
+        HttpResponseMessage response;
+        try
+        {
+            response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", new { username, password });
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (TaskCanceledException)
+        {
+            return null;
+        }
+
+        using (response)
+        {
         if (!response.IsSuccessStatusCode)
         {
             return null;
@@ -23,6 +38,7 @@ public sealed class BackendApiClient
 
         var body = await response.Content.ReadFromJsonAsync<LoginResponse>();
         return string.IsNullOrWhiteSpace(body?.Token) ? null : body.Token;
+        }
     }
 
     public async Task<StaffProfile?> GetProfileAsync(string token)

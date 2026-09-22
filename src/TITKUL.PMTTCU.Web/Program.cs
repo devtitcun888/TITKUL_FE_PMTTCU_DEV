@@ -30,6 +30,7 @@ builder.WebHost.ConfigureKestrel(options =>
 var app = builder.Build();
 
 app.UseMiddleware<CorrelationMiddleware>();
+app.UseMiddleware<AdminGateMiddleware>();
 app.Use(async (context, next) =>
 {
     var headers = context.Response.Headers;

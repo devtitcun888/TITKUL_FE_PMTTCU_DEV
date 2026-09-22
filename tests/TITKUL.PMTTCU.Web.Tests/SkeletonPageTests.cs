@@ -16,17 +16,32 @@ public sealed class SkeletonPageTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     [Fact]
-    public async Task Admin_area_returns_skeleton()
+    public async Task Admin_area_requires_login()
     {
-        using var client = _factory.CreateClient();
+        using var client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
         var response = await client.GetAsync("/admin");
-        var html = await response.Content.ReadAsStringAsync();
-        var text = WebUtility.HtmlDecode(html);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("Khu vực quản trị", text, StringComparison.Ordinal);
-        Assert.Contains("Cms", text, StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal("/admin/dang-nhap", response.Headers.Location?.OriginalString);
+    }
+
+    [Fact]
+    public async Task Login_form_has_antiforgery_and_rejects_post_without_it()
+    {
+        using var client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        var page = await client.GetAsync("/admin/dang-nhap");
+        var html = await page.Content.ReadAsStringAsync();
+        Assert.Equal(HttpStatusCode.OK, page.StatusCode);
+        Assert.Contains("Tên đăng nhập", html, StringComparison.Ordinal);
+        Assert.Contains("__RequestVerificationToken", html, StringComparison.Ordinal);
+
+        var posted = await client.PostAsync("/admin/dang-nhap", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Username"] = "super.admin",
+            ["Password"] = "mat-khau-1"
+        }));
+        Assert.Equal(HttpStatusCode.BadRequest, posted.StatusCode);
     }
 
     [Fact]

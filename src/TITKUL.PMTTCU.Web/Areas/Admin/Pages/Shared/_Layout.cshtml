@@ -16,6 +16,13 @@
     <div class="admin-shell">
         <nav class="side-nav" aria-label="Quản trị">
             <a href="/admin">Tổng quan</a>
+            @if (permissions.Contains("education.manage") || permissions.Contains("education.view"))
+            {
+                <a href="/admin/chuong-trinh">Chương trình</a>
+                <a href="/admin/doi-tuong">Đối tượng</a>
+                <a href="/admin/phong-hoc">Phòng học</a>
+                <a href="/admin/lop-hoc">Lớp học</a>
+            }
             @if (permissions.Contains("audit.view"))
             {
                 <a href="/admin/nhat-ky">Nhật ký</a>

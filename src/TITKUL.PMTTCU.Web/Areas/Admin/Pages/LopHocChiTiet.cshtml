@@ -1,0 +1,97 @@
+@page "/admin/lop-hoc/{id:guid}"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.LopHocChiTietModel
+@{
+    ViewData["Title"] = "Chi tiết lớp";
+}
+
+<section class="card stack">
+    <h1>Chi tiết lớp</h1>
+    <p><a href="/admin/lop-hoc">Về danh sách</a></p>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Item is not null)
+    {
+        <p><strong>Trạng thái hiện tại:</strong> @EducationUi.Status(Model.Item.Status)</p>
+        @if (Model.CanEdit)
+        {
+            <form method="post" class="stack">
+                <div>
+                    <label for="programId">Chương trình</label>
+                    <select id="programId" name="ProgramId" required>
+                        @foreach (var program in Model.Programs)
+                        {
+                            <option value="@program.Id" selected="@(Model.ProgramId == program.Id ? "selected" : null)">@program.Code — @program.Name</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label for="roomId">Phòng</label>
+                    <select id="roomId" name="RoomId">
+                        <option value="">Không gán phòng</option>
+                        @foreach (var room in Model.Rooms)
+                        {
+                            <option value="@room.Id" selected="@(Model.RoomId == room.Id ? "selected" : null)">@room.Code — @room.Name</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label for="code">Mã lớp</label>
+                    <input id="code" name="Code" value="@Model.Code" required maxlength="60" />
+                </div>
+                <div>
+                    <label for="name">Tên lớp</label>
+                    <input id="name" name="Name" value="@Model.Name" required maxlength="250" />
+                </div>
+                <div>
+                    <label for="startDate">Ngày bắt đầu</label>
+                    <input id="startDate" name="StartDate" type="date" value="@Model.StartDate?.ToString("yyyy-MM-dd")" required />
+                </div>
+                <div>
+                    <label for="endDate">Ngày kết thúc</label>
+                    <input id="endDate" name="EndDate" type="date" value="@Model.EndDate?.ToString("yyyy-MM-dd")" required />
+                </div>
+                <div>
+                    <label for="capacity">Sĩ số tối đa</label>
+                    <input id="capacity" name="Capacity" type="number" min="1" value="@Model.Capacity" required />
+                </div>
+                <div>
+                    <label for="public">Công khai</label>
+                    <select id="public" name="Public">
+                        <option value="true" selected="@(Model.Public ? "selected" : null)">Có</option>
+                        <option value="false" selected="@(!Model.Public ? "selected" : null)">Không</option>
+                    </select>
+                </div>
+                <button type="submit">Lưu thông tin lớp</button>
+            </form>
+        }
+        else
+        {
+            <p><strong>Mã:</strong> @Model.Item.Code</p>
+            <p><strong>Tên:</strong> @Model.Item.Name</p>
+            <p><strong>Thời gian:</strong> @Model.Item.StartDate.ToString("dd/MM/yyyy") - @Model.Item.EndDate.ToString("dd/MM/yyyy")</p>
+            <p><strong>Sĩ số tối đa:</strong> @Model.Item.Capacity</p>
+        }
+        @if (Model.CanManage && Model.AllowedTransitions.Count > 0)
+        {
+            <form method="post" asp-page-handler="Transition" class="stack">
+                <div>
+                    <label for="toStatus">Chuyển sang</label>
+                    <select id="toStatus" name="ToStatus" required>
+                        @foreach (var status in Model.AllowedTransitions)
+                        {
+                            <option value="@status">@EducationUi.Status(status)</option>
+                        }
+                    </select>
+                </div>
+                <button type="submit">Cập nhật trạng thái</button>
+            </form>
+        }
+        else if (Model.CanManage)
+        {
+            <p class="status-note">Lớp đã đóng hoặc hủy. Không mở lại trong phạm vi hiện tại.</p>
+        }
+    }
+</section>

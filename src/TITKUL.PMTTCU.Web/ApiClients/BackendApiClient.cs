@@ -70,6 +70,46 @@ public sealed class BackendApiClient
 
     public async Task<bool> HasSessionAsync(string token) => await GetProfileAsync(token) is not null;
 
+    public async Task<T?> GetJsonAsync<T>(string path, string token)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, path);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            using var response = await HttpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode) return default;
+            return await response.Content.ReadFromJsonAsync<T>(JsonOptions());
+        }
+        catch (HttpRequestException)
+        {
+            return default;
+        }
+        catch (TaskCanceledException)
+        {
+            return default;
+        }
+    }
+
+    public async Task<HttpResponseMessage?> SendJsonAsync(HttpMethod method, string path, string token, object body)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(method, path) { Content = JsonContent.Create(body) };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            return await HttpClient.SendAsync(request);
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (TaskCanceledException)
+        {
+            return null;
+        }
+    }
+
+    private static JsonSerializerOptions JsonOptions() => new() { PropertyNameCaseInsensitive = true };
+
     private sealed record LoginResponse(string? Token);
 }
 

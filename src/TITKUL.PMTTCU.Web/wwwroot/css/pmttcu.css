@@ -45,7 +45,7 @@ body {
 
 a { color: var(--accent-strong); }
 
-a:focus-visible, button:focus-visible, input:focus-visible {
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
   outline: 3px solid #f0b429;
   outline-offset: 2px;
 }
@@ -133,7 +133,7 @@ code, td, th {
 
 label { display: block; font-weight: 700; margin-bottom: 6px; }
 
-input {
+input, select {
   width: 100%;
   min-height: 44px;
   padding: 8px 12px;
@@ -152,6 +152,21 @@ button, .button {
 }
 
 button:hover, .button:hover { background: var(--accent-strong); }
+
+.button-quiet {
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+.button-quiet:hover { background: var(--surface); color: var(--ink); }
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
 
 .alert {
   padding: 12px 14px;

@@ -1,0 +1,96 @@
+@page "/admin/chuong-trinh"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.ChuongTrinhModel
+@{
+    ViewData["Title"] = "Chương trình";
+}
+
+<section class="card stack">
+    <h1>Chương trình</h1>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.CanManage)
+    {
+        <form method="post" class="stack">
+            @if (Model.Id is Guid editId)
+            {
+                <input type="hidden" name="Id" value="@editId" />
+                <p class="status-note">Đang sửa @Model.Code</p>
+            }
+            <div>
+                <label for="code">Mã</label>
+                <input id="code" name="Code" value="@Model.Code" required maxlength="50" autocomplete="off" />
+            </div>
+            <div>
+                <label for="name">Tên</label>
+                <input id="name" name="Name" value="@Model.Name" required maxlength="250" />
+            </div>
+            <div>
+                <label for="goal">Mục tiêu</label>
+                <input id="goal" name="Goal" value="@Model.Goal" required />
+            </div>
+            <div>
+                <label for="status">Trạng thái</label>
+                <select id="status" name="Status">
+                    <option value="DRAFT" selected="@(Model.Status == "DRAFT" ? "selected" : null)">Nháp</option>
+                    <option value="ACTIVE" selected="@(Model.Status == "ACTIVE" ? "selected" : null)">Đang dùng</option>
+                    <option value="INACTIVE" selected="@(Model.Status == "INACTIVE" ? "selected" : null)">Ngưng</option>
+                </select>
+            </div>
+            <div class="row-actions">
+                <button type="submit">@(Model.Editing ? "Lưu chương trình" : "Thêm chương trình")</button>
+                @if (Model.Editing)
+                {
+                    <a class="button button-quiet" href="/admin/chuong-trinh">Hủy sửa</a>
+                }
+            </div>
+        </form>
+    }
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có chương trình.</p>
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table>
+                <caption>Danh sách chương trình</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Mã</th>
+                        <th scope="col">Tên</th>
+                        <th scope="col">Trạng thái</th>
+                        @if (Model.CanManage)
+                        {
+                            <th scope="col">Thao tác</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@item.Code</td>
+                        <td>@item.Name</td>
+                        <td>@EducationUi.Status(item.Status)</td>
+                        @if (Model.CanManage)
+                        {
+                            <td>
+                                <div class="row-actions">
+                                    <a href="/admin/chuong-trinh?id=@item.Id">Sửa</a>
+                                    <form method="post" asp-page-handler="Delete">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <button type="submit" class="button-quiet">Xóa</button>
+                                    </form>
+                                </div>
+                            </td>
+                        }
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

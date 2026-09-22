@@ -1,0 +1,83 @@
+@page "/admin/doi-tuong"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.DoiTuongModel
+@{
+    ViewData["Title"] = "Đối tượng";
+}
+
+<section class="card stack">
+    <h1>Đối tượng</h1>
+    <p>Cán bộ nhập danh mục đang dùng. Khi Trung tâm chốt tên chính thức (D-04), sửa lại tại đây.</p>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.CanManage)
+    {
+        <form method="post" class="stack">
+            @if (Model.Id is Guid editId)
+            {
+                <input type="hidden" name="Id" value="@editId" />
+                <p class="status-note">Đang sửa @Model.Code</p>
+            }
+            <div>
+                <label for="code">Mã</label>
+                <input id="code" name="Code" value="@Model.Code" required maxlength="50" autocomplete="off" />
+            </div>
+            <div>
+                <label for="name">Tên</label>
+                <input id="name" name="Name" value="@Model.Name" required maxlength="180" />
+            </div>
+            <div>
+                <label for="active">Hiệu lực</label>
+                <select id="active" name="Active">
+                    <option value="true" selected="@(Model.Active ? "selected" : null)">Đang dùng</option>
+                    <option value="false" selected="@(!Model.Active ? "selected" : null)">Ngưng</option>
+                </select>
+            </div>
+            <div class="row-actions">
+                <button type="submit">@(Model.Editing ? "Lưu đối tượng" : "Thêm đối tượng")</button>
+                @if (Model.Editing)
+                {
+                    <a class="button button-quiet" href="/admin/doi-tuong">Hủy sửa</a>
+                }
+            </div>
+        </form>
+    }
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có đối tượng.</p>
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table>
+                <caption>Danh sách đối tượng</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Mã</th>
+                        <th scope="col">Tên</th>
+                        <th scope="col">Hiệu lực</th>
+                        @if (Model.CanManage)
+                        {
+                            <th scope="col">Thao tác</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@item.Code</td>
+                        <td>@item.Name</td>
+                        <td>@(item.Active ? "Đang dùng" : "Ngưng")</td>
+                        @if (Model.CanManage)
+                        {
+                            <td><a href="/admin/doi-tuong?id=@item.Id">Sửa</a></td>
+                        }
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

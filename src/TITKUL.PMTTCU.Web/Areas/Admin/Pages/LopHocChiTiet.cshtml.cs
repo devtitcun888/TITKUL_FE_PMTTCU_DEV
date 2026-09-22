@@ -1,0 +1,113 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using TITKUL.PMTTCU.Web.ApiClients;
+using TITKUL.PMTTCU.Web.Observability;
+
+namespace TITKUL.PMTTCU.Web.Areas.Admin.Pages;
+
+public class LopHocChiTietModel : PageModel
+{
+    private readonly BackendApiClient _api;
+    public LopHocChiTietModel(BackendApiClient api) => _api = api;
+    public ClassItem? Item { get; private set; }
+    public IReadOnlyList<string> AllowedTransitions { get; private set; } = [];
+    public IReadOnlyList<OptionItem> Programs { get; private set; } = [];
+    public IReadOnlyList<OptionItem> Rooms { get; private set; } = [];
+    public string? ErrorMessage { get; private set; }
+    public bool CanManage { get; private set; }
+    public bool CanEdit => CanManage && Item is { Status: not "DONG" and not "HUY" };
+
+    [BindProperty] public Guid? ProgramId { get; set; }
+    [BindProperty] public Guid? RoomId { get; set; }
+    [BindProperty] public string Code { get; set; } = "";
+    [BindProperty] public string Name { get; set; } = "";
+    [BindProperty] public DateOnly? StartDate { get; set; }
+    [BindProperty] public DateOnly? EndDate { get; set; }
+    [BindProperty] public int Capacity { get; set; }
+    [BindProperty] public bool Public { get; set; } = true;
+    [BindProperty] public string ToStatus { get; set; } = "";
+
+    public async Task<IActionResult> OnGetAsync(Guid id) => await LoadAsync(id);
+
+    public async Task<IActionResult> OnPostAsync(Guid id)
+    {
+        if (!HasManage()) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        var response = await _api.SendJsonAsync(HttpMethod.Put, $"/api/v1/admin/classes/{id}", token, new
+        {
+            programId = ProgramId,
+            roomId = RoomId,
+            code = Code,
+            name = Name,
+            startDate = StartDate,
+            endDate = EndDate,
+            capacity = Capacity,
+            @public = Public
+        });
+        if (response is null || !response.IsSuccessStatusCode)
+        {
+            ErrorMessage = "Không lưu được lớp. Lớp đóng hoặc hủy thì không sửa được.";
+            return await LoadAsync(id);
+        }
+
+        return Redirect($"/admin/lop-hoc/{id}");
+    }
+
+    public async Task<IActionResult> OnPostTransitionAsync(Guid id)
+    {
+        if (!HasManage()) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        var response = await _api.SendJsonAsync(HttpMethod.Post, $"/api/v1/admin/classes/{id}/transition", token, new { toStatus = ToStatus });
+        if (response is null || !response.IsSuccessStatusCode)
+        {
+            ErrorMessage = "Không chuyển được trạng thái. Chỉ các bước được phép mới thực hiện.";
+            return await LoadAsync(id);
+        }
+
+        return Redirect($"/admin/lop-hoc/{id}");
+    }
+
+    private bool HasManage() => Has("education.manage");
+    private bool HasView() => Has("education.manage") || Has("education.view");
+    private bool Has(string permission) => (HttpContext.Items["StaffProfile"] as StaffProfile)?.Permissions?.Contains(permission) == true;
+    private string? Token() => Request.Cookies[AdminGateMiddleware.CookieName];
+
+    private async Task<IActionResult> LoadAsync(Guid id)
+    {
+        CanManage = HasManage();
+        if (!HasView()) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        var body = await _api.GetJsonAsync<ClassEnvelope>($"/api/v1/admin/classes/{id}", token);
+        var programs = await _api.GetJsonAsync<ListEnvelope<OptionItem>>("/api/v1/admin/programs?pageSize=100", token);
+        var rooms = await _api.GetJsonAsync<ListEnvelope<OptionItem>>("/api/v1/admin/rooms?pageSize=100", token);
+        Item = body?.Item;
+        AllowedTransitions = body?.AllowedTransitions ?? [];
+        Programs = programs?.Items ?? [];
+        Rooms = rooms?.Items ?? [];
+        if (Item is null)
+        {
+            ErrorMessage ??= "Không tìm thấy lớp.";
+        }
+        else
+        {
+            ProgramId = Item.ProgramId;
+            RoomId = Item.RoomId;
+            Code = Item.Code;
+            Name = Item.Name;
+            StartDate = Item.StartDate;
+            EndDate = Item.EndDate;
+            Capacity = Item.Capacity;
+            Public = Item.Public;
+        }
+
+        return Page();
+    }
+
+    public sealed record ClassItem(Guid Id, Guid ProgramId, Guid? RoomId, string Code, string Name, DateOnly StartDate, DateOnly EndDate, int Capacity, string Status, bool Public);
+    public sealed record OptionItem(Guid Id, string Code, string Name);
+    private sealed record ClassEnvelope(ClassItem? Item, IReadOnlyList<string>? AllowedTransitions);
+    private sealed record ListEnvelope<T>(IReadOnlyList<T>? Items);
+}

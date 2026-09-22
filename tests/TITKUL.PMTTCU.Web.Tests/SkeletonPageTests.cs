@@ -45,6 +45,18 @@ public sealed class SkeletonPageTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     [Fact]
+    public async Task Education_pages_require_login()
+    {
+        using var client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        foreach (var path in new[] { "/admin/chuong-trinh", "/admin/doi-tuong", "/admin/phong-hoc", "/admin/lop-hoc", "/admin/lop-hoc/" + Guid.Empty })
+        {
+            var response = await client.GetAsync(path);
+            Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+            Assert.Equal("/admin/dang-nhap", response.Headers.Location?.OriginalString);
+        }
+    }
+
+    [Fact]
     public async Task Error_page_shows_trace_id_from_query()
     {
         using var client = _factory.CreateClient();

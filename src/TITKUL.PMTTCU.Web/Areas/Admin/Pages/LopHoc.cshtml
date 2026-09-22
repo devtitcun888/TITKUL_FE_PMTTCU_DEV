@@ -1,0 +1,134 @@
+@page "/admin/lop-hoc"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.LopHocModel
+@{
+    ViewData["Title"] = "Lớp học";
+}
+
+<section class="card stack">
+    <h1>Lớp học</h1>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    <form method="get" class="stack">
+        <div>
+            <label for="q">Tìm mã hoặc tên</label>
+            <input id="q" name="q" value="@Model.Query" />
+        </div>
+        <div>
+            <label for="status">Trạng thái</label>
+            <select id="status" name="status">
+                <option value="">Tất cả</option>
+                <option value="DU_KIEN" selected="@(Model.StatusFilter == "DU_KIEN" ? "selected" : null)">Dự kiến</option>
+                <option value="MO_DANG_KY" selected="@(Model.StatusFilter == "MO_DANG_KY" ? "selected" : null)">Mở đăng ký</option>
+                <option value="DANG_HOC" selected="@(Model.StatusFilter == "DANG_HOC" ? "selected" : null)">Đang học</option>
+                <option value="DONG" selected="@(Model.StatusFilter == "DONG" ? "selected" : null)">Đóng</option>
+                <option value="HUY" selected="@(Model.StatusFilter == "HUY" ? "selected" : null)">Hủy</option>
+            </select>
+        </div>
+        <div>
+            <label for="programIdFilter">Chương trình</label>
+            <select id="programIdFilter" name="programId">
+                <option value="">Tất cả</option>
+                @foreach (var program in Model.Programs)
+                {
+                    <option value="@program.Id" selected="@(Model.ProgramFilter == program.Id ? "selected" : null)">@program.Code — @program.Name</option>
+                }
+            </select>
+        </div>
+        <button type="submit">Lọc</button>
+    </form>
+    @if (Model.CanManage)
+    {
+        <form method="post" class="stack">
+            <div>
+                <label for="programId">Chương trình</label>
+                <select id="programId" name="ProgramId" required>
+                    <option value="">Chọn chương trình</option>
+                    @foreach (var program in Model.Programs)
+                    {
+                        <option value="@program.Id">@program.Code — @program.Name</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label for="roomId">Phòng</label>
+                <select id="roomId" name="RoomId">
+                    <option value="">Không gán phòng</option>
+                    @foreach (var room in Model.Rooms)
+                    {
+                        <option value="@room.Id">@room.Code — @room.Name</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label for="code">Mã lớp</label>
+                <input id="code" name="Code" value="@Model.Code" required maxlength="60" autocomplete="off" />
+            </div>
+            <div>
+                <label for="name">Tên lớp</label>
+                <input id="name" name="Name" value="@Model.Name" required maxlength="250" />
+            </div>
+            <div>
+                <label for="startDate">Ngày bắt đầu</label>
+                <input id="startDate" name="StartDate" type="date" value="@Model.StartDate?.ToString("yyyy-MM-dd")" required />
+            </div>
+            <div>
+                <label for="endDate">Ngày kết thúc</label>
+                <input id="endDate" name="EndDate" type="date" value="@Model.EndDate?.ToString("yyyy-MM-dd")" required />
+            </div>
+            <div>
+                <label for="capacity">Sĩ số tối đa</label>
+                <input id="capacity" name="Capacity" type="number" min="1" value="@Model.Capacity" required />
+            </div>
+            <button type="submit">Tạo lớp (Dự kiến)</button>
+        </form>
+    }
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có lớp học.</p>
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table>
+                <caption>Danh sách lớp</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Mã</th>
+                        <th scope="col">Tên</th>
+                        <th scope="col">Trạng thái</th>
+                        <th scope="col">Sĩ số</th>
+                        <th scope="col">Chi tiết</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@item.Code</td>
+                        <td>@item.Name</td>
+                        <td>@EducationUi.Status(item.Status)</td>
+                        <td>@item.Capacity</td>
+                        <td><a href="/admin/lop-hoc/@item.Id">Mở</a></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+        @if (Model.Total > 20)
+        {
+            <p class="row-actions">
+                @if (Model.PageNumber > 1)
+                {
+                    <a href="/admin/lop-hoc?page=@(Model.PageNumber - 1)&q=@Uri.EscapeDataString(Model.Query ?? "")&status=@Model.StatusFilter&programId=@Model.ProgramFilter">Trang trước</a>
+                }
+                @if (Model.PageNumber * 20 < Model.Total)
+                {
+                    <a href="/admin/lop-hoc?page=@(Model.PageNumber + 1)&q=@Uri.EscapeDataString(Model.Query ?? "")&status=@Model.StatusFilter&programId=@Model.ProgramFilter">Trang sau</a>
+                }
+            </p>
+        }
+    }
+</section>

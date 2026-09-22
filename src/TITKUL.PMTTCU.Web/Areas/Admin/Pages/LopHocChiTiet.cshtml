@@ -93,5 +93,131 @@
         {
             <p class="status-note">Lớp đã đóng hoặc hủy. Không mở lại trong phạm vi hiện tại.</p>
         }
+
+        <h2>Giảng viên</h2>
+        @if (Model.Teachers.Count == 0)
+        {
+            <p class="empty">Chưa phân công giảng viên.</p>
+        }
+        else
+        {
+            <ul>
+                @foreach (var teacher in Model.Teachers)
+                {
+                    <li class="row-actions">
+                        <span>@teacher.Username</span>
+                        @if (Model.CanManage)
+                        {
+                            <form method="post" asp-page-handler="RemoveTeacher">
+                                <input type="hidden" name="userId" value="@teacher.UserId" />
+                                <button type="submit" class="button-quiet">Gỡ</button>
+                            </form>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+        @if (Model.CanManage)
+        {
+            <form method="post" asp-page-handler="Assign" class="stack">
+                <div>
+                    <label for="teacherUserId">Phân công</label>
+                    <select id="teacherUserId" name="TeacherUserId" required>
+                        <option value="">Chọn giảng viên hoặc cán bộ</option>
+                        @foreach (var person in Model.Staff)
+                        {
+                            <option value="@person.Id">@person.Username</option>
+                        }
+                    </select>
+                </div>
+                <button type="submit">Thêm giảng viên</button>
+            </form>
+        }
+
+        <h2>Buổi học</h2>
+        @if (Model.Sessions.Count == 0)
+        {
+            <p class="empty">Chưa có buổi học.</p>
+        }
+        else
+        {
+            <div class="table-scroll">
+                <table>
+                    <caption>Thời khóa biểu lớp</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Buổi</th>
+                            <th scope="col">Thời gian</th>
+                            <th scope="col">Hình thức</th>
+                            <th scope="col">Trạng thái</th>
+                            @if (Model.CanManage)
+                            {
+                                <th scope="col">Thao tác</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var session in Model.Sessions)
+                    {
+                        <tr>
+                            <td>@session.Title</td>
+                            <td>@session.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM HH:mm") - @session.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")</td>
+                            <td>@EducationUi.Status(session.Mode)</td>
+                            <td>@EducationUi.Status(session.Status)</td>
+                            @if (Model.CanManage && session.Status == "SCHEDULED")
+                            {
+                                <td>
+                                    <form method="post" asp-page-handler="CancelSession">
+                                        <input type="hidden" name="sessionId" value="@session.Id" />
+                                        <button type="submit" class="button-quiet">Hủy buổi</button>
+                                    </form>
+                                </td>
+                            }
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+        @if (Model.CanEdit)
+        {
+            <form method="post" asp-page-handler="Session" class="stack">
+                <div>
+                    <label for="sessionTitle">Tên buổi</label>
+                    <input id="sessionTitle" name="SessionTitle" value="@Model.SessionTitle" required maxlength="250" />
+                </div>
+                <div>
+                    <label for="sessionRoomId">Phòng</label>
+                    <select id="sessionRoomId" name="SessionRoomId">
+                        <option value="">Không gán phòng</option>
+                        @foreach (var room in Model.Rooms)
+                        {
+                            <option value="@room.Id">@room.Code — @room.Name</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label for="sessionStart">Bắt đầu</label>
+                    <input id="sessionStart" name="SessionStart" type="datetime-local" value="@Model.SessionStart" required />
+                </div>
+                <div>
+                    <label for="sessionEnd">Kết thúc</label>
+                    <input id="sessionEnd" name="SessionEnd" type="datetime-local" value="@Model.SessionEnd" required />
+                </div>
+                <div>
+                    <label for="sessionMode">Hình thức</label>
+                    <select id="sessionMode" name="SessionMode">
+                        <option value="OFFLINE" selected="@(Model.SessionMode == "OFFLINE" ? "selected" : null)">Trực tiếp</option>
+                        <option value="ONLINE" selected="@(Model.SessionMode == "ONLINE" ? "selected" : null)">Trực tuyến</option>
+                        <option value="HYBRID" selected="@(Model.SessionMode == "HYBRID" ? "selected" : null)">Kết hợp</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="meetingUrl">Liên kết Meet/Zoom (HTTPS)</label>
+                    <input id="meetingUrl" name="MeetingUrl" value="@Model.MeetingUrl" maxlength="1000" />
+                </div>
+                <button type="submit">Thêm buổi học</button>
+            </form>
+        }
     }
 </section>

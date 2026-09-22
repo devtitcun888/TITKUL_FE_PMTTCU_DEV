@@ -57,7 +57,7 @@ public class LopHocModel : PageModel
     }
 
     private bool HasManage() => Has("education.manage");
-    private bool HasView() => Has("education.manage") || Has("education.view");
+    private bool HasView() => Has("education.manage") || Has("education.view") || Has("report.own_classes.view");
     private bool Has(string permission) => (HttpContext.Items["StaffProfile"] as StaffProfile)?.Permissions?.Contains(permission) == true;
     private string? Token() => Request.Cookies[AdminGateMiddleware.CookieName];
 

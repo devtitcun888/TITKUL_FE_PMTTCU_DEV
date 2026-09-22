@@ -220,10 +220,46 @@ th, td {
 
 .login-card { width: min(420px, 100%); }
 
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.week-day {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: #fff;
+}
+
+.week-day h2 {
+  font-size: 0.95rem;
+  margin: 0 0 8px;
+}
+
+.session-chip {
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  margin-bottom: 8px;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+
+.week-list { display: none; }
+
 @media (max-width: 768px) {
   .admin-shell { grid-template-columns: minmax(0, 1fr); }
   .side-nav { grid-auto-flow: column; overflow-x: auto; }
   .portal-header .wrap { padding: 8px 0; }
+  .week-grid { display: none; }
+  .week-list { display: block; }
 }
 
 @media (max-width: 390px) {

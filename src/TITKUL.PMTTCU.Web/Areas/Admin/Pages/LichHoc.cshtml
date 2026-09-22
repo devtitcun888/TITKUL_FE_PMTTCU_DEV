@@ -1,0 +1,68 @@
+@page "/admin/lich-hoc"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.LichHocModel
+@{
+    ViewData["Title"] = "Lịch học";
+    var days = Enumerable.Range(0, 7).Select(offset => Model.WeekStart.AddDays(offset)).ToArray();
+    var prev = Model.WeekStart.AddDays(-7).ToString("yyyy-MM-dd");
+    var next = Model.WeekStart.AddDays(7).ToString("yyyy-MM-dd");
+}
+
+<section class="card stack">
+    <h1>Lịch học tuần</h1>
+    <p class="row-actions">
+        <a class="button button-quiet" href="/admin/lich-hoc?week=@prev">Tuần trước</a>
+        <span>@Model.WeekStart.ToString("dd/MM") – @Model.WeekStart.AddDays(6).ToString("dd/MM/yyyy")</span>
+        <a class="button button-quiet" href="/admin/lich-hoc?week=@next">Tuần sau</a>
+    </p>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    <div class="week-grid" aria-hidden="false">
+        @foreach (var day in days)
+        {
+            <div class="week-day">
+                <h2>@EducationUi.Weekday(day) @day.ToString("dd/MM")</h2>
+                @foreach (var item in Model.ForDay(day))
+                {
+                    <a class="session-chip" href="/admin/lop-hoc/@item.ClassId">
+                        <strong>@(item.ClassCode ?? item.ClassName)</strong>
+                        <span>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")–@item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")</span>
+                        <span>@item.Title — @EducationUi.Status(item.Status)</span>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+    <div class="week-list">
+        @if (Model.Items.Count == 0)
+        {
+            <p class="empty">Tuần này chưa có buổi học.</p>
+        }
+        else
+        {
+            @foreach (var day in days)
+            {
+                var rows = Model.ForDay(day);
+                <h2>@EducationUi.Weekday(day) @day.ToString("dd/MM")</h2>
+                @if (rows.Count == 0)
+                {
+                    <p class="status-note">Không có buổi.</p>
+                }
+                else
+                {
+                    <ul>
+                        @foreach (var item in rows)
+                        {
+                            <li>
+                                <a href="/admin/lop-hoc/@item.ClassId">@(item.ClassCode ?? item.ClassName) — @item.Title</a>
+                                <span>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")–@item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm") · @EducationUi.Status(item.Mode) · @EducationUi.Status(item.Status)</span>
+                            </li>
+                        }
+                    </ul>
+                }
+            }
+        }
+    </div>
+</section>

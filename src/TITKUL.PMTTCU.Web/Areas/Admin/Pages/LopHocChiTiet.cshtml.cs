@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TITKUL.PMTTCU.Web.ApiClients;
@@ -13,6 +14,9 @@ public class LopHocChiTietModel : PageModel
     public IReadOnlyList<string> AllowedTransitions { get; private set; } = [];
     public IReadOnlyList<OptionItem> Programs { get; private set; } = [];
     public IReadOnlyList<OptionItem> Rooms { get; private set; } = [];
+    public IReadOnlyList<SessionItem> Sessions { get; private set; } = [];
+    public IReadOnlyList<TeacherItem> Teachers { get; private set; } = [];
+    public IReadOnlyList<StaffItem> Staff { get; private set; } = [];
     public string? ErrorMessage { get; private set; }
     public bool CanManage { get; private set; }
     public bool CanEdit => CanManage && Item is { Status: not "DONG" and not "HUY" };
@@ -26,6 +30,13 @@ public class LopHocChiTietModel : PageModel
     [BindProperty] public int Capacity { get; set; }
     [BindProperty] public bool Public { get; set; } = true;
     [BindProperty] public string ToStatus { get; set; } = "";
+    [BindProperty] public string SessionTitle { get; set; } = "";
+    [BindProperty] public Guid? SessionRoomId { get; set; }
+    [BindProperty] public string SessionStart { get; set; } = "";
+    [BindProperty] public string SessionEnd { get; set; } = "";
+    [BindProperty] public string SessionMode { get; set; } = "OFFLINE";
+    [BindProperty] public string? MeetingUrl { get; set; }
+    [BindProperty] public Guid? TeacherUserId { get; set; }
 
     public async Task<IActionResult> OnGetAsync(Guid id) => await LoadAsync(id);
 
@@ -69,8 +80,76 @@ public class LopHocChiTietModel : PageModel
         return Redirect($"/admin/lop-hoc/{id}");
     }
 
+    public async Task<IActionResult> OnPostSessionAsync(Guid id)
+    {
+        if (!HasManage()) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        var response = await _api.SendJsonAsync(HttpMethod.Post, $"/api/v1/admin/classes/{id}/sessions", token, new
+        {
+            title = SessionTitle,
+            roomId = SessionRoomId,
+            startAt = ToOffset(SessionStart),
+            endAt = ToOffset(SessionEnd),
+            mode = SessionMode,
+            meetingUrl = MeetingUrl
+        });
+        if (response is null || !response.IsSuccessStatusCode)
+        {
+            ErrorMessage = await ReadErrorAsync(response) ?? "Không lưu được buổi học. Kiểm tra giờ, phòng và giảng viên trùng lịch.";
+            return await LoadAsync(id);
+        }
+
+        return Redirect($"/admin/lop-hoc/{id}");
+    }
+
+    public async Task<IActionResult> OnPostCancelSessionAsync(Guid id, Guid sessionId)
+    {
+        if (!HasManage()) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        var response = await _api.SendJsonAsync(HttpMethod.Post, $"/api/v1/admin/sessions/{sessionId}/cancel", token, new { });
+        if (response is null || !response.IsSuccessStatusCode)
+        {
+            ErrorMessage = "Không hủy được buổi học.";
+            return await LoadAsync(id);
+        }
+
+        return Redirect($"/admin/lop-hoc/{id}");
+    }
+
+    public async Task<IActionResult> OnPostAssignAsync(Guid id)
+    {
+        if (!HasManage()) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        var response = await _api.SendJsonAsync(HttpMethod.Post, $"/api/v1/admin/classes/{id}/teachers", token, new { userId = TeacherUserId });
+        if (response is null || !response.IsSuccessStatusCode)
+        {
+            ErrorMessage = await ReadErrorAsync(response) ?? "Không phân công được giảng viên.";
+            return await LoadAsync(id);
+        }
+
+        return Redirect($"/admin/lop-hoc/{id}");
+    }
+
+    public async Task<IActionResult> OnPostRemoveTeacherAsync(Guid id, Guid userId)
+    {
+        if (!HasManage()) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        var response = await _api.SendJsonAsync(HttpMethod.Delete, $"/api/v1/admin/classes/{id}/teachers/{userId}", token, new { });
+        if (response is null || !response.IsSuccessStatusCode)
+        {
+            ErrorMessage = "Không gỡ được giảng viên.";
+            return await LoadAsync(id);
+        }
+
+        return Redirect($"/admin/lop-hoc/{id}");
+    }
+
     private bool HasManage() => Has("education.manage");
-    private bool HasView() => Has("education.manage") || Has("education.view");
+    private bool HasView() => Has("education.manage") || Has("education.view") || Has("report.own_classes.view");
     private bool Has(string permission) => (HttpContext.Items["StaffProfile"] as StaffProfile)?.Permissions?.Contains(permission) == true;
     private string? Token() => Request.Cookies[AdminGateMiddleware.CookieName];
 
@@ -81,15 +160,25 @@ public class LopHocChiTietModel : PageModel
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
         var body = await _api.GetJsonAsync<ClassEnvelope>($"/api/v1/admin/classes/{id}", token);
-        var programs = await _api.GetJsonAsync<ListEnvelope<OptionItem>>("/api/v1/admin/programs?pageSize=100", token);
-        var rooms = await _api.GetJsonAsync<ListEnvelope<OptionItem>>("/api/v1/admin/rooms?pageSize=100", token);
         Item = body?.Item;
         AllowedTransitions = body?.AllowedTransitions ?? [];
-        Programs = programs?.Items ?? [];
-        Rooms = rooms?.Items ?? [];
+        if (CanManage)
+        {
+            var programs = await _api.GetJsonAsync<ListEnvelope<OptionItem>>("/api/v1/admin/programs?pageSize=100", token);
+            var rooms = await _api.GetJsonAsync<ListEnvelope<OptionItem>>("/api/v1/admin/rooms?pageSize=100", token);
+            var staff = await _api.GetJsonAsync<ListEnvelope<StaffItem>>("/api/v1/admin/education/staff", token);
+            Programs = programs?.Items ?? [];
+            Rooms = rooms?.Items ?? [];
+            Staff = staff?.Items ?? [];
+        }
+
+        var sessions = await _api.GetJsonAsync<ListEnvelope<SessionItem>>($"/api/v1/admin/classes/{id}/sessions", token);
+        var teachers = await _api.GetJsonAsync<ListEnvelope<TeacherItem>>($"/api/v1/admin/classes/{id}/teachers", token);
+        Sessions = sessions?.Items ?? [];
+        Teachers = teachers?.Items ?? [];
         if (Item is null)
         {
-            ErrorMessage ??= "Không tìm thấy lớp.";
+            ErrorMessage ??= "Không tìm thấy lớp hoặc không có quyền xem.";
         }
         else
         {
@@ -106,8 +195,29 @@ public class LopHocChiTietModel : PageModel
         return Page();
     }
 
+    private static DateTimeOffset? ToOffset(string value) =>
+        DateTimeOffset.TryParse(value + "+07:00", out var parsed) ? parsed : null;
+
+    private static async Task<string?> ReadErrorAsync(HttpResponseMessage? response)
+    {
+        if (response is null) return null;
+        try
+        {
+            var body = await response.Content.ReadFromJsonAsync<ApiErr>();
+            return string.IsNullOrWhiteSpace(body?.Message) ? null : body.Message;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
     public sealed record ClassItem(Guid Id, Guid ProgramId, Guid? RoomId, string Code, string Name, DateOnly StartDate, DateOnly EndDate, int Capacity, string Status, bool Public);
     public sealed record OptionItem(Guid Id, string Code, string Name);
+    public sealed record SessionItem(Guid Id, Guid ClassId, Guid? RoomId, string Title, DateTimeOffset StartAt, DateTimeOffset EndAt, string Mode, string? MeetingUrl, string Status);
+    public sealed record TeacherItem(Guid Id, Guid ClassId, Guid UserId, string Username, string Role);
+    public sealed record StaffItem(Guid Id, string Username, IReadOnlyList<string>? Roles);
     private sealed record ClassEnvelope(ClassItem? Item, IReadOnlyList<string>? AllowedTransitions);
     private sealed record ListEnvelope<T>(IReadOnlyList<T>? Items);
+    private sealed record ApiErr(string? Code, string? Message);
 }

@@ -1,7 +1,10 @@
 @page "/tin-tuc/{slug}"
 @model TITKUL.PMTTCU.Web.Pages.TinTucChiTietModel
 @{
-    ViewData["Title"] = Model.Item?.Title ?? "Tin tức";
+    if (Model.Item is null)
+    {
+        ViewData["Title"] = "Tin tức";
+    }
 }
 
 <section class="card stack">

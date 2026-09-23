@@ -1,0 +1,44 @@
+@page "/admin/cau-hinh"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CauHinhModel
+@{
+    ViewData["Title"] = "Cấu hình cổng";
+    var labels = new Dictionary<string, string>
+    {
+        ["org.name"] = "Tên đơn vị",
+        ["org.address"] = "Địa chỉ",
+        ["org.hotline"] = "Điện thoại",
+        ["org.email"] = "Email",
+        ["maps.url"] = "URL bản đồ Google (https)",
+        ["page.gioi-thieu"] = "Giới thiệu",
+        ["page.co-cau"] = "Cơ cấu tổ chức",
+        ["page.van-hoa"] = "Văn hóa - Thể thao"
+    };
+}
+<section class="card stack">
+    <h1>Cấu hình cổng</h1>
+    <p>Sửa tại đây thì trang công khai đổi theo, không cần sửa mã nguồn.</p>
+    @if (!string.IsNullOrEmpty(Model.Message)) { <p role="status">@Model.Message</p> }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage)) { <p class="alert" role="alert">@Model.ErrorMessage</p> }
+    @foreach (var pair in labels)
+    {
+        var current = Model.Values.TryGetValue(pair.Key, out var value) ? value : "";
+        <form method="post" class="stack">
+            <input type="hidden" name="Key" value="@pair.Key" />
+            <div>
+                <label for="@pair.Key">@pair.Value</label>
+                @if (pair.Key.StartsWith("page."))
+                {
+                    <textarea id="@pair.Key" name="Value" rows="6">@current</textarea>
+                }
+                else
+                {
+                    <input id="@pair.Key" name="Value" value="@current" />
+                }
+            </div>
+            @if (Model.CanEdit)
+            {
+                <button type="submit">Lưu @pair.Value</button>
+            }
+        </form>
+    }
+</section>

@@ -1,0 +1,16 @@
+@page "/van-hoa-the-thao"
+@model TITKUL.PMTTCU.Web.Pages.VanHoaModel
+@{
+    ViewData["Title"] = "Văn hóa - Thể thao";
+}
+<section class="card stack">
+    <h1>Văn hóa - Thể thao, dịch vụ sự nghiệp công</h1>
+    @if (string.IsNullOrWhiteSpace(Model.Html))
+    {
+        <p class="empty">Chưa có nội dung chuyên trang.</p>
+    }
+    else
+    {
+        @Html.Raw(Model.Html)
+    }
+</section>

@@ -1,0 +1,36 @@
+@page "/lien-he"
+@model TITKUL.PMTTCU.Web.Pages.LienHeModel
+@{
+    ViewData["Title"] = "Liên hệ";
+}
+<section class="stack">
+    <section class="card stack">
+        <h1>Liên hệ</h1>
+        @if (!string.IsNullOrWhiteSpace(Model.Name)) { <p>@Model.Name</p> }
+        @if (!string.IsNullOrWhiteSpace(Model.Address)) { <p>@Model.Address</p> }
+        @if (!string.IsNullOrWhiteSpace(Model.Hotline)) { <p>Điện thoại: @Model.Hotline</p> }
+        @if (!string.IsNullOrWhiteSpace(Model.Email)) { <p>Email: @Model.Email</p> }
+        @if (!string.IsNullOrWhiteSpace(Model.MapsUrl))
+        {
+            <iframe title="Bản đồ" src="@Model.MapsUrl" width="100%" height="280" style="border:0;max-width:100%" loading="lazy" referrerpolicy="no-referrer"></iframe>
+        }
+        else
+        {
+            <p class="empty">Bản đồ chưa được cấu hình.</p>
+        }
+    </section>
+    <section class="card stack">
+        <h2>Gửi phản ánh</h2>
+        @if (!string.IsNullOrEmpty(Model.Message)) { <p role="status">@Model.Message</p> }
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage)) { <p class="alert" role="alert">@Model.ErrorMessage</p> }
+        <form method="post" class="stack">
+            <div class="hp" aria-hidden="true"><label for="website">Website</label><input id="website" name="Website" tabindex="-1" autocomplete="off" /></div>
+            <div><label for="hoTen">Họ tên</label><input id="hoTen" name="HoTen" value="@Model.HoTen" required maxlength="200" /></div>
+            <div><label for="phone">Số điện thoại</label><input id="phone" name="Phone" value="@Model.Phone" required maxlength="20" /></div>
+            <div><label for="mail">Email</label><input id="mail" name="Mail" value="@Model.Mail" maxlength="254" /></div>
+            <div><label for="title">Tiêu đề</label><input id="title" name="Title" value="@Model.Title" required maxlength="250" /></div>
+            <div><label for="body">Nội dung</label><textarea id="body" name="Body" rows="5" required maxlength="4000">@Model.Body</textarea></div>
+            <button type="submit">Gửi</button>
+        </form>
+    </section>
+</section>

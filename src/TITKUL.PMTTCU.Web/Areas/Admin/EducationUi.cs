@@ -38,6 +38,10 @@ public static class EducationUi
         "VIDEO_LINK" => "Video",
         "HOC_LIEU" => "Học liệu số",
         "DOCUMENT" => "Tài liệu",
+        "NEW" => "Mới",
+        "PROCESSING" => "Đang xử lý",
+        "CLOSED" => "Đã đóng",
+        "SPAM" => "Rác",
         _ => status
     };
 

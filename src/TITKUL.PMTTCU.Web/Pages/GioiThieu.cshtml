@@ -1,0 +1,16 @@
+@page "/gioi-thieu"
+@model TITKUL.PMTTCU.Web.Pages.GioiThieuModel
+@{
+    ViewData["Title"] = "Giới thiệu";
+}
+<section class="card stack">
+    <h1>Giới thiệu Trung tâm</h1>
+    @if (string.IsNullOrWhiteSpace(Model.Html))
+    {
+        <p class="empty">Chưa có nội dung giới thiệu.</p>
+    }
+    else
+    {
+        @Html.Raw(Model.Html)
+    }
+</section>

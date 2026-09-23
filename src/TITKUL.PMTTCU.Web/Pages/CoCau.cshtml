@@ -1,0 +1,16 @@
+@page "/co-cau"
+@model TITKUL.PMTTCU.Web.Pages.CoCauModel
+@{
+    ViewData["Title"] = "Cơ cấu tổ chức";
+}
+<section class="card stack">
+    <h1>Cơ cấu tổ chức</h1>
+    @if (string.IsNullOrWhiteSpace(Model.Html))
+    {
+        <p class="empty">Chưa có nội dung cơ cấu.</p>
+    }
+    else
+    {
+        @Html.Raw(Model.Html)
+    }
+</section>

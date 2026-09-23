@@ -1,0 +1,45 @@
+@page "/admin/lien-he"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.LienHeAdminModel
+@{
+    ViewData["Title"] = "Phản ánh";
+}
+<section class="card stack">
+    <h1>Phản ánh</h1>
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có phản ánh.</p>
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table>
+                <caption>Danh sách phản ánh</caption>
+                <thead><tr><th scope="col">Người gửi</th><th scope="col">Nội dung</th><th scope="col">Trạng thái</th><th scope="col"></th></tr></thead>
+                <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@item.Name<br />@item.Phone</td>
+                        <td><strong>@item.Title</strong><p>@item.Body</p></td>
+                        <td>@EducationUi.Status(item.Status)</td>
+                        <td>
+                            @if (Model.CanEdit)
+                            {
+                                <form method="post" asp-page-handler="Status" asp-route-id="@item.Id">
+                                    <input type="hidden" name="status" value="PROCESSING" />
+                                    <button type="submit">Đang xử lý</button>
+                                </form>
+                                <form method="post" asp-page-handler="Status" asp-route-id="@item.Id">
+                                    <input type="hidden" name="status" value="CLOSED" />
+                                    <button type="submit">Đóng</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

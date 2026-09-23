@@ -46,6 +46,16 @@ public class KhaoSatThietKeModel : PageModel
         return await LoadAsync(id);
     }
 
+    public async Task<IActionResult> OnGetQrAsync(Guid id)
+    {
+        if (!HasView()) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        var file = await _api.GetFileAsync("/api/v1/admin/surveys/" + id + "/qr", token);
+        if (file.Bytes is null) return NotFound();
+        return File(file.Bytes, "image/png", "khao-sat.png");
+    }
+
     public async Task<IActionResult> OnPostOpenAsync(Guid id)
     {
         if (!Has("survey.manage")) return Redirect("/admin/khong-quyen");

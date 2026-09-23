@@ -11,7 +11,10 @@
     {
         <h1>@Model.Survey.Title</h1>
         <p>@EducationUi.Status(Model.Survey.Status) · @Model.Questions.Count/30 câu</p>
-        <p><a class="button" href="/admin/khao-sat/@Model.Survey.Id/preview">Xem trước</a></p>
+        <p class="row-actions">
+            <a class="button" href="/admin/khao-sat/@Model.Survey.Id/preview">Xem trước</a>
+            <a class="button" href="/admin/khao-sat/@Model.Survey.Id/thiet-ke?handler=Qr">Tải QR</a>
+        </p>
         @if (Model.CanManage && Model.Survey.Status == "DRAFT")
         {
             <form method="post" asp-page-handler="Question" class="stack">

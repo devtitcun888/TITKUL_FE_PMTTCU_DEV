@@ -1,0 +1,55 @@
+@page "/khao-sat/{ma}"
+@model TITKUL.PMTTCU.Web.Pages.KhaoSatCongKhaiModel
+@{
+    ViewData["Title"] = Model.Item?.Title ?? "Khảo sát";
+}
+<section class="card stack">
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage) && Model.Item is null)
+    {
+        <h1>Khảo sát</h1>
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Item is not null)
+    {
+        <h1>@Model.Item.Title</h1>
+        @if (!string.IsNullOrWhiteSpace(Model.Item.Summary)) { <p>@Model.Item.Summary</p> }
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage)) { <p class="alert" role="alert">@Model.ErrorMessage</p> }
+        <form method="post" class="stack">
+            <div class="hp" aria-hidden="true"><label for="website">Website</label><input id="website" name="Website" tabindex="-1" autocomplete="off" /></div>
+            <input type="hidden" name="IdempotencyKey" value="@Guid.NewGuid().ToString("N")" />
+            @if (Model.Item.RequirePhone)
+            {
+                <div><label for="phone">Số điện thoại</label><input id="phone" name="Phone" required maxlength="20" /></div>
+            }
+            @foreach (var question in Model.Item.Questions)
+            {
+                <fieldset class="stack">
+                    <legend>@question.Text @(question.Required ? "*" : "")</legend>
+                    @if (question.Type == "SINGLE")
+                    {
+                        foreach (var option in Model.Item.Options.Where(item => item.QuestionId == question.Id))
+                        {
+                            <label class="choice"><input type="radio" name="q-@question.Id" value="@option.Id" /> @option.Text</label>
+                        }
+                    }
+                    else if (question.Type == "MULTIPLE")
+                    {
+                        foreach (var option in Model.Item.Options.Where(item => item.QuestionId == question.Id))
+                        {
+                            <label class="choice"><input type="checkbox" name="q-@question.Id" value="@option.Id" /> @option.Text</label>
+                        }
+                    }
+                    else if (question.Type == "TEXT")
+                    {
+                        <textarea name="t-@question.Id" rows="3" maxlength="2000"></textarea>
+                    }
+                    else
+                    {
+                        <input name="s-@question.Id" type="number" min="@question.ScaleMin" max="@question.ScaleMax" />
+                    }
+                </fieldset>
+            }
+            <button type="submit">Gửi phiếu</button>
+        </form>
+    }
+</section>

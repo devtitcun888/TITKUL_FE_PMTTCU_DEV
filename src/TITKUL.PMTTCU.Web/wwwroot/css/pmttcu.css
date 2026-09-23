@@ -148,6 +148,13 @@ input[type=checkbox] {
   min-width: 22px;
 }
 
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+
 .hp {
   position: absolute;
   left: -10000px;

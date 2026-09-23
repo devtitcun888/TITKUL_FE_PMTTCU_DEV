@@ -60,7 +60,7 @@ public sealed class SkeletonPageTests : IClassFixture<WebApplicationFactory<Prog
     public async Task Public_class_pages_render()
     {
         using var client = _factory.CreateClient();
-        foreach (var path in new[] { "/lop-hoc", "/lop-hoc/ABC12", "/dang-ky/ABC12", "/dang-ky/ABC12/cam-on", "/dang-ky/ABC12/cam-on?code=DKTESTCODE12ABCD", "/diem-danh-buoi/" + Guid.Empty, "/tra-cuu", "/tra-cuu/CNTEST", "/tin-tuc", "/tin-tuc/bai-thu", "/su-kien", "/su-kien/hoi-thao", "/thong-bao", "/thong-bao/khan-trong", "/van-ban", "/bieu-mau", "/hoc-lieu", "/hoc-lieu/chung", "/thu-vien", "/thu-vien/anh", "/gioi-thieu", "/co-cau", "/van-hoa-the-thao", "/lien-he" })
+        foreach (var path in new[] { "/lop-hoc", "/lop-hoc/ABC12", "/dang-ky/ABC12", "/dang-ky/ABC12/cam-on", "/dang-ky/ABC12/cam-on?code=DKTESTCODE12ABCD", "/diem-danh-buoi/" + Guid.Empty, "/tra-cuu", "/tra-cuu/CNTEST", "/tin-tuc", "/tin-tuc/bai-thu", "/su-kien", "/su-kien/hoi-thao", "/thong-bao", "/thong-bao/khan-trong", "/van-ban", "/bieu-mau", "/hoc-lieu", "/hoc-lieu/chung", "/thu-vien", "/thu-vien/anh", "/gioi-thieu", "/co-cau", "/van-hoa-the-thao", "/lien-he", "/khao-sat/ABC12", "/khao-sat/ABC12/cam-on" })
         {
             var response = await client.GetAsync(path);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);

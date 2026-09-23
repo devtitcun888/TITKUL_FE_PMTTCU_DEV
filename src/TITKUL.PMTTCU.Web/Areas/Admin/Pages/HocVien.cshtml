@@ -1,0 +1,92 @@
+@page "/admin/hoc-vien"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.HocVienModel
+@{
+    ViewData["Title"] = "Học viên";
+}
+
+<section class="card stack">
+    <h1>Học viên</h1>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    <form method="get" class="stack">
+        <div>
+            <label for="q">Tên hoặc số điện thoại</label>
+            <input id="q" name="q" value="@Model.Query" autocomplete="off" />
+        </div>
+        <div>
+            <label for="classId">Lớp</label>
+            <select id="classId" name="classId">
+                <option value="">Tất cả</option>
+                @foreach (var cls in Model.Classes)
+                {
+                    <option value="@cls.Id" selected="@(Model.ClassFilter == cls.Id ? "selected" : null)">@cls.Code — @cls.Name</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="hamletId">Thôn/ấp</label>
+            <select id="hamletId" name="hamletId">
+                <option value="">Tất cả</option>
+                @foreach (var hamlet in Model.Hamlets)
+                {
+                    <option value="@hamlet.Id" selected="@(Model.HamletFilter == hamlet.Id ? "selected" : null)">@hamlet.Name</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="ageFrom">Tuổi từ</label>
+            <input id="ageFrom" name="ageFrom" type="number" min="0" max="120" value="@Model.AgeFrom" />
+        </div>
+        <div>
+            <label for="ageTo">Tuổi đến</label>
+            <input id="ageTo" name="ageTo" type="number" min="0" max="120" value="@Model.AgeTo" />
+        </div>
+        <button type="submit">Lọc</button>
+    </form>
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Không có học viên khớp bộ lọc.</p>
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table>
+                <caption>Danh sách học viên</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Họ tên</th>
+                        <th scope="col">Điện thoại</th>
+                        <th scope="col">Tuổi</th>
+                        <th scope="col">Thôn/ấp</th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@item.FullName</td>
+                        <td>@item.Phone</td>
+                        <td>@item.Age</td>
+                        <td>@item.HamletName</td>
+                        <td><a href="/admin/hoc-vien/@item.Id">Hồ sơ</a></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+        <p class="row-actions">
+            @if (Model.PageNumber > 1)
+            {
+                <a href="/admin/hoc-vien?page=@(Model.PageNumber - 1)&q=@Uri.EscapeDataString(Model.Query ?? "")&classId=@Model.ClassFilter&hamletId=@Model.HamletFilter&ageFrom=@Model.AgeFrom&ageTo=@Model.AgeTo">Trang trước</a>
+            }
+            @if (Model.PageNumber * 20 < Model.Total)
+            {
+                <a href="/admin/hoc-vien?page=@(Model.PageNumber + 1)&q=@Uri.EscapeDataString(Model.Query ?? "")&classId=@Model.ClassFilter&hamletId=@Model.HamletFilter&ageFrom=@Model.AgeFrom&ageTo=@Model.AgeTo">Trang sau</a>
+            }
+        </p>
+    }
+</section>

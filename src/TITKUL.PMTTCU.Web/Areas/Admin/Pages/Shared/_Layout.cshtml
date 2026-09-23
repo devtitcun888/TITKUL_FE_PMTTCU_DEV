@@ -28,6 +28,10 @@
                 <a href="/admin/lop-hoc">Lớp học</a>
                 <a href="/admin/lich-hoc">Lịch học</a>
             }
+            @if (permissions.Contains("learner.view") || permissions.Contains("learner.manage"))
+            {
+                <a href="/admin/hoc-vien">Học viên</a>
+            }
             @if (permissions.Contains("audit.view"))
             {
                 <a href="/admin/nhat-ky">Nhật ký</a>

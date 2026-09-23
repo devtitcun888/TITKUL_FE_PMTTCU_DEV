@@ -21,6 +21,9 @@ public static class EducationUi
         "OFFLINE" => "Trực tiếp",
         "ONLINE" => "Trực tuyến",
         "HYBRID" => "Kết hợp",
+        "NAM" => "Nam",
+        "NU" => "Nữ",
+        "KHAC" => "Khác",
         _ => status
     };
 

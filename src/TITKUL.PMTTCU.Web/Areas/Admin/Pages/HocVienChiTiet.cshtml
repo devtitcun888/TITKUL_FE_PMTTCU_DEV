@@ -1,0 +1,59 @@
+@page "/admin/hoc-vien/{id:guid}"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.HocVienChiTietModel
+@{
+    ViewData["Title"] = "Hồ sơ học viên";
+}
+
+<section class="card stack">
+    <h1>Hồ sơ học viên</h1>
+    <p><a href="/admin/hoc-vien">Về danh sách</a></p>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Item is not null)
+    {
+        <p><strong>@Model.Item.FullName</strong></p>
+        <p>Điện thoại: @Model.Item.Phone</p>
+        <p>CCCD: @Model.Item.CccdMasked</p>
+        <p>Ngày sinh: @Model.Item.BirthDate.ToString("dd/MM/yyyy") · @Model.Item.Age tuổi · @EducationUi.Status(Model.Item.Gender)</p>
+        <p>Thôn/ấp: @Model.Item.HamletName</p>
+        @if (!string.IsNullOrWhiteSpace(Model.Item.Note))
+        {
+            <p>Ghi chú: @Model.Item.Note</p>
+        }
+        <h2>Lịch sử lớp</h2>
+        @if (Model.Classes.Count == 0)
+        {
+            <p class="empty">Chưa có lớp.</p>
+        }
+        else
+        {
+            <div class="table-scroll">
+                <table>
+                    <caption>Các lớp đã đăng ký</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Lớp</th>
+                            <th scope="col">Mã đăng ký</th>
+                            <th scope="col">Trạng thái</th>
+                            <th scope="col">Lúc</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var row in Model.Classes)
+                    {
+                        <tr>
+                            <td><a href="/admin/lop-hoc/@row.ClassId">@row.ClassCode — @row.ClassName</a></td>
+                            <td>@row.RegistrationCode</td>
+                            <td>@EducationUi.Status(row.EnrollmentStatus)</td>
+                            <td>@row.RegisteredAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM HH:mm")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+</section>

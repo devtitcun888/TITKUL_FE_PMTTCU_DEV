@@ -1,0 +1,71 @@
+@page "/admin/diem-danh/{buoiId:guid}"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.DiemDanhModel
+@{
+    ViewData["Title"] = "Điểm danh";
+}
+
+<section class="card stack">
+    <h1>Điểm danh</h1>
+    @if (Model.Item is not null)
+    {
+        <p><a href="/admin/lop-hoc/@Model.Item.ClassId">Về lớp @Model.Item.ClassName</a></p>
+        <p><strong>@Model.Item.SessionTitle</strong> · @Model.Item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM HH:mm")–@Model.Item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm") · @EducationUi.Status(Model.Item.SessionStatus)</p>
+        <p>Có mặt @Model.Item.Present · Vắng @Model.Item.Absent</p>
+    }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Item is not null)
+    {
+        <form method="get" action="/admin/diem-danh/@Model.Item.SessionId" class="stack">
+            <div>
+                <label for="q">Tìm học viên</label>
+                <input id="q" name="q" value="@Model.Query" autocomplete="off" />
+            </div>
+            <button type="submit" class="button-quiet">Tìm</button>
+        </form>
+        @if (Model.Item.Items.Count == 0)
+        {
+            <p class="empty">Chưa có học viên hoặc không khớp tìm kiếm.</p>
+        }
+        else if (Model.Item.CanEdit)
+        {
+            <form method="post" class="stack">
+                @for (var i = 0; i < Model.Marks.Count; i++)
+                {
+                    var line = Model.Item.Items.ElementAtOrDefault(i);
+                    if (line is null) { continue; }
+                    <div class="attend-row">
+                        <input type="hidden" name="Marks[@i].EnrollmentId" value="@Model.Marks[i].EnrollmentId" />
+                        <strong>@line.FullName</strong>
+                        <div class="attend-choices">
+                            <label>
+                                <input type="radio" name="Marks[@i].Status" value="CO_MAT" checked="@(Model.Marks[i].Status == "CO_MAT" ? "checked" : null)" />
+                                Có mặt
+                            </label>
+                            <label>
+                                <input type="radio" name="Marks[@i].Status" value="VANG" checked="@(Model.Marks[i].Status == "VANG" ? "checked" : null)" />
+                                Vắng
+                            </label>
+                        </div>
+                    </div>
+                }
+                <div class="attend-save">
+                    <button type="submit">Lưu điểm danh</button>
+                </div>
+            </form>
+        }
+        else
+        {
+            <ul>
+                @foreach (var line in Model.Item.Items)
+                {
+                    <li class="attend-row"><strong>@line.FullName</strong> <span>@EducationUi.Status(line.Status ?? "")</span></li>
+                }
+            </ul>
+            <p class="status-note">Buổi chưa đến giờ, đã hủy, hoặc bạn chỉ được xem.</p>
+        }
+    }
+</section>

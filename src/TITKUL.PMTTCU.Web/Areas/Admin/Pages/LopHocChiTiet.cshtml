@@ -162,10 +162,7 @@
                             <th scope="col">Thời gian</th>
                             <th scope="col">Hình thức</th>
                             <th scope="col">Trạng thái</th>
-                            @if (Model.CanManage)
-                            {
-                                <th scope="col">Thao tác</th>
-                            }
+                            <th scope="col">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -176,15 +173,16 @@
                             <td>@session.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM HH:mm") - @session.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")</td>
                             <td>@EducationUi.Status(session.Mode)</td>
                             <td>@EducationUi.Status(session.Status)</td>
+                            <td class="row-actions">
+                                <a href="/admin/diem-danh/@session.Id">Điểm danh</a>
                             @if (Model.CanManage && session.Status == "SCHEDULED")
                             {
-                                <td>
                                     <form method="post" asp-page-handler="CancelSession">
                                         <input type="hidden" name="sessionId" value="@session.Id" />
                                         <button type="submit" class="button-quiet">Hủy buổi</button>
                                     </form>
-                                </td>
                             }
+                            </td>
                         </tr>
                     }
                     </tbody>

@@ -26,7 +26,7 @@
                 <h2>@EducationUi.Weekday(day) @day.ToString("dd/MM")</h2>
                 @foreach (var item in Model.ForDay(day))
                 {
-                    <a class="session-chip" href="/admin/lop-hoc/@item.ClassId">
+                    <a class="session-chip" href="/admin/diem-danh/@item.Id">
                         <strong>@(item.ClassCode ?? item.ClassName)</strong>
                         <span>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")–@item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")</span>
                         <span>@item.Title — @EducationUi.Status(item.Status)</span>
@@ -56,7 +56,7 @@
                         @foreach (var item in rows)
                         {
                             <li>
-                                <a href="/admin/lop-hoc/@item.ClassId">@(item.ClassCode ?? item.ClassName) — @item.Title</a>
+                                <a href="/admin/diem-danh/@item.Id">@(item.ClassCode ?? item.ClassName) — @item.Title</a>
                                 <span>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")–@item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm") · @EducationUi.Status(item.Mode) · @EducationUi.Status(item.Status)</span>
                             </li>
                         }

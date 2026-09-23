@@ -1,0 +1,22 @@
+@page "/hoc-lieu"
+@model TITKUL.PMTTCU.Web.Pages.HocLieuModel
+@{
+    ViewData["Title"] = "Học liệu số";
+}
+<section class="card stack">
+    <h1>Học liệu số</h1>
+    <p>Học liệu dùng chung. Học liệu của từng lớp nằm ở trang lớp.</p>
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có học liệu chung.</p>
+    }
+    else
+    {
+        <ul class="stack">
+            @foreach (var item in Model.Items)
+            {
+                <li><a href="/hoc-lieu/@item.Slug"><strong>@item.Title</strong></a></li>
+            }
+        </ul>
+    }
+</section>

@@ -1,0 +1,51 @@
+@page "/admin/cms/bieu-mau"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsBieuMauModel
+@{
+    ViewData["Title"] = "Biểu mẫu";
+}
+<section class="card stack">
+    <h1>Biểu mẫu</h1>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.CanEdit)
+    {
+        <form method="post" enctype="multipart/form-data" class="stack">
+            <div><label for="title">Tiêu đề</label><input id="title" name="Title" required maxlength="300" /></div>
+            <div><label for="code">Mã</label><input id="code" name="Code" maxlength="60" /></div>
+            <div><label for="summary">Mô tả</label><textarea id="summary" name="Summary" rows="2"></textarea></div>
+            <div><label for="upload">Tệp PDF, Word, Excel</label><input id="upload" name="Upload" type="file" required /></div>
+            <button type="submit">Lưu nháp</button>
+        </form>
+    }
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có biểu mẫu.</p>
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table>
+                <caption>Danh sách biểu mẫu</caption>
+                <thead><tr><th scope="col">Tiêu đề</th><th scope="col">Trạng thái</th><th scope="col"></th></tr></thead>
+                <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@item.Title</td>
+                        <td>@EducationUi.Status(item.Status)</td>
+                        <td>
+                            @if (Model.CanEdit && item.Status != "PUBLISHED")
+                            {
+                                <form method="post" asp-page-handler="Publish" asp-route-id="@item.Id"><button type="submit">Đăng</button></form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

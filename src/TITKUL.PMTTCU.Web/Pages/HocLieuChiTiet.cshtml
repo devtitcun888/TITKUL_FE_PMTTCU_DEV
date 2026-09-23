@@ -1,0 +1,32 @@
+@page "/hoc-lieu/{slug}"
+@model TITKUL.PMTTCU.Web.Pages.HocLieuChiTietModel
+@{
+    if (Model.Item is null) ViewData["Title"] = "Học liệu số";
+}
+<section class="card stack">
+    <p><a href="/hoc-lieu">Về học liệu chung</a></p>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Item is not null)
+    {
+        <h1>@Model.Item.Title</h1>
+        @if (Model.Media.Count == 0)
+        {
+            <p class="empty">Album chưa có tệp.</p>
+        }
+        else
+        {
+            <ul class="stack">
+                @foreach (var file in Model.Media)
+                {
+                    @if (file.FileId is Guid id)
+                    {
+                        <li><a class="button" href="/hoc-lieu/@Model.Item.Slug?handler=Tai&amp;id=@id">Tải @(file.Title ?? "tệp")</a></li>
+                    }
+                }
+            </ul>
+        }
+    }
+</section>

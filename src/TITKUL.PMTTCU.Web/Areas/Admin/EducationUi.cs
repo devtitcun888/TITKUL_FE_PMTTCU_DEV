@@ -34,6 +34,10 @@ public static class EducationUi
         "VHTT_DVSN" => "VHTT-DVSN",
         "URGENT" => "Khẩn",
         "NORMAL" => "Thường",
+        "IMAGE" => "Hình ảnh",
+        "VIDEO_LINK" => "Video",
+        "HOC_LIEU" => "Học liệu số",
+        "DOCUMENT" => "Tài liệu",
         _ => status
     };
 

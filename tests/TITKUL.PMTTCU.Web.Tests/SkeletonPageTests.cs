@@ -48,7 +48,7 @@ public sealed class SkeletonPageTests : IClassFixture<WebApplicationFactory<Prog
     public async Task Education_pages_require_login()
     {
         using var client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
-        foreach (var path in new[] { "/admin/chuong-trinh", "/admin/doi-tuong", "/admin/thon-ap", "/admin/phong-hoc", "/admin/lop-hoc", "/admin/lich-hoc", "/admin/lop-hoc/" + Guid.Empty, "/admin/hoc-vien", "/admin/hoc-vien/" + Guid.Empty, "/admin/diem-danh/" + Guid.Empty, "/admin/lop-hoc/" + Guid.Empty + "/chung-nhan", "/admin/cms/chuyen-muc", "/admin/cms/bai-viet", "/admin/cms/bai-viet/sua", "/admin/cms/su-kien", "/admin/cms/su-kien/sua", "/admin/cms/thong-bao", "/admin/cms/thong-bao/sua" })
+        foreach (var path in new[] { "/admin/chuong-trinh", "/admin/doi-tuong", "/admin/thon-ap", "/admin/phong-hoc", "/admin/lop-hoc", "/admin/lich-hoc", "/admin/lop-hoc/" + Guid.Empty, "/admin/hoc-vien", "/admin/hoc-vien/" + Guid.Empty, "/admin/diem-danh/" + Guid.Empty, "/admin/lop-hoc/" + Guid.Empty + "/chung-nhan", "/admin/cms/chuyen-muc", "/admin/cms/bai-viet", "/admin/cms/bai-viet/sua", "/admin/cms/su-kien", "/admin/cms/su-kien/sua", "/admin/cms/thong-bao", "/admin/cms/thong-bao/sua", "/admin/cms/van-ban", "/admin/cms/bieu-mau", "/admin/cms/album", "/admin/cms/album/" + Guid.Empty })
         {
             var response = await client.GetAsync(path);
             Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
@@ -60,7 +60,7 @@ public sealed class SkeletonPageTests : IClassFixture<WebApplicationFactory<Prog
     public async Task Public_class_pages_render()
     {
         using var client = _factory.CreateClient();
-        foreach (var path in new[] { "/lop-hoc", "/lop-hoc/ABC12", "/dang-ky/ABC12", "/dang-ky/ABC12/cam-on", "/dang-ky/ABC12/cam-on?code=DKTESTCODE12ABCD", "/diem-danh-buoi/" + Guid.Empty, "/tra-cuu", "/tra-cuu/CNTEST", "/tin-tuc", "/tin-tuc/bai-thu", "/su-kien", "/su-kien/hoi-thao", "/thong-bao", "/thong-bao/khan-trong" })
+        foreach (var path in new[] { "/lop-hoc", "/lop-hoc/ABC12", "/dang-ky/ABC12", "/dang-ky/ABC12/cam-on", "/dang-ky/ABC12/cam-on?code=DKTESTCODE12ABCD", "/diem-danh-buoi/" + Guid.Empty, "/tra-cuu", "/tra-cuu/CNTEST", "/tin-tuc", "/tin-tuc/bai-thu", "/su-kien", "/su-kien/hoi-thao", "/thong-bao", "/thong-bao/khan-trong", "/van-ban", "/bieu-mau", "/hoc-lieu", "/hoc-lieu/chung", "/thu-vien", "/thu-vien/anh" })
         {
             var response = await client.GetAsync(path);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);

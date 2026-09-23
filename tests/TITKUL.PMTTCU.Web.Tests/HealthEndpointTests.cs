@@ -55,6 +55,8 @@ public sealed class HealthEndpointTests : IClassFixture<WebApplicationFactory<Pr
         Assert.Contains("Tin mới", text, StringComparison.Ordinal);
         Assert.Contains("Chưa có tin bài", text, StringComparison.Ordinal);
         Assert.Contains("Sự kiện sắp tới", text, StringComparison.Ordinal);
+        Assert.Contains("Học liệu số", text, StringComparison.Ordinal);
+        Assert.Contains("Chưa có học liệu chung.", text, StringComparison.Ordinal);
         Assert.Contains("Đi tới nội dung", text, StringComparison.Ordinal);
     }
 

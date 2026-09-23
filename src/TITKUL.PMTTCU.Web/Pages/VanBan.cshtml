@@ -1,0 +1,25 @@
+@page "/van-ban"
+@model TITKUL.PMTTCU.Web.Pages.VanBanModel
+@{
+    ViewData["Title"] = "Văn bản";
+}
+<section class="card stack">
+    <h1>Văn bản</h1>
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có văn bản công khai.</p>
+    }
+    else
+    {
+        <ul class="stack">
+            @foreach (var item in Model.Items)
+            {
+                <li>
+                    <strong>@item.Title</strong>
+                    @if (!string.IsNullOrWhiteSpace(item.Field)) { <span> · @item.Field</span> }
+                    <p><a class="button" href="/van-ban?handler=Tai&amp;id=@item.Id">Tải @item.FileName</a></p>
+                </li>
+            }
+        </ul>
+    }
+</section>

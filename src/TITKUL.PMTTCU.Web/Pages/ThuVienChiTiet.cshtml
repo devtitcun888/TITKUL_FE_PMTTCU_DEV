@@ -1,0 +1,29 @@
+@page "/thu-vien/{slug}"
+@model TITKUL.PMTTCU.Web.Pages.ThuVienChiTietModel
+@{
+    if (Model.Item is null) ViewData["Title"] = "Thư viện";
+}
+<section class="card stack">
+    <p><a href="/thu-vien">Về thư viện</a></p>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Item is not null)
+    {
+        <h1>@Model.Item.Title</h1>
+        <ul class="stack">
+            @foreach (var item in Model.Media)
+            {
+                @if (item.Kind == "VIDEO_LINK" && !string.IsNullOrWhiteSpace(item.ExternalUrl))
+                {
+                    <li><a href="@item.ExternalUrl">@(item.Title ?? "Video")</a></li>
+                }
+                else if (item.FileId is Guid id)
+                {
+                    <li><img src="/thu-vien/@Model.Item.Slug?handler=Anh&amp;id=@id" alt="@item.AltText" /></li>
+                }
+            }
+        </ul>
+    }
+</section>

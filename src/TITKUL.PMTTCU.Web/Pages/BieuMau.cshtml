@@ -1,0 +1,25 @@
+@page "/bieu-mau"
+@model TITKUL.PMTTCU.Web.Pages.BieuMauModel
+@{
+    ViewData["Title"] = "Biểu mẫu";
+}
+<section class="card stack">
+    <h1>Biểu mẫu</h1>
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có biểu mẫu công khai.</p>
+    }
+    else
+    {
+        <ul class="stack">
+            @foreach (var item in Model.Items)
+            {
+                <li>
+                    <strong>@item.Title</strong>
+                    @if (!string.IsNullOrWhiteSpace(item.Summary)) { <p>@item.Summary</p> }
+                    <p><a class="button" href="/bieu-mau?handler=Tai&amp;id=@item.Id">Tải @item.FileName</a></p>
+                </li>
+            }
+        </ul>
+    }
+</section>

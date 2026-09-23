@@ -1,0 +1,52 @@
+@page "/admin/cms/van-ban"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsVanBanModel
+@{
+    ViewData["Title"] = "Văn bản";
+}
+<section class="card stack">
+    <h1>Văn bản</h1>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.CanEdit)
+    {
+        <form method="post" enctype="multipart/form-data" class="stack">
+            <div><label for="title">Tiêu đề</label><input id="title" name="Title" required maxlength="300" /></div>
+            <div><label for="symbol">Số ký hiệu</label><input id="symbol" name="Symbol" maxlength="100" /></div>
+            <div><label for="field">Lĩnh vực</label><input id="field" name="Field" maxlength="120" /></div>
+            <div><label for="upload">Tệp PDF, Word, Excel</label><input id="upload" name="Upload" type="file" required /></div>
+            <button type="submit">Lưu nháp</button>
+        </form>
+    }
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có văn bản.</p>
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table>
+                <caption>Danh sách văn bản</caption>
+                <thead><tr><th scope="col">Tiêu đề</th><th scope="col">Lĩnh vực</th><th scope="col">Trạng thái</th><th scope="col"></th></tr></thead>
+                <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@item.Title</td>
+                        <td>@item.Field</td>
+                        <td>@EducationUi.Status(item.Status)</td>
+                        <td>
+                            @if (Model.CanEdit && item.Status != "PUBLISHED")
+                            {
+                                <form method="post" asp-page-handler="Publish" asp-route-id="@item.Id"><button type="submit">Đăng</button></form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

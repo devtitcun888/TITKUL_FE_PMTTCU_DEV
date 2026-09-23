@@ -68,6 +68,24 @@
     </section>
 
     <section class="card stack">
+        <h2>Học liệu số</h2>
+        @if (Model.Materials.Count == 0)
+        {
+            <p class="empty">Chưa có học liệu chung.</p>
+        }
+        else
+        {
+            <ul class="stack">
+                @foreach (var item in Model.Materials)
+                {
+                    <li><a href="/hoc-lieu/@item.Slug">@item.Title</a></li>
+                }
+            </ul>
+        }
+        <p><a href="/hoc-lieu">Xem hết học liệu chung</a></p>
+    </section>
+
+    <section class="card stack">
         <h2>Sự kiện sắp tới</h2>
         @if (Model.Upcoming.Count == 0)
         {

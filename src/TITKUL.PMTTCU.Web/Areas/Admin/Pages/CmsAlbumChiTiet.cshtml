@@ -1,0 +1,48 @@
+@page "/admin/cms/album/{id:guid}"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsAlbumChiTietModel
+@{
+    ViewData["Title"] = Model.Item?.Title ?? "Album";
+}
+<section class="card stack">
+    <p><a href="/admin/cms/album">Về thư viện</a></p>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Item is not null)
+    {
+        <h1>@Model.Item.Title</h1>
+        <p>@EducationUi.Status(Model.Item.Kind) · @EducationUi.Status(Model.Item.Status)</p>
+        @if (Model.CanEdit && Model.Item.Kind == "VIDEO_LINK")
+        {
+            <form method="post" asp-page-handler="Link" class="stack">
+                <div><label for="mediaTitle">Tiêu đề video</label><input id="mediaTitle" name="MediaTitle" maxlength="250" /></div>
+                <div><label for="videoUrl">Link https YouTube hoặc Facebook</label><input id="videoUrl" name="VideoUrl" type="url" required /></div>
+                <button type="submit">Thêm video</button>
+            </form>
+        }
+        else if (Model.CanEdit)
+        {
+            <form method="post" asp-page-handler="File" enctype="multipart/form-data" class="stack">
+                <div><label for="mediaTitle">Tiêu đề</label><input id="mediaTitle" name="MediaTitle" maxlength="250" /></div>
+                @if (Model.Item.Kind == "IMAGE")
+                {
+                    <div><label for="alt">Mô tả ảnh</label><input id="alt" name="Alt" required maxlength="250" /></div>
+                }
+                <div><label for="upload">@(Model.Item.Kind == "IMAGE" ? "Ảnh JPEG/PNG" : "PDF, Word hoặc Excel")</label><input id="upload" name="Upload" type="file" required /></div>
+                <button type="submit">Thêm tệp</button>
+            </form>
+        }
+        @if (Model.CanEdit && Model.Item.Status != "PUBLISHED")
+        {
+            <form method="post" asp-page-handler="Publish"><button type="submit">Đăng album</button></form>
+        }
+        <ul class="stack">
+            @foreach (var item in Model.Media)
+            {
+                <li>@(item.Title ?? item.AltText ?? item.ExternalUrl ?? "Tệp")</li>
+            }
+        </ul>
+    }
+</section>

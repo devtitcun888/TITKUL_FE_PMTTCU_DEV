@@ -19,6 +19,7 @@ public class IndexModel : PageModel
     public IReadOnlyList<PostItem> Pinned { get; private set; } = [];
     public IReadOnlyList<PostItem> Latest { get; private set; } = [];
     public IReadOnlyList<EventItem> Upcoming { get; private set; } = [];
+    public IReadOnlyList<MaterialItem> Materials { get; private set; } = [];
 
     public async Task OnGetAsync()
     {
@@ -31,12 +32,14 @@ public class IndexModel : PageModel
             Pinned = item.Pinned ?? [];
             Latest = item.Latest ?? [];
             Upcoming = item.Upcoming ?? [];
+            Materials = item.Materials ?? [];
         }
     }
 
     public sealed record NoticeItem(string Title, string Slug, string Level);
     public sealed record PostItem(string Title, string Slug, string? Summary, DateTimeOffset? PublishedAt);
     public sealed record EventItem(string Title, string Slug, DateTimeOffset StartAt, DateTimeOffset EndAt, string? Location);
-    private sealed record HomeBody(IReadOnlyList<NoticeItem>? Urgent, IReadOnlyList<PostItem>? Pinned, IReadOnlyList<PostItem>? Latest, IReadOnlyList<EventItem>? Upcoming);
+    public sealed record MaterialItem(string Title, string Slug, string? Summary);
+    private sealed record HomeBody(IReadOnlyList<NoticeItem>? Urgent, IReadOnlyList<PostItem>? Pinned, IReadOnlyList<PostItem>? Latest, IReadOnlyList<EventItem>? Upcoming, IReadOnlyList<MaterialItem>? Materials);
     private sealed record ItemEnvelope(HomeBody? Item);
 }

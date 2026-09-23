@@ -1,0 +1,52 @@
+@page "/admin/cms/album"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsAlbumModel
+@{
+    ViewData["Title"] = "Thư viện";
+}
+<section class="card stack">
+    <h1>Thư viện</h1>
+    <p>Ba danh mục riêng: hình ảnh, video, học liệu chung. Học liệu từng lớp vẫn ở trang lớp.</p>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.CanEdit)
+    {
+        <form method="post" class="stack">
+            <div><label for="title">Tiêu đề</label><input id="title" name="Title" required maxlength="250" /></div>
+            <div>
+                <label for="kind">Danh mục</label>
+                <select id="kind" name="Kind">
+                    <option value="IMAGE">Hình ảnh</option>
+                    <option value="VIDEO_LINK">Video</option>
+                    <option value="HOC_LIEU">Học liệu số chung</option>
+                </select>
+            </div>
+            <button type="submit">Tạo nháp</button>
+        </form>
+    }
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có album.</p>
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table>
+                <caption>Danh sách album</caption>
+                <thead><tr><th scope="col">Tiêu đề</th><th scope="col">Danh mục</th><th scope="col">Trạng thái</th></tr></thead>
+                <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td><a href="/admin/cms/album/@item.Id">@item.Title</a></td>
+                        <td>@EducationUi.Status(item.Kind)</td>
+                        <td>@EducationUi.Status(item.Status)</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

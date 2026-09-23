@@ -1,0 +1,23 @@
+@page "/thu-vien"
+@model TITKUL.PMTTCU.Web.Pages.ThuVienModel
+<section class="card stack">
+    <h1>@(Model.Kind == "VIDEO_LINK" ? "Video" : "Hình ảnh")</h1>
+    <p>
+        <a href="/thu-vien?loai=IMAGE">Hình ảnh</a>
+        ·
+        <a href="/thu-vien?loai=VIDEO_LINK">Video</a>
+    </p>
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có album công khai.</p>
+    }
+    else
+    {
+        <ul class="stack">
+            @foreach (var item in Model.Items)
+            {
+                <li><a href="/thu-vien/@item.Slug"><strong>@item.Title</strong></a></li>
+            }
+        </ul>
+    }
+</section>

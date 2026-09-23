@@ -7,7 +7,10 @@
 
 <section class="card stack">
     <h1>Chi tiết lớp</h1>
-    <p><a href="/admin/lop-hoc">Về danh sách</a></p>
+    <p class="row-actions">
+        <a href="/admin/lop-hoc">Về danh sách</a>
+        <a href="/admin/lop-hoc/@Model.Item?.Id/chung-nhan">Chứng nhận</a>
+    </p>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
         <p class="alert" role="alert">@Model.ErrorMessage</p>

@@ -1,0 +1,35 @@
+@page "/tra-cuu/{ma?}"
+@model TITKUL.PMTTCU.Web.Pages.TraCuuModel
+@{
+    ViewData["Title"] = "Tra cứu chứng nhận";
+}
+
+<section class="card stack">
+    <h1>Tra cứu chứng nhận</h1>
+    <form method="post" class="stack">
+        <div>
+            <label for="code">Mã tra cứu</label>
+            <input id="code" name="Code" value="@Model.Code" required autocomplete="off" />
+        </div>
+        <button type="submit">Tra cứu</button>
+    </form>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Item is not null)
+    {
+        <p><strong>@Model.Item.LearnerName</strong></p>
+        <p>Lớp @Model.Item.ClassCode — @Model.Item.ClassName</p>
+        <p>Ngày cấp @Model.Item.IssuedOn.ToString("dd/MM/yyyy") · Chuyên cần @Model.Item.Percent.ToString("0.##")%</p>
+        <p>Trạng thái: @(Model.Item.Status == "ISSUED" ? "Còn hiệu lực" : "Đã thu hồi")</p>
+        @if (Model.Item.Status == "ISSUED")
+        {
+            <p><a class="button" href="/tra-cuu/@Model.Item.LookupCode?handler=Pdf">Tải PDF</a></p>
+        }
+        else
+        {
+            <p class="status-note">Chứng nhận đã thu hồi. Không tải được bản PDF.</p>
+        }
+    }
+</section>

@@ -27,6 +27,9 @@ public static class EducationUi
         "CO_MAT" => "Có mặt",
         "VANG" => "Vắng",
         "PHEP" => "Phép",
+        "CER_THRESHOLD" => "Chưa đạt ngưỡng",
+        "CER_EXISTS" => "Đã cấp",
+        "CER_CLASS" => "Lớp chưa đủ điều kiện",
         _ => status
     };
 

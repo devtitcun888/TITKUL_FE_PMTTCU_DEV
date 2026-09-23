@@ -48,7 +48,7 @@ public sealed class SkeletonPageTests : IClassFixture<WebApplicationFactory<Prog
     public async Task Education_pages_require_login()
     {
         using var client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
-        foreach (var path in new[] { "/admin/chuong-trinh", "/admin/doi-tuong", "/admin/thon-ap", "/admin/phong-hoc", "/admin/lop-hoc", "/admin/lich-hoc", "/admin/lop-hoc/" + Guid.Empty, "/admin/hoc-vien", "/admin/hoc-vien/" + Guid.Empty, "/admin/diem-danh/" + Guid.Empty })
+        foreach (var path in new[] { "/admin/chuong-trinh", "/admin/doi-tuong", "/admin/thon-ap", "/admin/phong-hoc", "/admin/lop-hoc", "/admin/lich-hoc", "/admin/lop-hoc/" + Guid.Empty, "/admin/hoc-vien", "/admin/hoc-vien/" + Guid.Empty, "/admin/diem-danh/" + Guid.Empty, "/admin/lop-hoc/" + Guid.Empty + "/chung-nhan" })
         {
             var response = await client.GetAsync(path);
             Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
@@ -60,7 +60,7 @@ public sealed class SkeletonPageTests : IClassFixture<WebApplicationFactory<Prog
     public async Task Public_class_pages_render()
     {
         using var client = _factory.CreateClient();
-        foreach (var path in new[] { "/lop-hoc", "/lop-hoc/ABC12", "/dang-ky/ABC12", "/dang-ky/ABC12/cam-on", "/dang-ky/ABC12/cam-on?code=DKTESTCODE12ABCD", "/diem-danh-buoi/" + Guid.Empty })
+        foreach (var path in new[] { "/lop-hoc", "/lop-hoc/ABC12", "/dang-ky/ABC12", "/dang-ky/ABC12/cam-on", "/dang-ky/ABC12/cam-on?code=DKTESTCODE12ABCD", "/diem-danh-buoi/" + Guid.Empty, "/tra-cuu", "/tra-cuu/CNTEST" })
         {
             var response = await client.GetAsync(path);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);

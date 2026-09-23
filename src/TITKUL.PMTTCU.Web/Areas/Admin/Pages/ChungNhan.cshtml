@@ -1,0 +1,59 @@
+@page "/admin/lop-hoc/{id:guid}/chung-nhan"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.ChungNhanModel
+@{
+    ViewData["Title"] = "Chứng nhận";
+}
+
+<section class="card stack">
+    <h1>Chứng nhận lớp</h1>
+    <p><a href="/admin/lop-hoc/@Model.ClassId">Về lớp</a></p>
+    <p class="status-note">Ngưỡng chuyên cần tạm thời @Model.MinPercent% (D-03/D-05 chưa chốt mẫu/người ký). Mẫu PDF lập trình, chưa có con dấu.</p>
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <p class="status-note" role="status">@Model.SuccessMessage</p>
+    }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có học viên để xét cấp.</p>
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table>
+                <caption>Xét cấp chứng nhận</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Họ tên</th>
+                        <th scope="col">Chuyên cần</th>
+                        <th scope="col">Kết quả</th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var row in Model.Items)
+                {
+                    <tr>
+                        <td>@row.FullName</td>
+                        <td>@row.Percent.ToString("0.##")%</td>
+                        <td>@(row.Eligible ? "Đủ điều kiện" : EducationUi.Status(row.Reason ?? ""))</td>
+                        <td class="row-actions">
+                            @if (Model.CanIssue && row.Eligible)
+                            {
+                                <form method="post" asp-page-handler="Issue">
+                                    <input type="hidden" name="EnrollmentId" value="@row.EnrollmentId" />
+                                    <button type="submit">Phát hành</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

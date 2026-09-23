@@ -11,7 +11,21 @@
     {
         <p><a href="/admin/lop-hoc/@Model.Item.ClassId">Về lớp @Model.Item.ClassName</a></p>
         <p><strong>@Model.Item.SessionTitle</strong> · @Model.Item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM HH:mm")–@Model.Item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm") · @EducationUi.Status(Model.Item.SessionStatus)</p>
-        <p>Có mặt @Model.Item.Present · Vắng @Model.Item.Absent</p>
+        <p>Có mặt @Model.Item.Present · Vắng @Model.Item.Absent · Phép @Model.Item.Excused</p>
+        <div class="material-card stack">
+            <h2>QR và link (học trực tiếp hoặc Meet)</h2>
+            <p>Học viên quét mã hoặc mở link, nhập SĐT đã đăng ký và mã 6 số.</p>
+            <p>Mã buổi: <strong>@Model.Item.Pin</strong></p>
+            <p class="row-actions">
+                <img src="/admin/diem-danh/@Model.Item.SessionId?handler=Qr" alt="Mã QR điểm danh" width="180" height="180" />
+            </p>
+            <p><a class="button" href="@Model.Item.CheckInUrl">Mở link điểm danh</a></p>
+            <p class="status-note">Cửa sổ tự điểm danh: 15 phút trước giờ học đến 30 phút sau khi kết thúc. Dán link vào chat Meet khi dạy online.</p>
+            @if (!Model.Item.CheckInOpen)
+            {
+                <p class="status-note">Ngoài cửa sổ: học viên chưa tự điểm danh được. Cán bộ vẫn chấm tay sau giờ học.</p>
+            }
+        </div>
     }
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
@@ -26,6 +40,23 @@
             </div>
             <button type="submit" class="button-quiet">Tìm</button>
         </form>
+        @if (Model.Item.CanEdit)
+        {
+            <p class="row-actions">
+                <form method="post" asp-page-handler="Fill">
+                    <input type="hidden" name="fill" value="CO_MAT" />
+                    <button type="submit" class="button-quiet">Tất cả có mặt</button>
+                </form>
+                <form method="post" asp-page-handler="Fill">
+                    <input type="hidden" name="fill" value="VANG" />
+                    <button type="submit" class="button-quiet">Tất cả vắng</button>
+                </form>
+                <form method="post" asp-page-handler="Fill">
+                    <input type="hidden" name="fill" value="PHEP" />
+                    <button type="submit" class="button-quiet">Tất cả phép</button>
+                </form>
+            </p>
+        }
         @if (Model.Item.Items.Count == 0)
         {
             <p class="empty">Chưa có học viên hoặc không khớp tìm kiếm.</p>
@@ -48,6 +79,10 @@
                             <label>
                                 <input type="radio" name="Marks[@i].Status" value="VANG" checked="@(Model.Marks[i].Status == "VANG" ? "checked" : null)" />
                                 Vắng
+                            </label>
+                            <label>
+                                <input type="radio" name="Marks[@i].Status" value="PHEP" checked="@(Model.Marks[i].Status == "PHEP" ? "checked" : null)" />
+                                Phép
                             </label>
                         </div>
                     </div>

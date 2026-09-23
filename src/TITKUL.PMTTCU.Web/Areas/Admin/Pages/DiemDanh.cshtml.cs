@@ -22,6 +22,31 @@ public class DiemDanhModel : PageModel
         return await LoadAsync(buoiId, q);
     }
 
+    public async Task<IActionResult> OnGetQrAsync(Guid buoiId)
+    {
+        if (!HasView()) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        var file = await _api.GetFileAsync($"/api/v1/admin/sessions/{buoiId}/attendance-qr", token);
+        if (file.Bytes is null) return NotFound();
+        return File(file.Bytes, file.ContentType ?? "image/png", file.FileName ?? "diem-danh.png");
+    }
+
+    public async Task<IActionResult> OnPostFillAsync(Guid buoiId, string fill)
+    {
+        if (!HasManage()) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        var response = await _api.SendJsonAsync(HttpMethod.Put, $"/api/v1/admin/sessions/{buoiId}/attendance", token, new { fillAll = fill });
+        if (response is null || !response.IsSuccessStatusCode)
+        {
+            ErrorMessage = await ReadErrorAsync(response) ?? "Không lưu được điểm danh hàng loạt.";
+            return await LoadAsync(buoiId, null);
+        }
+
+        return Redirect($"/admin/diem-danh/{buoiId}");
+    }
+
     public async Task<IActionResult> OnPostAsync(Guid buoiId, string? q)
     {
         if (!HasManage()) return Redirect("/admin/khong-quyen");
@@ -81,7 +106,7 @@ public class DiemDanhModel : PageModel
     }
 
     public sealed record Line(Guid EnrollmentId, string FullName, string Phone, string? Status);
-    public sealed record Sheet(Guid SessionId, Guid ClassId, string ClassName, string SessionTitle, DateTimeOffset StartAt, DateTimeOffset EndAt, string SessionStatus, bool CanEdit, IReadOnlyList<Line> Items, int Present, int Absent);
+    public sealed record Sheet(Guid SessionId, Guid ClassId, string ClassName, string SessionTitle, DateTimeOffset StartAt, DateTimeOffset EndAt, string SessionStatus, bool CanEdit, bool CheckInOpen, string CheckInUrl, string Pin, IReadOnlyList<Line> Items, int Present, int Absent, int Excused);
     public sealed class Row
     {
         public Guid EnrollmentId { get; set; }

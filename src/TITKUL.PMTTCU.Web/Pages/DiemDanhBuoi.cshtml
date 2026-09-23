@@ -1,0 +1,48 @@
+@page "/diem-danh-buoi/{id:guid}"
+@model TITKUL.PMTTCU.Web.Pages.DiemDanhBuoiModel
+@{
+    ViewData["Title"] = "Điểm danh buổi học";
+}
+
+<section class="card stack">
+    <h1>Điểm danh buổi học</h1>
+    @if (Model.Session is not null)
+    {
+        <p><strong>@Model.Session.ClassName</strong></p>
+        <p>@Model.Session.SessionTitle · @Model.Session.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM HH:mm")–@Model.Session.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")</p>
+    }
+    @if (!string.IsNullOrEmpty(Model.SuccessName))
+    {
+        <p class="status-note" role="status">Đã ghi có mặt cho @Model.SuccessName.</p>
+        <p><a class="button" href="/">Về trang chủ</a></p>
+    }
+    else
+    {
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <p class="alert" role="alert">@Model.ErrorMessage</p>
+        }
+        @if (Model.Session is { CanCheckIn: true })
+        {
+            <form method="post" class="stack">
+                <div>
+                    <label for="phone">Số điện thoại đã đăng ký</label>
+                    <input id="phone" name="Phone" type="tel" inputmode="numeric" autocomplete="tel" value="@Model.Phone" required />
+                </div>
+                <div>
+                    <label for="pin">Mã buổi 6 số do giảng viên đọc</label>
+                    <input id="pin" name="Pin" inputmode="numeric" autocomplete="one-time-code" maxlength="6" value="@Model.Pin" required />
+                </div>
+                <div class="hp" aria-hidden="true">
+                    <label for="website">Website</label>
+                    <input id="website" name="Website" tabindex="-1" autocomplete="off" />
+                </div>
+                <button type="submit">Điểm danh có mặt</button>
+            </form>
+        }
+        else if (Model.Session is not null)
+        {
+            <p class="status-note">Cửa sổ tự điểm danh: 15 phút trước giờ học đến 30 phút sau khi kết thúc. Ngoài giờ nhờ giảng viên chấm trên danh sách.</p>
+        }
+    }
+</section>

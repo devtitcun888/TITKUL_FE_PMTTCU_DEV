@@ -26,6 +26,7 @@ public static class EducationUi
         "KHAC" => "Khác",
         "CO_MAT" => "Có mặt",
         "VANG" => "Vắng",
+        "PHEP" => "Phép",
         _ => status
     };
 

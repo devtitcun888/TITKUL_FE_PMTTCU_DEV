@@ -338,6 +338,39 @@ th, td {
   background: var(--card);
 }
 
+.kpi-grid, .filter-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.kpi strong {
+  display: block;
+  font-size: 1.75rem;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.report-table th, .report-table td {
+  text-align: left;
+  padding: 6px 0;
+  overflow-wrap: anywhere;
+}
+
+.report-table caption {
+  text-align: left;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+@media (min-width: 769px) {
+  .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .filter-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; }
+}
+
 @media (max-width: 768px) {
   .admin-shell { grid-template-columns: minmax(0, 1fr); }
   .side-nav { grid-auto-flow: column; overflow-x: auto; }

@@ -1,0 +1,115 @@
+@page "/admin/tong-quan"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.TongQuanModel
+@{
+    ViewData["Title"] = "Tổng quan";
+}
+<section class="card stack">
+    <h1>Tổng quan</h1>
+    <form method="get" class="filter-grid">
+        <div><label for="from">Từ ngày</label><input id="from" name="From" type="date" value="@Model.From" /></div>
+        <div><label for="to">Đến ngày</label><input id="to" name="To" type="date" value="@Model.To" /></div>
+        <div><button type="submit">Áp dụng</button></div>
+    </form>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Item is not null)
+    {
+        <div class="kpi-grid">
+            <article class="card kpi"><span>Lớp</span><strong>@Model.Item.Classes</strong></article>
+            <article class="card kpi"><span>Học viên</span><strong>@Model.Item.Learners</strong></article>
+            <article class="card kpi"><span>Thôn/ấp</span><strong>@Model.Item.Hamlets.Count</strong></article>
+        </div>
+        <section class="stack">
+            <h2>Lớp theo trạng thái</h2>
+            <table class="report-table">
+                <caption>Số lớp theo trạng thái</caption>
+                <thead><tr><th>Trạng thái</th><th>Số lớp</th></tr></thead>
+                <tbody>
+                @foreach (var row in Model.Item.ClassStatus)
+                {
+                    var max = Math.Max(1, Model.Item.ClassStatus.Max(item => item.Count));
+                    <tr>
+                        <td>@EducationUi.Status(row.Status)</td>
+                        <td>@row.Count</td>
+                    </tr>
+                    @if (row.Count > 0)
+                    {
+                        <tr><td colspan="2"><div class="bar" style="width:@(row.Count * 100 / max)%"></div></td></tr>
+                    }
+                }
+                </tbody>
+            </table>
+        </section>
+        <section class="stack">
+            <h2>Học viên theo thôn/ấp</h2>
+            @if (Model.Item.Hamlets.Count == 0)
+            {
+                <p class="empty">Chưa có học viên trong kỳ.</p>
+            }
+            else
+            {
+                var max = Math.Max(1, Model.Item.Hamlets.Max(item => item.Count));
+                <table class="report-table">
+                    <caption>Học viên không trùng theo thôn/ấp</caption>
+                    <thead><tr><th>Thôn/ấp</th><th>Học viên</th></tr></thead>
+                    <tbody>
+                    @foreach (var row in Model.Item.Hamlets)
+                    {
+                        <tr><td>@row.Name</td><td>@row.Count</td></tr>
+                        @if (row.Count > 0)
+                        {
+                            <tr><td colspan="2"><div class="bar" style="width:@(row.Count * 100 / max)%"></div></td></tr>
+                        }
+                    }
+                    </tbody>
+                </table>
+            }
+        </section>
+        <section class="stack">
+            <h2>Học viên theo tuổi</h2>
+            <table class="report-table">
+                <caption>Học viên không trùng theo nhóm tuổi</caption>
+                <thead><tr><th>Nhóm tuổi</th><th>Học viên</th></tr></thead>
+                <tbody>
+                @foreach (var row in Model.Item.Ages)
+                {
+                    var max = Math.Max(1, Model.Item.Ages.Max(item => item.Count));
+                    <tr><td>@EducationUi.AgeBand(row.Band)</td><td>@row.Count</td></tr>
+                    @if (row.Count > 0)
+                    {
+                        <tr><td colspan="2"><div class="bar" style="width:@(row.Count * 100 / max)%"></div></td></tr>
+                    }
+                }
+                </tbody>
+            </table>
+        </section>
+        <section class="stack">
+            <h2>Học viên theo đối tượng</h2>
+            @if (Model.Item.Audiences.Count == 0)
+            {
+                <p class="empty">Chưa có đối tượng gắn với lớp trong kỳ.</p>
+            }
+            else
+            {
+                var max = Math.Max(1, Model.Item.Audiences.Max(item => item.Count));
+                <table class="report-table">
+                    <caption>Học viên không trùng theo đối tượng của chương trình</caption>
+                    <thead><tr><th>Đối tượng</th><th>Học viên</th></tr></thead>
+                    <tbody>
+                    @foreach (var row in Model.Item.Audiences)
+                    {
+                        <tr><td>@row.Name</td><td>@row.Count</td></tr>
+                        @if (row.Count > 0)
+                        {
+                            <tr><td colspan="2"><div class="bar" style="width:@(row.Count * 100 / max)%"></div></td></tr>
+                        }
+                    }
+                    </tbody>
+                </table>
+            }
+        </section>
+    }
+</section>

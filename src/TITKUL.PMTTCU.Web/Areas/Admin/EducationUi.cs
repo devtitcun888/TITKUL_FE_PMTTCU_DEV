@@ -50,6 +50,16 @@ public static class EducationUi
         _ => status
     };
 
+    public static string AgeBand(string band) => band switch
+    {
+        "DUOI_18" => "Dưới 18",
+        "TU_18_35" => "18–35",
+        "TU_36_50" => "36–50",
+        "TU_51_60" => "51–60",
+        "TREN_60" => "Trên 60",
+        _ => band
+    };
+
     public static DateOnly MondayOf(DateOnly day)
     {
         var offset = ((int)day.DayOfWeek + 6) % 7;

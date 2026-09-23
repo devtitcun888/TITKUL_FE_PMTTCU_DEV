@@ -60,6 +60,11 @@
             {
                 <a href="/admin/khao-sat">Khảo sát</a>
             }
+            @if (permissions.Contains("user.manage"))
+            {
+                <a href="/admin/nguoi-dung">Người dùng</a>
+                <a href="/admin/vai-tro">Vai trò</a>
+            }
             @if (permissions.Contains("audit.view"))
             {
                 <a href="/admin/nhat-ky">Nhật ký</a>

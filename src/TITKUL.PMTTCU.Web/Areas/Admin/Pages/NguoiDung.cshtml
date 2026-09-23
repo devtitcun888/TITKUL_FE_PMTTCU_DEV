@@ -1,0 +1,54 @@
+@page "/admin/nguoi-dung"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.NguoiDungModel
+@{
+    ViewData["Title"] = "Người dùng";
+}
+<section class="card stack">
+    <h1>Người dùng</h1>
+    <p><a href="/admin/vai-tro">Vai trò hệ thống</a></p>
+    @if (!string.IsNullOrEmpty(Model.Notice))
+    {
+        <p class="alert" role="status">@Model.Notice</p>
+    }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    <form method="post" class="stack">
+        <div><label for="username">Tên đăng nhập</label><input id="username" name="Username" value="@Model.Username" /></div>
+        <div><label for="full-name">Họ tên</label><input id="full-name" name="FullName" value="@Model.FullName" /></div>
+        <div><label for="password">Mật khẩu</label><input id="password" name="Password" type="password" autocomplete="new-password" /></div>
+        <div>
+            <label for="role">Vai trò</label>
+            <select id="role" name="Role">
+                <option value="CAN_BO">Cán bộ</option>
+                <option value="BAN_GIAM_DOC">Ban giám đốc</option>
+                <option value="GIANG_VIEN">Giảng viên</option>
+                <option value="SUPER_ADMIN">Super Admin</option>
+            </select>
+        </div>
+        <button type="submit">Tạo tài khoản</button>
+    </form>
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có tài khoản.</p>
+    }
+    else
+    {
+        @foreach (var item in Model.Items)
+        {
+            <article class="stack">
+                <h2>@item.FullName</h2>
+                <p>@item.Username · @string.Join(", ", item.Roles) · @item.Status</p>
+                @if (item.Status == "ACTIVE")
+                {
+                    <form method="post" asp-page-handler="Khoa">
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <input type="hidden" name="fullName" value="@item.FullName" />
+                        <button type="submit">Khóa</button>
+                    </form>
+                }
+            </article>
+        }
+    }
+</section>

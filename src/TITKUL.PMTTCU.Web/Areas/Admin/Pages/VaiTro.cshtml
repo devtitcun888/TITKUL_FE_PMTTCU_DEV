@@ -1,0 +1,21 @@
+@page "/admin/vai-tro"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.VaiTroModel
+@{
+    ViewData["Title"] = "Vai trò";
+}
+<section class="card stack">
+    <h1>Vai trò</h1>
+    <p>Bốn vai trò hệ thống chỉ đọc. Không tạo mã quyền mới trên màn hình.</p>
+    <p><a href="/admin/nguoi-dung">Về người dùng</a></p>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @foreach (var item in Model.Items)
+    {
+        <article>
+            <h2>@item.Code</h2>
+            <p>@(item.ReadOnly ? "Chỉ đọc" : "Có thể sửa")</p>
+        </article>
+    }
+</section>

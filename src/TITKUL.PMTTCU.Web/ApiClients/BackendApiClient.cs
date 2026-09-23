@@ -151,6 +151,50 @@ public sealed class BackendApiClient
         }
     }
 
+    public async Task<HttpResponseMessage?> PostMultipartAsync(string path, string token, MultipartFormDataContent content)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, path) { Content = content };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            return await HttpClient.SendAsync(request);
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (TaskCanceledException)
+        {
+            return null;
+        }
+    }
+
+    public async Task<(byte[]? Bytes, string? ContentType, string? FileName)> GetFileAsync(string path, string? token = null)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, path);
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
+
+            using var response = await HttpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode) return (null, null, null);
+            var name = response.Content.Headers.ContentDisposition?.FileNameStar
+                ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"');
+            return (await response.Content.ReadAsByteArrayAsync(), response.Content.Headers.ContentType?.MediaType, name);
+        }
+        catch (HttpRequestException)
+        {
+            return (null, null, null);
+        }
+        catch (TaskCanceledException)
+        {
+            return (null, null, null);
+        }
+    }
+
     public async Task<HttpResponseMessage?> SendJsonAsync(HttpMethod method, string path, string token, object body)
     {
         try

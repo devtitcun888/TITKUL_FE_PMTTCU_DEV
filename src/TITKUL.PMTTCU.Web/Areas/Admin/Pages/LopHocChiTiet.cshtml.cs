@@ -17,8 +17,11 @@ public class LopHocChiTietModel : PageModel
     public IReadOnlyList<SessionItem> Sessions { get; private set; } = [];
     public IReadOnlyList<TeacherItem> Teachers { get; private set; } = [];
     public IReadOnlyList<StaffItem> Staff { get; private set; } = [];
+    public IReadOnlyList<EnrollmentItem> Enrollments { get; private set; } = [];
+    public IReadOnlyList<MaterialItem> Materials { get; private set; } = [];
     public string? ErrorMessage { get; private set; }
     public bool CanManage { get; private set; }
+    public bool CanMaterial { get; private set; }
     public bool CanEdit => CanManage && Item is { Status: not "DONG" and not "HUY" };
 
     [BindProperty] public Guid? ProgramId { get; set; }
@@ -37,6 +40,10 @@ public class LopHocChiTietModel : PageModel
     [BindProperty] public string SessionMode { get; set; } = "OFFLINE";
     [BindProperty] public string? MeetingUrl { get; set; }
     [BindProperty] public Guid? TeacherUserId { get; set; }
+    [BindProperty] public string MaterialTitle { get; set; } = "";
+    [BindProperty] public string? MaterialDescription { get; set; }
+    [BindProperty] public bool MaterialPublic { get; set; }
+    [BindProperty] public IFormFile? MaterialFile { get; set; }
 
     public string? QrUrl { get; private set; }
 
@@ -145,6 +152,60 @@ public class LopHocChiTietModel : PageModel
         return Redirect($"/admin/lop-hoc/{id}");
     }
 
+    public async Task<IActionResult> OnPostMaterialAsync(Guid id)
+    {
+        if (!Has("education.material.manage")) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        if (MaterialFile is null)
+        {
+            ErrorMessage = "Chọn tệp PDF hoặc ảnh JPEG/PNG.";
+            return await LoadAsync(id);
+        }
+
+        using var content = new MultipartFormDataContent();
+        await using var stream = MaterialFile.OpenReadStream();
+        using var fileContent = new StreamContent(stream);
+        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(MaterialFile.ContentType ?? "application/octet-stream");
+        content.Add(fileContent, "file", MaterialFile.FileName);
+        var uploaded = await _api.PostMultipartAsync("/api/v1/admin/files", token, content);
+        if (uploaded is null || !uploaded.IsSuccessStatusCode)
+        {
+            ErrorMessage = "Không tải được tệp. Chỉ nhận PDF/JPEG/PNG đúng chữ ký.";
+            return await LoadAsync(id);
+        }
+
+        var saved = await uploaded.Content.ReadFromJsonAsync<UploadBody>();
+        var response = await _api.SendJsonAsync(HttpMethod.Post, $"/api/v1/admin/classes/{id}/materials", token, new
+        {
+            title = MaterialTitle,
+            description = MaterialDescription,
+            storageKey = saved?.StorageKey,
+            fileName = MaterialFile.FileName,
+            mimeType = MaterialFile.ContentType,
+            size = MaterialFile.Length,
+            @public = MaterialPublic,
+            status = "PUBLISHED"
+        });
+        if (response is null || !response.IsSuccessStatusCode)
+        {
+            ErrorMessage = await ReadErrorAsync(response) ?? "Không lưu được học liệu.";
+            return await LoadAsync(id);
+        }
+
+        return Redirect($"/admin/lop-hoc/{id}");
+    }
+
+    public async Task<IActionResult> OnGetMaterialFileAsync(Guid id, Guid materialId)
+    {
+        if (!HasView()) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        var file = await _api.GetFileAsync($"/api/v1/admin/materials/{materialId}/file", token);
+        if (file.Bytes is null) return NotFound();
+        return File(file.Bytes, file.ContentType ?? "application/octet-stream", file.FileName ?? "hoc-lieu");
+    }
+
     public async Task<IActionResult> OnPostRemoveTeacherAsync(Guid id, Guid userId)
     {
         if (!HasManage()) return Redirect("/admin/khong-quyen");
@@ -168,6 +229,7 @@ public class LopHocChiTietModel : PageModel
     private async Task<IActionResult> LoadAsync(Guid id)
     {
         CanManage = HasManage();
+        CanMaterial = Has("education.material.manage");
         if (!HasView()) return Redirect("/admin/khong-quyen");
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
@@ -186,8 +248,12 @@ public class LopHocChiTietModel : PageModel
 
         var sessions = await _api.GetJsonAsync<ListEnvelope<SessionItem>>($"/api/v1/admin/classes/{id}/sessions", token);
         var teachers = await _api.GetJsonAsync<ListEnvelope<TeacherItem>>($"/api/v1/admin/classes/{id}/teachers", token);
+        var enrollments = await _api.GetJsonAsync<ListEnvelope<EnrollmentItem>>($"/api/v1/admin/classes/{id}/enrollments", token);
+        var materials = await _api.GetJsonAsync<ListEnvelope<MaterialItem>>($"/api/v1/admin/classes/{id}/materials", token);
         Sessions = sessions?.Items ?? [];
         Teachers = teachers?.Items ?? [];
+        Enrollments = enrollments?.Items ?? [];
+        Materials = materials?.Items ?? [];
         if (Item is null)
         {
             ErrorMessage ??= "Không tìm thấy lớp hoặc không có quyền xem.";
@@ -231,6 +297,9 @@ public class LopHocChiTietModel : PageModel
     public sealed record SessionItem(Guid Id, Guid ClassId, Guid? RoomId, string Title, DateTimeOffset StartAt, DateTimeOffset EndAt, string Mode, string? MeetingUrl, string Status);
     public sealed record TeacherItem(Guid Id, Guid ClassId, Guid UserId, string Username, string Role);
     public sealed record StaffItem(Guid Id, string Username, IReadOnlyList<string>? Roles);
+    public sealed record EnrollmentItem(Guid Id, string Code, string FullName, string Phone, string Status, DateTimeOffset RegisteredAt);
+    public sealed record MaterialItem(Guid Id, string Title, string? Description, string FileName, string MimeType, long Size, bool Public, string Status);
+    private sealed record UploadBody(string? StorageKey);
     private sealed record ClassEnvelope(ClassItem? Item, IReadOnlyList<string>? AllowedTransitions);
     private sealed record ListEnvelope<T>(IReadOnlyList<T>? Items);
     private sealed record ApiErr(string? Code, string? Message);

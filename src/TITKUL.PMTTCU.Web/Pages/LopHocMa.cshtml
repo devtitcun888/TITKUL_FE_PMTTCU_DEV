@@ -28,6 +28,16 @@
         {
             <p class="alert" role="status">Lớp chưa nhận đăng ký. @(Model.Item.ClosedReason == "EDU_FULL" ? "Đã đủ chỗ." : "Ngoài thời hạn hoặc chưa mở.")</p>
         }
+        @if (Model.Join is { CanJoin: true, Url: not null })
+        {
+            <p class="row-actions">
+                <a class="button" href="@Model.Join.Url" rel="noopener noreferrer" target="_blank">Tham gia buổi học</a>
+            </p>
+        }
+        else if (Model.Join is { SessionTitle: not null })
+        {
+            <p class="status-note">Buổi @Model.Join.SessionTitle mở liên kết từ 15 phút trước giờ học đến khi kết thúc.</p>
+        }
         @if (Model.Item.Sessions is { Count: > 0 })
         {
             <h2>Lịch học</h2>
@@ -37,6 +47,27 @@
                     <li>@session.Title · @session.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM HH:mm")–@session.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm") · @EducationUi.Status(session.Mode)</li>
                 }
             </ul>
+        }
+        <h2>Học liệu</h2>
+        @if (Model.Materials.Count == 0)
+        {
+            <p class="empty">Chưa có học liệu công khai.</p>
+        }
+        else
+        {
+            <div class="material-grid">
+                @foreach (var material in Model.Materials)
+                {
+                    <article class="material-card">
+                        <h3>@material.Title</h3>
+                        @if (!string.IsNullOrWhiteSpace(material.Description))
+                        {
+                            <p>@material.Description</p>
+                        }
+                        <p><a class="button" href="/lop-hoc/@Model.Item.Code?handler=HocLieu&amp;id=@material.Id">Tải @material.FileName</a></p>
+                    </article>
+                }
+            </div>
         }
     }
 </section>

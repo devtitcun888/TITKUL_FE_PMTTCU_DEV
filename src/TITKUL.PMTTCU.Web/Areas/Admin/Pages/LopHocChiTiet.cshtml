@@ -231,5 +231,83 @@
                 <button type="submit">Thêm buổi học</button>
             </form>
         }
+
+        <h2>Danh sách đăng ký</h2>
+        @if (Model.Enrollments.Count == 0)
+        {
+            <p class="empty">Chưa có đăng ký.</p>
+        }
+        else
+        {
+            <div class="table-scroll">
+                <table>
+                    <caption>Học viên đã đăng ký</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Họ tên</th>
+                            <th scope="col">Điện thoại</th>
+                            <th scope="col">Mã</th>
+                            <th scope="col">Trạng thái</th>
+                            <th scope="col">Lúc</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var row in Model.Enrollments)
+                    {
+                        <tr>
+                            <td>@row.FullName</td>
+                            <td>@row.Phone</td>
+                            <td>@row.Code</td>
+                            <td>@EducationUi.Status(row.Status)</td>
+                            <td>@row.RegisteredAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM HH:mm")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <h2>Học liệu</h2>
+        @if (Model.Materials.Count == 0)
+        {
+            <p class="empty">Chưa có học liệu.</p>
+        }
+        else
+        {
+            <div class="material-grid">
+                @foreach (var material in Model.Materials)
+                {
+                    <article class="material-card">
+                        <h3>@material.Title</h3>
+                        <p>@(material.Public ? "Công khai" : "Nội bộ") · @material.FileName</p>
+                        <p><a class="button" href="/admin/lop-hoc/@Model.Item.Id?handler=MaterialFile&amp;materialId=@material.Id">Tải tệp</a></p>
+                    </article>
+                }
+            </div>
+        }
+        @if (Model.CanMaterial)
+        {
+            <form method="post" asp-page-handler="Material" enctype="multipart/form-data" class="stack">
+                <div>
+                    <label for="materialTitle">Tiêu đề học liệu</label>
+                    <input id="materialTitle" name="MaterialTitle" value="@Model.MaterialTitle" required maxlength="250" />
+                </div>
+                <div>
+                    <label for="materialDescription">Mô tả</label>
+                    <input id="materialDescription" name="MaterialDescription" value="@Model.MaterialDescription" maxlength="1000" />
+                </div>
+                <div>
+                    <label for="materialFile">Tệp PDF hoặc ảnh</label>
+                    <input id="materialFile" name="MaterialFile" type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" required />
+                </div>
+                <div>
+                    <label>
+                        <input type="checkbox" name="MaterialPublic" value="true" checked="@(Model.MaterialPublic ? "checked" : null)" />
+                        Công khai trên trang lớp
+                    </label>
+                </div>
+                <button type="submit">Thêm học liệu</button>
+            </form>
+        }
     }
 </section>

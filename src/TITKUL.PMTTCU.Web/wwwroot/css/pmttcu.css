@@ -267,6 +267,21 @@ th, td {
 
 .week-list { display: none; }
 
+.material-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+}
+
+.material-card {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 768px) {
   .admin-shell { grid-template-columns: minmax(0, 1fr); }
   .side-nav { grid-auto-flow: column; overflow-x: auto; }

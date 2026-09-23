@@ -20,10 +20,12 @@ public class HocVienModel : PageModel
     public Guid? HamletFilter { get; private set; }
     public int? AgeFrom { get; private set; }
     public int? AgeTo { get; private set; }
+    public bool CanExport { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(string? q, Guid? classId, Guid? hamletId, int? ageFrom, int? ageTo, int page = 1)
     {
         if (!HasView()) return Redirect("/admin/khong-quyen");
+        CanExport = Has("learner.export");
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
         Query = q;
@@ -47,6 +49,27 @@ public class HocVienModel : PageModel
         Hamlets = hamlets?.Items ?? [];
         if (list is null) ErrorMessage = "Không tải được danh sách học viên.";
         return Page();
+    }
+
+    public async Task<IActionResult> OnGetExportAsync(string? q, Guid? classId, Guid? hamletId, int? ageFrom, int? ageTo)
+    {
+        if (!Has("learner.export")) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        var path = "/api/v1/admin/learners/export?";
+        if (!string.IsNullOrWhiteSpace(q)) path += "q=" + Uri.EscapeDataString(q) + "&";
+        if (classId is Guid cls) path += "classId=" + cls + "&";
+        if (hamletId is Guid hamlet) path += "hamletId=" + hamlet + "&";
+        if (ageFrom is int from) path += "ageFrom=" + from + "&";
+        if (ageTo is int to) path += "ageTo=" + to + "&";
+        var file = await _api.GetFileAsync(path.TrimEnd('&'), token);
+        if (file.Bytes is null)
+        {
+            ErrorMessage = "Không xuất được Excel.";
+            return await OnGetAsync(q, classId, hamletId, ageFrom, ageTo);
+        }
+
+        return File(file.Bytes, file.ContentType ?? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", file.FileName ?? "hoc-vien.xlsx");
     }
 
     private bool HasView() => Has("learner.view") || Has("learner.manage");

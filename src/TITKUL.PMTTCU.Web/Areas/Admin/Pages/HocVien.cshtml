@@ -46,6 +46,12 @@
         </div>
         <button type="submit">Lọc</button>
     </form>
+    @if (Model.CanExport)
+    {
+        <p class="row-actions">
+            <a class="button" href="/admin/hoc-vien?handler=Export&amp;q=@Uri.EscapeDataString(Model.Query ?? "")&amp;classId=@Model.ClassFilter&amp;hamletId=@Model.HamletFilter&amp;ageFrom=@Model.AgeFrom&amp;ageTo=@Model.AgeTo">Xuất Excel</a>
+        </p>
+    }
     @if (Model.Items.Count == 0)
     {
         <p class="empty">Không có học viên khớp bộ lọc.</p>

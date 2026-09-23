@@ -15,6 +15,18 @@
     @if (Model.Item is not null)
     {
         <p><strong>Trạng thái hiện tại:</strong> @EducationUi.Status(Model.Item.Status)</p>
+        @if (Model.CanManage && !string.IsNullOrEmpty(Model.QrUrl))
+        {
+            <div class="stack">
+                <h2>QR đăng ký</h2>
+                <p>Quét mã mở <code>@Model.QrUrl</code></p>
+                <img src="/admin/lop-hoc/@Model.Item.Id?handler=Qr" alt="Mã QR đăng ký lớp @Model.Item.Code" width="180" height="180" />
+                <p class="row-actions">
+                    <a class="button" href="/admin/lop-hoc/@Model.Item.Id?handler=Qr">Tải PNG</a>
+                    <a href="/dang-ky/@Model.Item.Code">Mở form công khai</a>
+                </p>
+            </div>
+        }
         @if (Model.CanEdit)
         {
             <form method="post" class="stack">

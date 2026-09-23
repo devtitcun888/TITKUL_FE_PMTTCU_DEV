@@ -38,7 +38,19 @@ public class LopHocChiTietModel : PageModel
     [BindProperty] public string? MeetingUrl { get; set; }
     [BindProperty] public Guid? TeacherUserId { get; set; }
 
+    public string? QrUrl { get; private set; }
+
     public async Task<IActionResult> OnGetAsync(Guid id) => await LoadAsync(id);
+
+    public async Task<IActionResult> OnGetQrAsync(Guid id)
+    {
+        if (!HasManage()) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        var (bytes, _) = await _api.GetQrAsync($"/api/v1/admin/classes/{id}/qr", token);
+        if (bytes is null) return NotFound();
+        return File(bytes, "image/png");
+    }
 
     public async Task<IActionResult> OnPostAsync(Guid id)
     {
@@ -190,6 +202,8 @@ public class LopHocChiTietModel : PageModel
             EndDate = Item.EndDate;
             Capacity = Item.Capacity;
             Public = Item.Public;
+            var qr = await _api.GetQrAsync($"/api/v1/admin/classes/{id}/qr", token);
+            QrUrl = qr.QrUrl;
         }
 
         return Page();

@@ -1,0 +1,33 @@
+@page "/lop-hoc"
+@model LopHocPublicModel
+@{
+    ViewData["Title"] = "Lớp đang mở";
+}
+
+<section class="card stack">
+    <h1>Lớp đang mở đăng ký</h1>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Hiện chưa có lớp mở đăng ký.</p>
+    }
+    else
+    {
+        <ul class="stack">
+            @foreach (var item in Model.Items)
+            {
+                <li class="card stack">
+                    <h2>@item.Name</h2>
+                    <p>@item.ProgramName · @item.StartDate.ToString("dd/MM") – @item.EndDate.ToString("dd/MM/yyyy") · còn @item.Remaining chỗ</p>
+                    <p class="row-actions">
+                        <a class="button" href="/lop-hoc/@item.Code">Chi tiết</a>
+                        <a class="button" href="/dang-ky/@item.Code">Đăng ký</a>
+                    </p>
+                </li>
+            }
+        </ul>
+    }
+</section>

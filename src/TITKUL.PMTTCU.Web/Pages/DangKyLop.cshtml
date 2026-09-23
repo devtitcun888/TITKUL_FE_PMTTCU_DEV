@@ -1,0 +1,84 @@
+@page "/dang-ky/{ma}"
+@model DangKyLopModel
+@{
+    ViewData["Title"] = "Đăng ký lớp";
+}
+
+<section class="card stack">
+    <h1>Đăng ký lớp</h1>
+    @if (Model.Class is not null)
+    {
+        <p><strong>@Model.Class.Name</strong> · @Model.Class.ProgramName · còn @Model.Class.Remaining chỗ</p>
+        <p><a href="/lop-hoc/@Model.Class.Code">Xem chi tiết lớp</a></p>
+    }
+    @if (!string.IsNullOrEmpty(Model.SuccessCode))
+    {
+        <p class="status-note" role="status">Đã nhận đăng ký. Mã của bạn: @Model.SuccessCode. Giữ mã này khi đến lớp.</p>
+    }
+    else if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Class is { CanRegister: true } && string.IsNullOrEmpty(Model.SuccessCode))
+    {
+        <form method="post" class="stack">
+            <div class="hp" aria-hidden="true">
+                <label for="website">Trang web</label>
+                <input id="website" name="Website" value="@Model.Website" tabindex="-1" autocomplete="off" />
+            </div>
+            <div>
+                <label for="fullName">Họ tên</label>
+                <input id="fullName" name="FullName" value="@Model.FullName" required maxlength="200" autocomplete="name" />
+            </div>
+            <div>
+                <label for="phone">Số điện thoại</label>
+                <input id="phone" name="Phone" value="@Model.Phone" required inputmode="tel" autocomplete="tel" />
+            </div>
+            <div>
+                <label for="citizenId">CCCD/CMND</label>
+                <input id="citizenId" name="CitizenId" value="@Model.CitizenId" required inputmode="numeric" maxlength="12" />
+            </div>
+            <div>
+                <label for="birthDate">Ngày sinh</label>
+                <input id="birthDate" name="BirthDate" type="date" value="@Model.BirthDate?.ToString("yyyy-MM-dd")" required />
+            </div>
+            <div>
+                <label for="gender">Giới tính</label>
+                <select id="gender" name="Gender">
+                    <option value="NAM" selected="@(Model.Gender == "NAM" ? "selected" : null)">Nam</option>
+                    <option value="NU" selected="@(Model.Gender == "NU" ? "selected" : null)">Nữ</option>
+                    <option value="KHAC" selected="@(Model.Gender == "KHAC" ? "selected" : null)">Khác</option>
+                </select>
+            </div>
+            <div>
+                <label for="hamletId">Thôn/ấp</label>
+                <select id="hamletId" name="HamletId" required>
+                    <option value="">Chọn thôn/ấp</option>
+                    @foreach (var hamlet in Model.Hamlets)
+                    {
+                        <option value="@hamlet.Id" selected="@(Model.HamletId == hamlet.Id ? "selected" : null)">@hamlet.Name</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label for="note">Ghi chú</label>
+                <input id="note" name="Note" value="@Model.Note" maxlength="1000" />
+            </div>
+            <div>
+                <label>
+                    <input type="checkbox" name="Consent" value="true" checked="@(Model.Consent ? "checked" : null)" />
+                    Tôi đồng ý Trung tâm sử dụng dữ liệu này để quản lý lớp học.
+                </label>
+            </div>
+            <button type="submit">Đăng ký lớp</button>
+        </form>
+        @if (Model.Hamlets.Count == 0)
+        {
+            <p class="status-note">Chưa có danh mục thôn/ấp. Liên hệ Trung tâm trước khi gửi form.</p>
+        }
+    }
+    else if (Model.Class is { CanRegister: false })
+    {
+        <p class="alert" role="status">Form không nhận đăng ký lúc này. @(Model.Class.ClosedReason == "EDU_FULL" ? "Lớp đã đủ chỗ." : "Lớp chưa mở, đã đóng hoặc hết hạn.")</p>
+    }
+</section>

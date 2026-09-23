@@ -90,6 +90,61 @@ public sealed class BackendApiClient
         }
     }
 
+    public async Task<T?> GetPublicJsonAsync<T>(string path)
+    {
+        try
+        {
+            using var response = await HttpClient.GetAsync(path);
+            if (!response.IsSuccessStatusCode) return default;
+            return await response.Content.ReadFromJsonAsync<T>(JsonOptions());
+        }
+        catch (HttpRequestException)
+        {
+            return default;
+        }
+        catch (TaskCanceledException)
+        {
+            return default;
+        }
+    }
+
+    public async Task<HttpResponseMessage?> PostPublicJsonAsync(string path, object body)
+    {
+        try
+        {
+            return await HttpClient.PostAsJsonAsync(path, body);
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (TaskCanceledException)
+        {
+            return null;
+        }
+    }
+
+    public async Task<(byte[]? Bytes, string? QrUrl)> GetQrAsync(string path, string token)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, path);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            using var response = await HttpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode) return (null, null);
+            var url = response.Headers.TryGetValues("X-Qr-Url", out var values) ? values.FirstOrDefault() : null;
+            return (await response.Content.ReadAsByteArrayAsync(), url);
+        }
+        catch (HttpRequestException)
+        {
+            return (null, null);
+        }
+        catch (TaskCanceledException)
+        {
+            return (null, null);
+        }
+    }
+
     public async Task<HttpResponseMessage?> SendJsonAsync(HttpMethod method, string path, string token, object body)
     {
         try

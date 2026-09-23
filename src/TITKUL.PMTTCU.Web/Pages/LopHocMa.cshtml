@@ -1,0 +1,42 @@
+@page "/lop-hoc/{ma}"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model LopHocMaModel
+@{
+    ViewData["Title"] = Model.Item?.Name ?? "Lớp học";
+}
+
+<section class="card stack">
+    <p><a href="/lop-hoc">Các lớp đang mở</a></p>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Item is not null)
+    {
+        <h1>@Model.Item.Name</h1>
+        <p>@Model.Item.ProgramName</p>
+        <p>@Model.Item.StartDate.ToString("dd/MM/yyyy") – @Model.Item.EndDate.ToString("dd/MM/yyyy") · sĩ số @Model.Item.Capacity · còn @Model.Item.Remaining chỗ</p>
+        @if (!string.IsNullOrWhiteSpace(Model.Item.Description))
+        {
+            <p>@Model.Item.Description</p>
+        }
+        @if (Model.Item.CanRegister)
+        {
+            <p><a class="button" href="/dang-ky/@Model.Item.Code">Đăng ký lớp</a></p>
+        }
+        else
+        {
+            <p class="alert" role="status">Lớp chưa nhận đăng ký. @(Model.Item.ClosedReason == "EDU_FULL" ? "Đã đủ chỗ." : "Ngoài thời hạn hoặc chưa mở.")</p>
+        }
+        @if (Model.Item.Sessions is { Count: > 0 })
+        {
+            <h2>Lịch học</h2>
+            <ul>
+                @foreach (var session in Model.Item.Sessions)
+                {
+                    <li>@session.Title · @session.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM HH:mm")–@session.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm") · @EducationUi.Status(session.Mode)</li>
+                }
+            </ul>
+        }
+    }
+</section>

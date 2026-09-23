@@ -1,0 +1,46 @@
+@page "/admin/bao-cao"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.BaoCaoModel
+@{
+    ViewData["Title"] = "Chuyên cần";
+}
+<section class="card stack">
+    <h1>Chuyên cần theo lớp</h1>
+    <p><a href="/admin/tong-quan?From=@Model.From&amp;To=@Model.To">Về tổng quan</a></p>
+    <form method="get" class="filter-grid">
+        <div><label for="from">Từ ngày</label><input id="from" name="From" type="date" value="@Model.From" /></div>
+        <div><label for="to">Đến ngày</label><input id="to" name="To" type="date" value="@Model.To" /></div>
+        <div><button type="submit">Áp dụng</button></div>
+    </form>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Item is not null)
+    {
+        <div class="kpi-grid">
+            <article class="card kpi"><span>Lớp</span><strong>@Model.Item.Classes</strong></article>
+            <article class="card kpi"><span>Học viên</span><strong>@Model.Item.Learners</strong></article>
+            <article class="card kpi"><span>Chuyên cần</span><strong>@Model.Item.AttendancePercent.ToString("0.##")%</strong></article>
+        </div>
+        <p>Chỉ buổi đã kết thúc và không hủy. Vắng và phép không tính có mặt.</p>
+        @if (Model.Item.Attendance.Count == 0)
+        {
+            <p class="empty">Chưa có lớp trong kỳ.</p>
+        }
+        else
+        {
+            @foreach (var row in Model.Item.Attendance)
+            {
+                <article class="stack">
+                    <h2>@row.ClassName</h2>
+                    <p>Buổi đã học: @row.Occurred. Sĩ số: @row.Roster. Có mặt: @row.Present.</p>
+                    <p>Tỷ lệ: @row.Percent.ToString("0.##")%</p>
+                    @if (row.Percent > 0)
+                    {
+                        <div class="bar" style="width:@((int)row.Percent)%"></div>
+                    }
+                </article>
+            }
+        }
+    }
+</section>

@@ -5,10 +5,10 @@ using TITKUL.PMTTCU.Web.Observability;
 
 namespace TITKUL.PMTTCU.Web.Areas.Admin.Pages;
 
-public class TongQuanModel : PageModel
+public class BaoCaoModel : PageModel
 {
     private readonly BackendApiClient _api;
-    public TongQuanModel(BackendApiClient api) => _api = api;
+    public BaoCaoModel(BackendApiClient api) => _api = api;
     public SummaryBody? Item { get; private set; }
     public string? ErrorMessage { get; private set; }
     [BindProperty(SupportsGet = true)] public string? From { get; set; }
@@ -25,8 +25,7 @@ public class TongQuanModel : PageModel
             return Page();
         }
 
-        var query = Query();
-        var body = await _api.GetJsonAsync<Envelope>("/api/v1/admin/dashboard/summary" + query, token);
+        var body = await _api.GetJsonAsync<Envelope>("/api/v1/admin/dashboard/summary" + Query(), token);
         Item = body?.Item;
         if (Item is null) ErrorMessage = "Chưa tải được số liệu.";
         return Page();
@@ -42,10 +41,7 @@ public class TongQuanModel : PageModel
 
     private bool Has(string permission) => (HttpContext.Items["StaffProfile"] as StaffProfile)?.Permissions?.Contains(permission) == true;
 
-    public sealed record StatusCount(string Status, int Count);
-    public sealed record NamedCount(string Name, int Count);
-    public sealed record AgeCount(string Band, int Count);
     public sealed record AttendanceRow(string ClassName, int Occurred, int Roster, int Present, decimal Percent);
-    public sealed record SummaryBody(int Classes, int Learners, decimal AttendancePercent, IReadOnlyList<StatusCount> ClassStatus, IReadOnlyList<NamedCount> Hamlets, IReadOnlyList<AgeCount> Ages, IReadOnlyList<NamedCount> Audiences, IReadOnlyList<AttendanceRow> Attendance);
+    public sealed record SummaryBody(int Classes, int Learners, decimal AttendancePercent, IReadOnlyList<AttendanceRow> Attendance);
     private sealed record Envelope(SummaryBody? Item);
 }

@@ -15,9 +15,10 @@
     <a class="skip-link" href="#noi-dung">Đi tới nội dung</a>
     <div class="admin-shell">
         <nav class="side-nav" aria-label="Quản trị">
-            @if (permissions.Contains("report.system.view"))
+            @if (permissions.Contains("report.system.view") || permissions.Contains("report.own_classes.view"))
             {
                 <a href="/admin/tong-quan">Tổng quan</a>
+                <a href="/admin/bao-cao">Báo cáo</a>
             }
             else
             {

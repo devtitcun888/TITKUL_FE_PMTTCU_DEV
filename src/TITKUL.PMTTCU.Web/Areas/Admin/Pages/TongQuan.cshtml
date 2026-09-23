@@ -21,7 +21,9 @@
             <article class="card kpi"><span>Lớp</span><strong>@Model.Item.Classes</strong></article>
             <article class="card kpi"><span>Học viên</span><strong>@Model.Item.Learners</strong></article>
             <article class="card kpi"><span>Thôn/ấp</span><strong>@Model.Item.Hamlets.Count</strong></article>
+            <article class="card kpi"><span>Chuyên cần</span><strong>@Model.Item.AttendancePercent.ToString("0.##")%</strong></article>
         </div>
+        <p><a href="/admin/bao-cao?From=@Model.From&amp;To=@Model.To">Bảng chuyên cần</a></p>
         <section class="stack">
             <h2>Lớp theo trạng thái</h2>
             <table class="report-table">

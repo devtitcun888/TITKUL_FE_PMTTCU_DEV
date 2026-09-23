@@ -12,7 +12,6 @@ public class DangKyLopModel : PageModel
     public PublicClass? Class { get; private set; }
     public IReadOnlyList<Hamlet> Hamlets { get; private set; } = [];
     public string? ErrorMessage { get; private set; }
-    public string? SuccessCode { get; private set; }
 
     [BindProperty] public string FullName { get; set; } = "";
     [BindProperty] public string Phone { get; set; } = "";
@@ -23,6 +22,7 @@ public class DangKyLopModel : PageModel
     [BindProperty] public string? Note { get; set; }
     [BindProperty] public bool Consent { get; set; }
     [BindProperty] public string? Website { get; set; }
+    [BindProperty] public string IdempotencyKey { get; set; } = Guid.NewGuid().ToString("N");
 
     public async Task<IActionResult> OnGetAsync(string ma) => await LoadAsync(ma);
 
@@ -41,7 +41,7 @@ public class DangKyLopModel : PageModel
             note = Note,
             consent = Consent,
             website = Website
-        });
+        }, IdempotencyKey);
         if (response is null)
         {
             ErrorMessage = "Không gửi được đăng ký. Thử lại sau.";
@@ -51,14 +51,25 @@ public class DangKyLopModel : PageModel
         if (response.IsSuccessStatusCode)
         {
             var body = await response.Content.ReadFromJsonAsync<ItemEnvelope<Result>>();
-            SuccessCode = body?.Item?.Code;
-            return Page();
+            var code = body?.Item?.Code;
+            if (!string.IsNullOrWhiteSpace(code))
+            {
+                return Redirect($"/dang-ky/{ma}/cam-on?code={Uri.EscapeDataString(code)}");
+            }
         }
 
         try
         {
             var err = await response.Content.ReadFromJsonAsync<ApiErr>();
-            ErrorMessage = err?.Message ?? "Không đăng ký được.";
+            ErrorMessage = err?.Code switch
+            {
+                "EDU_FULL" => "Lớp đã đủ chỗ. Không nhận thêm đăng ký.",
+                "REG_DUPLICATE" => "Số điện thoại hoặc CCCD này đã đăng ký lớp này.",
+                "EDU_CLOSED" or "EDU_WINDOW" => "Lớp chưa mở, đã đóng hoặc hết hạn đăng ký.",
+                "REG_IDEMPOTENCY" => "Phiên gửi bị gián đoạn. Tải lại trang rồi gửi lại.",
+                "REG_RATE" => "Bạn gửi quá nhanh. Thử lại sau.",
+                _ => err?.Message ?? "Không đăng ký được."
+            };
         }
         catch (Exception)
         {

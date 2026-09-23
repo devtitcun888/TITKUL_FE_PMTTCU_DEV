@@ -11,17 +11,14 @@
         <p><strong>@Model.Class.Name</strong> · @Model.Class.ProgramName · còn @Model.Class.Remaining chỗ</p>
         <p><a href="/lop-hoc/@Model.Class.Code">Xem chi tiết lớp</a></p>
     }
-    @if (!string.IsNullOrEmpty(Model.SuccessCode))
-    {
-        <p class="status-note" role="status">Đã nhận đăng ký. Mã của bạn: @Model.SuccessCode. Giữ mã này khi đến lớp.</p>
-    }
-    else if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
         <p class="alert" role="alert">@Model.ErrorMessage</p>
     }
-    @if (Model.Class is { CanRegister: true } && string.IsNullOrEmpty(Model.SuccessCode))
+    @if (Model.Class is { CanRegister: true })
     {
         <form method="post" class="stack">
+            <input type="hidden" name="IdempotencyKey" value="@Model.IdempotencyKey" />
             <div class="hp" aria-hidden="true">
                 <label for="website">Trang web</label>
                 <input id="website" name="Website" value="@Model.Website" tabindex="-1" autocomplete="off" />

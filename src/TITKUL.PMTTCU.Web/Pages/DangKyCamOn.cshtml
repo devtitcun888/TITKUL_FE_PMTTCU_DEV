@@ -1,0 +1,23 @@
+@page "/dang-ky/{ma}/cam-on"
+@model DangKyCamOnModel
+@{
+    ViewData["Title"] = "Đăng ký thành công";
+}
+
+<section class="card stack">
+    <h1>Cảm ơn bạn đã đăng ký</h1>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    else
+    {
+        <p class="status-note" role="status">Đăng ký lớp @(Model.ClassName ?? Model.RegistrationCode) đã được nhận.</p>
+        <p>Mã đăng ký: <strong>@Model.RegistrationCode</strong></p>
+        <p>Giữ mã này khi đến lớp. Không gửi CCCD qua tin nhắn.</p>
+    }
+    <p class="row-actions">
+        <a class="button" href="/lop-hoc">Các lớp đang mở</a>
+        <a href="/">Về trang chủ</a>
+    </p>
+</section>

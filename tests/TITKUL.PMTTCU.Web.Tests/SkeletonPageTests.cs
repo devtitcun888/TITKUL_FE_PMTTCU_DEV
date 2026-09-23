@@ -60,7 +60,7 @@ public sealed class SkeletonPageTests : IClassFixture<WebApplicationFactory<Prog
     public async Task Public_class_pages_render()
     {
         using var client = _factory.CreateClient();
-        foreach (var path in new[] { "/lop-hoc", "/lop-hoc/ABC12", "/dang-ky/ABC12" })
+        foreach (var path in new[] { "/lop-hoc", "/lop-hoc/ABC12", "/dang-ky/ABC12", "/dang-ky/ABC12/cam-on", "/dang-ky/ABC12/cam-on?code=DKTESTCODE12ABCD" })
         {
             var response = await client.GetAsync(path);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);

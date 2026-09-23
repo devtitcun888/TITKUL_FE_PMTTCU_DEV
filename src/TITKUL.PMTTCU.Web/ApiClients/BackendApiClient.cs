@@ -108,11 +108,17 @@ public sealed class BackendApiClient
         }
     }
 
-    public async Task<HttpResponseMessage?> PostPublicJsonAsync(string path, object body)
+    public async Task<HttpResponseMessage?> PostPublicJsonAsync(string path, object body, string? idempotencyKey = null)
     {
         try
         {
-            return await HttpClient.PostAsJsonAsync(path, body);
+            using var request = new HttpRequestMessage(HttpMethod.Post, path) { Content = JsonContent.Create(body) };
+            if (!string.IsNullOrWhiteSpace(idempotencyKey))
+            {
+                request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey);
+            }
+
+            return await HttpClient.SendAsync(request);
         }
         catch (HttpRequestException)
         {

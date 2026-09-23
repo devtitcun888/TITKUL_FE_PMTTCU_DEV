@@ -13,10 +13,26 @@
     @if (Model.Item is not null)
     {
         <div class="kpi-grid">
-            <article class="card kpi"><span>Nơi giữ</span><strong>Máy chủ</strong></article>
-            <article class="card kpi"><span>Số bản giữ</span><strong>@Model.Item.RetentionDays</strong></article>
+            <article class="card kpi"><span>Bản database</span><strong>@Model.Item.DatabaseCopies</strong></article>
+            <article class="card kpi"><span>Bản media</span><strong>@Model.Item.MediaCopies</strong></article>
+            <article class="card kpi"><span>Chính sách giữ</span><strong>@Model.Item.RetentionPolicyDays</strong></article>
         </div>
-        <p>Bản sao hằng ngày do máy chủ của đơn vị thực hiện. Ứng dụng không chạy dump và không phục hồi cơ sở dữ liệu.</p>
-        <p>Theo dõi sống: @Model.Item.LiveCheck. Sẵn sàng: @Model.Item.ReadyCheck.</p>
+        <p>@(Model.Item.MeetsRetention ? "Đủ số bản theo chính sách." : "Chưa đủ 7 bản database và 7 bản media trong thư mục được cấu hình.")</p>
+        <p>Ứng dụng không chạy dump và không phục hồi. Theo dõi sống: @Model.Item.LiveCheck. Sẵn sàng: @Model.Item.ReadyCheck.</p>
+        @if (Model.Item.Copies.Count == 0)
+        {
+            <p class="empty">Chưa thấy gói sao lưu.</p>
+        }
+        else
+        {
+            @foreach (var copy in Model.Item.Copies)
+            {
+                <article class="stack">
+                    <h2>@copy.Name</h2>
+                    <p>@copy.Kind · @copy.Bytes byte · @copy.CreatedAt.ToOffset(TimeSpan.FromHours(7)).ToString("yyyy-MM-dd HH:mm")</p>
+                    <p style="overflow-wrap:anywhere">SHA-256 @copy.Sha256</p>
+                </article>
+            }
+        }
     }
 </section>

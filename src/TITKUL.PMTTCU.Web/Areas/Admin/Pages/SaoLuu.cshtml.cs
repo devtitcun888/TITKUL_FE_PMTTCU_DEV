@@ -37,6 +37,7 @@ public class SaoLuuModel : PageModel
         return Page();
     }
 
-    public sealed record StatusBody(string Mode, int RetentionDays, bool RunsFromApp, bool RestoresFromApp, string LiveCheck, string ReadyCheck);
+    public sealed record CopyRow(string Name, string Kind, long Bytes, string Sha256, DateTimeOffset CreatedAt);
+    public sealed record StatusBody(string Mode, int RetentionPolicyDays, int DatabaseCopies, int MediaCopies, bool MeetsRetention, bool RunsFromApp, bool RestoresFromApp, string LiveCheck, string ReadyCheck, IReadOnlyList<CopyRow> Copies);
     private sealed record Envelope(StatusBody? Item);
 }

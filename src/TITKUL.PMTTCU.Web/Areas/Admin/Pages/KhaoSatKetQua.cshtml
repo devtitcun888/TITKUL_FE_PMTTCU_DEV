@@ -1,0 +1,41 @@
+@page "/admin/khao-sat/{id:guid}/ket-qua"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.KhaoSatKetQuaModel
+@{
+    ViewData["Title"] = "Kết quả khảo sát";
+}
+<section class="card stack">
+    <p><a href="/admin/khao-sat/@Model.SurveyId/thiet-ke">Về thiết kế</a></p>
+    <h1>Kết quả</h1>
+    @if (Model.CanExport)
+    {
+        <p><a class="button" href="/admin/khao-sat/@Model.SurveyId/ket-qua?handler=Xuat">Xuất Excel</a></p>
+    }
+    @if (Model.Item is null)
+    {
+        <p class="empty">Chưa có số liệu.</p>
+    }
+    else
+    {
+        <p>Số phiếu: @Model.Item.Responses</p>
+        @foreach (var question in Model.Item.Questions)
+        {
+            var max = Math.Max(1, question.Options.Select(item => item.Count).DefaultIfEmpty(0).Max());
+            <section class="stack">
+                <h2>@question.Text</h2>
+                @foreach (var option in question.Options)
+                {
+                    <p>@option.Text · @option.Count</p>
+                    <div class="bar" style="width:@(option.Count * 100 / max)%"></div>
+                }
+                @foreach (var scale in question.Scales)
+                {
+                    <p>Mức @scale.Value · @scale.Count</p>
+                }
+                @foreach (var text in question.Texts)
+                {
+                    <p>@text</p>
+                }
+            </section>
+        }
+    }
+</section>

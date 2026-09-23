@@ -148,6 +148,12 @@ input[type=checkbox] {
   min-width: 22px;
 }
 
+.bar {
+  height: 8px;
+  background: var(--accent);
+  max-width: 100%;
+}
+
 .choice {
   display: flex;
   align-items: center;

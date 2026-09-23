@@ -1,0 +1,22 @@
+@page "/admin/sao-luu"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.SaoLuuModel
+@{
+    ViewData["Title"] = "Sao lưu";
+}
+<section class="card stack">
+    <h1>Sao lưu</h1>
+    <p>Màn này chỉ đọc. Không hiện đường dẫn tệp, máy chủ hay mật khẩu.</p>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Item is not null)
+    {
+        <div class="kpi-grid">
+            <article class="card kpi"><span>Nơi giữ</span><strong>Máy chủ</strong></article>
+            <article class="card kpi"><span>Số bản giữ</span><strong>@Model.Item.RetentionDays</strong></article>
+        </div>
+        <p>Bản sao hằng ngày do máy chủ của đơn vị thực hiện. Ứng dụng không chạy dump và không phục hồi cơ sở dữ liệu.</p>
+        <p>Theo dõi sống: @Model.Item.LiveCheck. Sẵn sàng: @Model.Item.ReadyCheck.</p>
+    }
+</section>

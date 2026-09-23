@@ -69,6 +69,10 @@
             {
                 <a href="/admin/nhat-ky">Nhật ký</a>
             }
+            @if (permissions.Contains("backup.view"))
+            {
+                <a href="/admin/sao-luu">Sao lưu</a>
+            }
             <a href="/admin/dang-xuat">Đăng xuất</a>
         </nav>
         <div>

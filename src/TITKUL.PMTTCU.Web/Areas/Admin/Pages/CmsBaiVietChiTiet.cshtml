@@ -52,6 +52,9 @@
                 <label for="seoDescription">SEO mô tả (tối đa 170)</label>
                 <input id="seoDescription" name="SeoDescription" value="@Model.SeoDescription" maxlength="170" />
             </div>
+            <div>
+                <label for="pinned"><input id="pinned" name="Pinned" type="checkbox" value="true" checked="@(Model.Pinned ? "checked" : null)" /> Ghim lên trang chủ</label>
+            </div>
             <button type="submit">Lưu nháp</button>
         </form>
         @if (Model.PostId is Guid postId)

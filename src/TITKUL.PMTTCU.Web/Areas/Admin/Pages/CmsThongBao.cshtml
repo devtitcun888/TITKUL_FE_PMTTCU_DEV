@@ -1,41 +1,39 @@
-@page "/admin/cms/bai-viet"
+@page "/admin/cms/thong-bao"
 @using TITKUL.PMTTCU.Web.Areas.Admin
-@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsBaiVietModel
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsThongBaoModel
 @{
-    ViewData["Title"] = "Bài viết";
+    ViewData["Title"] = "Thông báo";
 }
 
 <section class="card stack">
-    <h1>Bài viết</h1>
+    <h1>Thông báo</h1>
     @if (Model.CanEdit)
     {
-        <p><a class="button" href="/admin/cms/bai-viet/sua">Viết bài mới</a></p>
+        <p><a class="button" href="/admin/cms/thong-bao/sua">Tạo thông báo</a></p>
     }
     @if (Model.Items.Count == 0)
     {
-        <p class="empty">Chưa có bài viết.</p>
+        <p class="empty">Chưa có thông báo.</p>
     }
     else
     {
         <div class="table-scroll">
             <table>
-                <caption>Danh sách bài</caption>
+                <caption>Danh sách thông báo</caption>
                 <thead>
                     <tr>
                         <th scope="col">Tiêu đề</th>
-                        <th scope="col">Chuyên mục</th>
+                        <th scope="col">Mức</th>
                         <th scope="col">Trạng thái</th>
-                        <th scope="col">Ghim</th>
                     </tr>
                 </thead>
                 <tbody>
                 @foreach (var item in Model.Items)
                 {
                     <tr>
-                        <td><a href="/admin/cms/bai-viet/sua/@item.Id">@item.Title</a></td>
-                        <td>@item.CategoryName</td>
+                        <td><a href="/admin/cms/thong-bao/sua/@item.Id">@item.Title</a></td>
+                        <td>@EducationUi.Status(item.Level)</td>
                         <td>@EducationUi.Status(item.Status)</td>
-                        <td>@(item.Pinned ? "Có" : "")</td>
                     </tr>
                 }
                 </tbody>

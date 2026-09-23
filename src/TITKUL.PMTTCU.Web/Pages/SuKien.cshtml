@@ -1,0 +1,33 @@
+@page "/su-kien"
+@model TITKUL.PMTTCU.Web.Pages.SuKienModel
+@{
+    ViewData["Title"] = "Sự kiện";
+}
+
+<section class="card stack">
+    <h1>Sự kiện</h1>
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có sự kiện công khai.</p>
+    }
+    else
+    {
+        <ul class="stack">
+            @foreach (var item in Model.Items)
+            {
+                <li>
+                    <a href="/su-kien/@item.Slug"><strong>@item.Title</strong></a>
+                    <p>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")–@item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")</p>
+                    @if (!string.IsNullOrWhiteSpace(item.Location))
+                    {
+                        <p>@item.Location</p>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(item.Summary))
+                    {
+                        <p>@item.Summary</p>
+                    }
+                </li>
+            }
+        </ul>
+    }
+</section>

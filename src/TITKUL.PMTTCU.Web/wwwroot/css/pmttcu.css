@@ -188,6 +188,13 @@ button:hover, .button:hover { background: var(--accent-strong); }
   color: var(--danger);
 }
 
+.banner-urgent {
+  border: 1px solid var(--danger);
+  background: #fde8eb;
+}
+
+.banner-urgent a { color: var(--danger); }
+
 .empty, .status-note {
   padding: 16px;
   border-left: 4px solid var(--accent);

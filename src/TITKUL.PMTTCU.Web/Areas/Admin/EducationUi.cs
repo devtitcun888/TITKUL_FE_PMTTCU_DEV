@@ -32,6 +32,8 @@ public static class EducationUi
         "CER_CLASS" => "Lớp chưa đủ điều kiện",
         "TIN_TUC" => "Tin tức",
         "VHTT_DVSN" => "VHTT-DVSN",
+        "URGENT" => "Khẩn",
+        "NORMAL" => "Thường",
         _ => status
     };
 

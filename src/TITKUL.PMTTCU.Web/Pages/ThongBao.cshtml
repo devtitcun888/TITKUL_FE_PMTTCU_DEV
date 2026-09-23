@@ -1,0 +1,40 @@
+@page "/thong-bao"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Pages.ThongBaoModel
+@{
+    ViewData["Title"] = "Thông báo";
+}
+
+<section class="stack">
+    @if (Model.Urgent.Count > 0)
+    {
+        <section class="card stack banner-urgent" aria-label="Thông báo khẩn">
+            <h1>Thông báo khẩn</h1>
+            <ul class="stack">
+                @foreach (var item in Model.Urgent)
+                {
+                    <li><a href="/thong-bao/@item.Slug">@item.Title</a></li>
+                }
+            </ul>
+        </section>
+    }
+    <section class="card stack">
+        <h1>Thông báo</h1>
+        @if (Model.Items.Count == 0)
+        {
+            <p class="empty">Chưa có thông báo công khai.</p>
+        }
+        else
+        {
+            <ul class="stack">
+                @foreach (var item in Model.Items)
+                {
+                    <li>
+                        <a href="/thong-bao/@item.Slug">@item.Title</a>
+                        <span> · @EducationUi.Status(item.Level)</span>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+</section>

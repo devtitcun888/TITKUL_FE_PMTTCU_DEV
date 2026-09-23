@@ -1,0 +1,35 @@
+@page "/su-kien/{slug}"
+@model TITKUL.PMTTCU.Web.Pages.SuKienChiTietModel
+@{
+    if (Model.Item is null)
+    {
+        ViewData["Title"] = "Sự kiện";
+    }
+}
+
+<section class="card stack">
+    <p><a href="/su-kien">Về danh sách sự kiện</a></p>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Item is not null)
+    {
+        <article class="stack">
+            <h1>@Model.Item.Title</h1>
+            <p>@Model.Item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")–@Model.Item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")</p>
+            @if (!string.IsNullOrWhiteSpace(Model.Item.Location))
+            {
+                <p>@Model.Item.Location</p>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.Item.Html))
+            {
+                @Html.Raw(Model.Item.Html)
+            }
+            else if (!string.IsNullOrWhiteSpace(Model.Item.Summary))
+            {
+                <p>@Model.Item.Summary</p>
+            }
+        </article>
+    }
+</section>

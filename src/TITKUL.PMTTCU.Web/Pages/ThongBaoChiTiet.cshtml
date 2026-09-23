@@ -1,0 +1,25 @@
+@page "/thong-bao/{slug}"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Pages.ThongBaoChiTietModel
+@{
+    if (Model.Item is null)
+    {
+        ViewData["Title"] = "Thông báo";
+    }
+}
+
+<section class="card stack">
+    <p><a href="/thong-bao">Về danh sách thông báo</a></p>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Item is not null)
+    {
+        <article class="stack">
+            <h1>@Model.Item.Title</h1>
+            <p>@EducationUi.Status(Model.Item.Level)</p>
+            @Html.Raw(Model.Item.Html)
+        </article>
+    }
+</section>

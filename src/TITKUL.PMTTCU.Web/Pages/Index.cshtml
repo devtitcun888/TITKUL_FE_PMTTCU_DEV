@@ -4,10 +4,87 @@
     ViewData["Title"] = "Trang chủ";
 }
 
-<section class="card stack">
-    <h1>Cổng thông tin</h1>
-    <p>@Model.OrganizationName</p>
-    <p>Ứng dụng cổng thông tin đã sẵn sàng.</p>
-    <p><a class="button" href="/lop-hoc">Xem lớp đang mở đăng ký</a></p>
-    <p class="empty">Chưa có tin bài hoặc thông báo được xuất bản.</p>
+<section class="stack">
+    <section class="card stack">
+        <h1>Cổng thông tin</h1>
+        <p>@Model.OrganizationName</p>
+        <p><a class="button" href="/lop-hoc">Xem lớp đang mở đăng ký</a></p>
+    </section>
+
+    @if (Model.Urgent.Count > 0)
+    {
+        <section class="card stack banner-urgent" aria-label="Thông báo khẩn">
+            <h2>Thông báo khẩn</h2>
+            <ul class="stack">
+                @foreach (var item in Model.Urgent)
+                {
+                    <li><a href="/thong-bao/@item.Slug">@item.Title</a></li>
+                }
+            </ul>
+        </section>
+    }
+
+    @if (Model.Pinned.Count > 0)
+    {
+        <section class="card stack">
+            <h2>Tin nổi bật</h2>
+            <ul class="stack">
+                @foreach (var item in Model.Pinned)
+                {
+                    <li>
+                        <a href="/tin-tuc/@item.Slug"><strong>@item.Title</strong></a>
+                        @if (item.PublishedAt is DateTimeOffset at)
+                        {
+                            <p>@at.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</p>
+                        }
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+
+    <section class="card stack">
+        <h2>Tin mới</h2>
+        @if (Model.Latest.Count == 0)
+        {
+            <p class="empty">Chưa có tin bài được xuất bản.</p>
+        }
+        else
+        {
+            <ul class="stack">
+                @foreach (var item in Model.Latest)
+                {
+                    <li>
+                        <a href="/tin-tuc/@item.Slug">@item.Title</a>
+                        @if (item.PublishedAt is DateTimeOffset at)
+                        {
+                            <span> · @at.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</span>
+                        }
+                    </li>
+                }
+            </ul>
+            <p><a href="/tin-tuc">Xem hết tin tức</a></p>
+        }
+    </section>
+
+    <section class="card stack">
+        <h2>Sự kiện sắp tới</h2>
+        @if (Model.Upcoming.Count == 0)
+        {
+            <p class="empty">Chưa có sự kiện công khai.</p>
+        }
+        else
+        {
+            <ul class="stack">
+                @foreach (var item in Model.Upcoming)
+                {
+                    <li>
+                        <a href="/su-kien/@item.Slug">@item.Title</a>
+                        <p>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM HH:mm")–@item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm") @item.Location</p>
+                    </li>
+                }
+            </ul>
+            <p><a href="/su-kien">Xem hết sự kiện</a></p>
+        }
+    </section>
 </section>

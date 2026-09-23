@@ -1,41 +1,39 @@
-@page "/admin/cms/bai-viet"
+@page "/admin/cms/su-kien"
 @using TITKUL.PMTTCU.Web.Areas.Admin
-@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsBaiVietModel
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsSuKienModel
 @{
-    ViewData["Title"] = "Bài viết";
+    ViewData["Title"] = "Sự kiện";
 }
 
 <section class="card stack">
-    <h1>Bài viết</h1>
+    <h1>Sự kiện</h1>
     @if (Model.CanEdit)
     {
-        <p><a class="button" href="/admin/cms/bai-viet/sua">Viết bài mới</a></p>
+        <p><a class="button" href="/admin/cms/su-kien/sua">Tạo sự kiện</a></p>
     }
     @if (Model.Items.Count == 0)
     {
-        <p class="empty">Chưa có bài viết.</p>
+        <p class="empty">Chưa có sự kiện.</p>
     }
     else
     {
         <div class="table-scroll">
             <table>
-                <caption>Danh sách bài</caption>
+                <caption>Danh sách sự kiện</caption>
                 <thead>
                     <tr>
                         <th scope="col">Tiêu đề</th>
-                        <th scope="col">Chuyên mục</th>
+                        <th scope="col">Thời gian</th>
                         <th scope="col">Trạng thái</th>
-                        <th scope="col">Ghim</th>
                     </tr>
                 </thead>
                 <tbody>
                 @foreach (var item in Model.Items)
                 {
                     <tr>
-                        <td><a href="/admin/cms/bai-viet/sua/@item.Id">@item.Title</a></td>
-                        <td>@item.CategoryName</td>
+                        <td><a href="/admin/cms/su-kien/sua/@item.Id">@item.Title</a></td>
+                        <td>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM HH:mm")–@item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")</td>
                         <td>@EducationUi.Status(item.Status)</td>
-                        <td>@(item.Pinned ? "Có" : "")</td>
                     </tr>
                 }
                 </tbody>

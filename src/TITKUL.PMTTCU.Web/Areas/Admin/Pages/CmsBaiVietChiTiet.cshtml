@@ -1,0 +1,84 @@
+@page "/admin/cms/bai-viet/sua/{id:guid?}"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsBaiVietChiTietModel
+@{
+    ViewData["Title"] = Model.PostId is null ? "Bài mới" : "Biên tập bài viết";
+}
+
+<section class="card stack">
+    <h1>@(Model.PostId is null ? "Bài mới" : "Biên tập bài viết")</h1>
+    <p><a href="/admin/cms/bai-viet">Về danh sách</a></p>
+    @if (!string.IsNullOrEmpty(Model.Status))
+    {
+        <p>Trạng thái: @EducationUi.Status(Model.Status)</p>
+    }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.CanEdit)
+    {
+        <form method="post" asp-page-handler="Save" class="stack">
+            <div>
+                <label for="categoryId">Chuyên mục</label>
+                <select id="categoryId" name="CategoryId" required>
+                    @foreach (var cat in Model.Categories)
+                    {
+                        <option value="@cat.Id" selected="@(Model.CategoryId == cat.Id ? "selected" : null)">@cat.Name</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label for="title">Tiêu đề</label>
+                <input id="title" name="Title" value="@Model.Title" required maxlength="250" />
+            </div>
+            <div>
+                <label for="slug">Đường dẫn</label>
+                <input id="slug" name="Slug" value="@Model.Slug" maxlength="280" />
+            </div>
+            <div>
+                <label for="summary">Tóm tắt / SEO mô tả</label>
+                <textarea id="summary" name="Summary" rows="3">@Model.Summary</textarea>
+            </div>
+            <div>
+                <label for="html">Nội dung HTML</label>
+                <textarea id="html" name="Html" rows="12" required>@Model.Html</textarea>
+            </div>
+            <div>
+                <label for="seoTitle">SEO tiêu đề (tối đa 70)</label>
+                <input id="seoTitle" name="SeoTitle" value="@Model.SeoTitle" maxlength="70" />
+            </div>
+            <div>
+                <label for="seoDescription">SEO mô tả (tối đa 170)</label>
+                <input id="seoDescription" name="SeoDescription" value="@Model.SeoDescription" maxlength="170" />
+            </div>
+            <button type="submit">Lưu nháp</button>
+        </form>
+        @if (Model.PostId is Guid postId)
+        {
+            <p class="row-actions">
+                @if (Model.Status != "PUBLISHED")
+                {
+                    <form method="post" asp-page-handler="Publish">
+                        <button type="submit">Đăng bài</button>
+                    </form>
+                }
+                else
+                {
+                    <form method="post" asp-page-handler="Unpublish">
+                        <button type="submit" class="button-quiet">Gỡ đăng</button>
+                    </form>
+                    <a class="button" href="/tin-tuc/@Model.Slug">Xem trên Portal</a>
+                }
+            </p>
+        }
+    }
+    @if (!string.IsNullOrEmpty(Model.Html))
+    {
+        <h2>Xem trước</h2>
+        <article class="card">
+            <h3>@Model.Title</h3>
+            @Html.Raw(Model.Html)
+        </article>
+    }
+</section>

@@ -1,0 +1,29 @@
+@page "/tin-tuc"
+@model TITKUL.PMTTCU.Web.Pages.TinTucModel
+@{
+    ViewData["Title"] = "Tin tức";
+}
+
+<section class="card stack">
+    <h1>Tin tức</h1>
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có bài viết công khai.</p>
+    }
+    else
+    {
+        <ul class="stack">
+            @foreach (var item in Model.Items)
+            {
+                <li>
+                    <a href="/tin-tuc/@item.Slug"><strong>@item.Title</strong></a>
+                    <p>@item.CategoryName @if (item.PublishedAt is DateTimeOffset at) { <span>· @at.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</span> }</p>
+                    @if (!string.IsNullOrWhiteSpace(item.Summary))
+                    {
+                        <p>@item.Summary</p>
+                    }
+                </li>
+            }
+        </ul>
+    }
+</section>

@@ -30,6 +30,8 @@ public static class EducationUi
         "CER_THRESHOLD" => "Chưa đạt ngưỡng",
         "CER_EXISTS" => "Đã cấp",
         "CER_CLASS" => "Lớp chưa đủ điều kiện",
+        "TIN_TUC" => "Tin tức",
+        "VHTT_DVSN" => "VHTT-DVSN",
         _ => status
     };
 

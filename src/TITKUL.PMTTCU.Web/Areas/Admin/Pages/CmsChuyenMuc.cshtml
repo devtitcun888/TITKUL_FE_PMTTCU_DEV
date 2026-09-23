@@ -1,0 +1,63 @@
+@page "/admin/cms/chuyen-muc"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsChuyenMucModel
+@{
+    ViewData["Title"] = "Chuyên mục";
+}
+
+<section class="card stack">
+    <h1>Chuyên mục</h1>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có chuyên mục.</p>
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table>
+                <caption>Danh mục bài viết</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Tên</th>
+                        <th scope="col">Đường dẫn</th>
+                        <th scope="col">Loại</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@item.Name</td>
+                        <td>@item.Slug</td>
+                        <td>@item.Kind</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+    @if (Model.CanEdit)
+    {
+        <form method="post" class="stack">
+            <div>
+                <label for="name">Tên chuyên mục</label>
+                <input id="name" name="Name" value="@Model.Name" required maxlength="160" />
+            </div>
+            <div>
+                <label for="slug">Đường dẫn (để trống sẽ tạo từ tên)</label>
+                <input id="slug" name="Slug" value="@Model.Slug" maxlength="180" />
+            </div>
+            <div>
+                <label for="kind">Loại</label>
+                <select id="kind" name="Kind">
+                    <option value="TIN_TUC" selected="@(Model.Kind == "TIN_TUC" ? "selected" : null)">Tin tức</option>
+                    <option value="VHTT_DVSN" selected="@(Model.Kind == "VHTT_DVSN" ? "selected" : null)">VHTT-DVSN</option>
+                </select>
+            </div>
+            <button type="submit">Thêm chuyên mục</button>
+        </form>
+    }
+</section>

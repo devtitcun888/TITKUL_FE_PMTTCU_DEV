@@ -32,6 +32,11 @@
             {
                 <a href="/admin/hoc-vien">Học viên</a>
             }
+            @if (permissions.Contains("cms.view") || permissions.Contains("cms.create"))
+            {
+                <a href="/admin/cms/chuyen-muc">Chuyên mục</a>
+                <a href="/admin/cms/bai-viet">Bài viết</a>
+            }
             @if (permissions.Contains("audit.view"))
             {
                 <a href="/admin/nhat-ky">Nhật ký</a>

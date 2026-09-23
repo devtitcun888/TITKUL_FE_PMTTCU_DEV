@@ -1,0 +1,43 @@
+@page "/admin/cms/bai-viet"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsBaiVietModel
+@{
+    ViewData["Title"] = "Bài viết";
+}
+
+<section class="card stack">
+    <h1>Bài viết</h1>
+    @if (Model.CanEdit)
+    {
+        <p><a class="button" href="/admin/cms/bai-viet/sua">Viết bài mới</a></p>
+    }
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có bài viết.</p>
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table>
+                <caption>Danh sách bài</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Tiêu đề</th>
+                        <th scope="col">Chuyên mục</th>
+                        <th scope="col">Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td><a href="/admin/cms/bai-viet/sua/@item.Id">@item.Title</a></td>
+                        <td>@item.CategoryName</td>
+                        <td>@EducationUi.Status(item.Status)</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

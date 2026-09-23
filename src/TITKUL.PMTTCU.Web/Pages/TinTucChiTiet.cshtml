@@ -1,0 +1,21 @@
+@page "/tin-tuc/{slug}"
+@model TITKUL.PMTTCU.Web.Pages.TinTucChiTietModel
+@{
+    ViewData["Title"] = Model.Item?.Title ?? "Tin tức";
+}
+
+<section class="card stack">
+    <p><a href="/tin-tuc">Về danh sách tin</a></p>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Item is not null)
+    {
+        <article class="stack">
+            <h1>@Model.Item.Title</h1>
+            <p>@Model.Item.CategoryName @if (Model.Item.PublishedAt is DateTimeOffset at) { <span>· @at.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</span> }</p>
+            @Html.Raw(Model.Item.Html)
+        </article>
+    }
+</section>

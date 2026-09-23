@@ -4,6 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - PMTTCU Tân Trụ</title>
+    @if (ViewData["Description"] is string description && description.Length > 0)
+    {
+        <meta name="description" content="@description" />
+    }
     <link rel="stylesheet" href="~/css/pmttcu.css" asp-append-version="true" />
 </head>
 <body>
@@ -15,6 +19,7 @@
                 <ul class="nav-list">
                     <li><a asp-area="" asp-page="/Index">Trang chủ</a></li>
                     <li><a href="/lop-hoc">Lớp học</a></li>
+                    <li><a href="/tin-tuc">Tin tức</a></li>
                     <li><a href="/tra-cuu">Tra cứu chứng nhận</a></li>
                     <li><a asp-area="" asp-page="/Privacy">Thông tin</a></li>
                     <li><a href="/admin">Quản trị</a></li>

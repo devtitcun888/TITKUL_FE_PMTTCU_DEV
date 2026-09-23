@@ -1,0 +1,43 @@
+@page "/admin/khao-sat/{id:guid}/thiet-ke"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.KhaoSatThietKeModel
+@{
+    ViewData["Title"] = Model.Survey?.Title ?? "Thiết kế khảo sát";
+}
+<section class="card stack">
+    <p><a href="/admin/khao-sat">Về danh sách</a></p>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage)) { <p class="alert" role="alert">@Model.ErrorMessage</p> }
+    @if (Model.Survey is not null)
+    {
+        <h1>@Model.Survey.Title</h1>
+        <p>@EducationUi.Status(Model.Survey.Status) · @Model.Questions.Count/30 câu</p>
+        <p><a class="button" href="/admin/khao-sat/@Model.Survey.Id/preview">Xem trước</a></p>
+        @if (Model.CanManage && Model.Survey.Status == "DRAFT")
+        {
+            <form method="post" asp-page-handler="Question" class="stack">
+                <div><label for="text">Nội dung câu</label><input id="text" name="Text" required maxlength="1000" /></div>
+                <div>
+                    <label for="type">Loại</label>
+                    <select id="type" name="Type">
+                        <option value="SINGLE">Một lựa chọn</option>
+                        <option value="MULTIPLE">Nhiều lựa chọn</option>
+                        <option value="TEXT">Tự luận</option>
+                        <option value="SCALE">Thang điểm</option>
+                    </select>
+                </div>
+                <div><label for="required"><input id="required" name="Required" type="checkbox" value="true" /> Bắt buộc</label></div>
+                <div><label for="choices">Lựa chọn, mỗi dòng một ý</label><textarea id="choices" name="Choices" rows="4"></textarea></div>
+                <div><label for="scaleMin">Thang từ</label><input id="scaleMin" name="ScaleMin" type="number" value="1" /></div>
+                <div><label for="scaleMax">Thang đến</label><input id="scaleMax" name="ScaleMax" type="number" value="5" /></div>
+                <button type="submit">Thêm câu</button>
+            </form>
+            <form method="post" asp-page-handler="Open"><button type="submit">Mở khảo sát</button></form>
+        }
+        <ol class="stack">
+            @foreach (var item in Model.Questions)
+            {
+                <li>@item.Text · @EducationUi.Status(item.Type) @(item.Required ? "· bắt buộc" : "")</li>
+            }
+        </ol>
+    }
+</section>

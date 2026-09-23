@@ -1,0 +1,33 @@
+@page "/admin/khao-sat"
+@using TITKUL.PMTTCU.Web.Areas.Admin
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.KhaoSatModel
+@{
+    ViewData["Title"] = "Khảo sát";
+}
+<section class="card stack">
+    <h1>Khảo sát</h1>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage)) { <p class="alert" role="alert">@Model.ErrorMessage</p> }
+    @if (Model.CanManage)
+    {
+        <form method="post" class="stack">
+            <div><label for="title">Tiêu đề</label><input id="title" name="Title" required maxlength="250" /></div>
+            <div><label for="startAt">Bắt đầu</label><input id="startAt" name="StartAt" type="datetime-local" required /></div>
+            <div><label for="endAt">Kết thúc</label><input id="endAt" name="EndAt" type="datetime-local" required /></div>
+            <div><label for="thanks">Lời cảm ơn</label><input id="thanks" name="Thanks" maxlength="1000" /></div>
+            <button type="submit">Tạo nháp</button>
+        </form>
+    }
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có đợt khảo sát.</p>
+    }
+    else
+    {
+        <ul class="stack">
+            @foreach (var item in Model.Items)
+            {
+                <li><a href="/admin/khao-sat/@item.Id/thiet-ke">@item.Title</a> · @EducationUi.Status(item.Status)</li>
+            }
+        </ul>
+    }
+</section>

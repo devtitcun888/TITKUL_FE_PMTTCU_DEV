@@ -1,0 +1,39 @@
+@page "/admin/khao-sat/{id:guid}/preview"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.KhaoSatXemTruocModel
+@{
+    ViewData["Title"] = "Xem trước khảo sát";
+}
+<section class="card stack">
+    <p><a href="/admin/khao-sat/@Model.Survey?.Id/thiet-ke">Về thiết kế</a></p>
+    @if (Model.Survey is null)
+    {
+        <p class="empty">Không tìm thấy đợt khảo sát.</p>
+    }
+    else
+    {
+        <h1>@Model.Survey.Title</h1>
+        @if (!string.IsNullOrWhiteSpace(Model.Survey.Summary)) { <p>@Model.Survey.Summary</p> }
+        @foreach (var question in Model.Questions)
+        {
+            <fieldset class="stack">
+                <legend>@question.Text @(question.Required ? "*" : "")</legend>
+                @if (question.Type is "SINGLE" or "MULTIPLE")
+                {
+                    foreach (var option in Model.Options.Where(item => item.QuestionId == question.Id))
+                    {
+                        <label><input type="@(question.Type == "SINGLE" ? "radio" : "checkbox")" disabled /> @option.Text</label>
+                    }
+                }
+                else if (question.Type == "TEXT")
+                {
+                    <textarea rows="3" disabled></textarea>
+                }
+                else
+                {
+                    <p>Thang @question.ScaleMin–@question.ScaleMax</p>
+                    <input type="number" min="@question.ScaleMin" max="@question.ScaleMax" disabled />
+                }
+            </fieldset>
+        }
+    }
+</section>

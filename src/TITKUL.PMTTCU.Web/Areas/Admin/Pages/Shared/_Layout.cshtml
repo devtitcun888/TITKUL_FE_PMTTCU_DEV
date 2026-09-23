@@ -44,6 +44,10 @@
                 <a href="/admin/cau-hinh">Cấu hình</a>
                 <a href="/admin/lien-he">Phản ánh</a>
             }
+            @if (permissions.Contains("survey.view") || permissions.Contains("survey.manage"))
+            {
+                <a href="/admin/khao-sat">Khảo sát</a>
+            }
             @if (permissions.Contains("audit.view"))
             {
                 <a href="/admin/nhat-ky">Nhật ký</a>

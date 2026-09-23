@@ -42,6 +42,11 @@ public static class EducationUi
         "PROCESSING" => "Đang xử lý",
         "CLOSED" => "Đã đóng",
         "SPAM" => "Rác",
+        "SINGLE" => "Một lựa chọn",
+        "MULTIPLE" => "Nhiều lựa chọn",
+        "TEXT" => "Tự luận",
+        "SCALE" => "Thang điểm",
+        "OPEN" => "Đang mở",
         _ => status
     };
 

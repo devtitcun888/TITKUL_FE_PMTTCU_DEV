@@ -19,6 +19,10 @@
             {
                 <a href="/admin/tong-quan">Tổng quan</a>
                 <a href="/admin/bao-cao">Báo cáo</a>
+                @if (permissions.Contains("report.export"))
+                {
+                    <a href="/admin/bao-cao/thang">Báo cáo tháng</a>
+                }
             }
             else
             {

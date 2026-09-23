@@ -1,0 +1,29 @@
+@page "/admin/bao-cao/thang"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.BaoCaoThangModel
+@{
+    ViewData["Title"] = "Đối soát tháng";
+}
+<section class="card stack">
+    <h1>Đối soát báo cáo tháng</h1>
+    <p><a href="/admin/bao-cao?From=@Model.From&amp;To=@Model.To">Về chuyên cần</a></p>
+    <form method="get" class="filter-grid">
+        <div><label for="month">Tháng</label><input id="month" name="Month" type="month" value="@Model.Month" /></div>
+        <div><label for="from">Từ ngày</label><input id="from" name="From" type="date" value="@Model.From" /></div>
+        <div><label for="to">Đến ngày</label><input id="to" name="To" type="date" value="@Model.To" /></div>
+        <div><button type="submit">Áp dụng</button></div>
+    </form>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Item is not null)
+    {
+        <div class="kpi-grid">
+            <article class="card kpi"><span>Lớp</span><strong>@Model.Item.Classes</strong></article>
+            <article class="card kpi"><span>Học viên</span><strong>@Model.Item.Learners</strong></article>
+            <article class="card kpi"><span>Chuyên cần</span><strong>@Model.Item.AttendancePercent.ToString("0.##")%</strong></article>
+        </div>
+        <p>Sheet Tong hop ghi đúng ba số này. Sheet Chi tiet ghi từng lớp, không gộp ô.</p>
+        <p><a class="button" href="/admin/bao-cao/thang?handler=Xuat&amp;From=@Model.From&amp;To=@Model.To">Tải Excel</a></p>
+    }
+</section>

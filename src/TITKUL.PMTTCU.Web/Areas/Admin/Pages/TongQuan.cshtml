@@ -23,7 +23,13 @@
             <article class="card kpi"><span>Thôn/ấp</span><strong>@Model.Item.Hamlets.Count</strong></article>
             <article class="card kpi"><span>Chuyên cần</span><strong>@Model.Item.AttendancePercent.ToString("0.##")%</strong></article>
         </div>
-        <p><a href="/admin/bao-cao?From=@Model.From&amp;To=@Model.To">Bảng chuyên cần</a></p>
+        <p class="row-actions">
+            <a href="/admin/bao-cao?From=@Model.From&amp;To=@Model.To">Bảng chuyên cần</a>
+            @if (Model.CanExport)
+            {
+                <a href="/admin/bao-cao/thang?From=@Model.From&amp;To=@Model.To">Đối soát tháng</a>
+            }
+        </p>
         <section class="stack">
             <h2>Lớp theo trạng thái</h2>
             <table class="report-table">

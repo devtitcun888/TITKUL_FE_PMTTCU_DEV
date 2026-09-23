@@ -10,6 +10,7 @@ public class TongQuanModel : PageModel
     private readonly BackendApiClient _api;
     public TongQuanModel(BackendApiClient api) => _api = api;
     public SummaryBody? Item { get; private set; }
+    public bool CanExport { get; private set; }
     public string? ErrorMessage { get; private set; }
     [BindProperty(SupportsGet = true)] public string? From { get; set; }
     [BindProperty(SupportsGet = true)] public string? To { get; set; }
@@ -17,6 +18,7 @@ public class TongQuanModel : PageModel
     public async Task<IActionResult> OnGetAsync()
     {
         if (!Has("report.system.view") && !Has("report.own_classes.view")) return Redirect("/admin/khong-quyen");
+        CanExport = Has("report.export");
         var token = Request.Cookies[AdminGateMiddleware.CookieName];
         if (token is null) return Redirect("/admin/dang-nhap");
         if (DateOnly.TryParse(From, out var start) && DateOnly.TryParse(To, out var end) && end < start)

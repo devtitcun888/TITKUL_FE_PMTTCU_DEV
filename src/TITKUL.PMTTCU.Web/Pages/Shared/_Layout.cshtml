@@ -10,7 +10,7 @@
     }
     <link rel="stylesheet" href="~/css/pmttcu.css" asp-append-version="true" />
 </head>
-<body>
+<body class="@(ViewData["BodyClass"] ?? string.Empty)">
     <a class="skip-link" href="#noi-dung">Đi tới nội dung</a>
     <header class="portal-header">
         <div class="utility-bar">

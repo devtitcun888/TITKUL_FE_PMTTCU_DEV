@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Trang chủ";
     ViewData["Description"] = "Cổng thông tin Trung tâm cung ứng dịch vụ sự nghiệp công xã Tân Trụ — học tập cộng đồng, lớp học, học liệu và thông tin địa phương.";
+    ViewData["BodyClass"] = "home-page";
 
     var primaryActions = new[]
     {
@@ -101,8 +102,6 @@
             {<div class="event-list">@foreach (var item in Model.Upcoming.Take(3)) {<a class="event-card" href="/su-kien/@item.Slug"><time><strong>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd")</strong><span>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("MMM", System.Globalization.CultureInfo.GetCultureInfo("vi-VN"))</span></time><span><strong>@item.Title</strong><small>⌖ @(item.Location ?? "Trung tâm") · @item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")</small></span><span class="event-arrow" aria-hidden="true">→</span></a>}</div>}
         </section>
 
-        <aside class="home-register" aria-labelledby="register-title"><div><span class="section-kicker">Sẵn sàng tham gia?</span><h2 id="register-title">Đăng ký lớp học<br />ngay hôm nay</h2><p>Chọn lớp học phù hợp và bắt đầu hành trình học tập cùng cộng đồng.</p><a class="button button-light" href="/lop-hoc">Xem lớp học <span aria-hidden="true">→</span></a></div><div class="register-code" aria-label="Mã QR đăng ký"><span>▦</span><small>Quét để đăng ký</small></div></aside>
     </div>
 </section>
-
-<section class="home-contact-band"><div><span class="section-kicker">Kết nối với chúng tôi</span><h2>Chung tay xây dựng<br />cộng đồng học tập</h2></div><a class="button button-primary" href="/lien-he">Liên hệ Trung tâm <span aria-hidden="true">→</span></a></section>
+<aside class="home-register" aria-labelledby="register-title"><div class="admin-promo-icon" aria-hidden="true">⚙</div><div class="admin-promo-copy"><h2 id="register-title">Dành cho cán bộ Trung tâm</h2><p>Quản lý lớp học, học viên, điểm danh và báo cáo</p></div><a class="button button-light" href="/admin">Truy cập Cổng quản trị <span aria-hidden="true">→</span></a></aside>

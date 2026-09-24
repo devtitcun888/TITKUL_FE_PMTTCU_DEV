@@ -4,24 +4,21 @@
     ViewData["Title"] = "Trang chủ";
     ViewData["Description"] = "Cổng thông tin Trung tâm cung ứng dịch vụ sự nghiệp công xã Tân Trụ — học tập cộng đồng, lớp học, học liệu và thông tin địa phương.";
 
-    var quickLinks = new[]
+    var primaryActions = new[]
     {
-        new { Icon = "⌂", Title = "Giới thiệu Trung tâm", Description = "Chức năng, nhiệm vụ và cơ cấu tổ chức", Href = "/gioi-thieu" },
-        new { Icon = "▣", Title = "Lớp học & câu lạc bộ", Description = "Lớp học đang mở và hoạt động cộng đồng", Href = "/lop-hoc" },
-        new { Icon = "✓", Title = "Tra cứu chứng nhận", Description = "Kiểm tra chứng nhận hoàn thành học tập", Href = "/tra-cuu" },
-        new { Icon = "▤", Title = "Văn bản, biểu mẫu", Description = "Tải biểu mẫu và văn bản hướng dẫn", Href = "/van-ban" },
-        new { Icon = "♡", Title = "Văn hóa - Thể thao", Description = "Hoạt động phong trào tại địa phương", Href = "/van-hoa-the-thao" },
-        new { Icon = "⌁", Title = "Gửi nhu cầu học tập", Description = "Đóng góp ý kiến cho chương trình học", Href = "/lien-he" },
-        new { Icon = "▧", Title = "Học liệu số", Description = "Tài liệu, video và nguồn học tập", Href = "/hoc-lieu" },
-        new { Icon = "⌖", Title = "Liên hệ & bản đồ", Description = "Địa chỉ, số điện thoại và đường đi", Href = "/lien-he" }
+        new { Icon = "▣", Title = "Lớp học đang mở", Description = "Xem lịch và đăng ký tham gia", Href = "/lop-hoc", Tone = "blue", Status = "Đang mở" },
+        new { Icon = "▦", Title = "Lịch hoạt động", Description = "Sự kiện, câu lạc bộ, lịch học", Href = "/su-kien", Tone = "green", Status = "Cập nhật thường xuyên" },
+        new { Icon = "✓", Title = "Tra cứu chứng nhận", Description = "Kiểm tra chứng nhận hoàn thành", Href = "/tra-cuu", Tone = "purple", Status = "Nhanh chóng" },
+        new { Icon = "⌁", Title = "Khảo sát nhu cầu học tập", Description = "Gửi nhu cầu cho Trung tâm", Href = "/lien-he", Tone = "teal", Status = "Ý kiến của bạn quan trọng" }
     };
+
 }
 
 <section class="home-hero" aria-labelledby="hero-title">
     <div class="home-hero-copy">
         <span class="eyebrow"><span class="eyebrow-dot"></span> Học tập cộng đồng suốt đời</span>
-        <h1 id="hero-title">Kết nối cộng đồng,<br /><span>lan tỏa tri thức</span><br />xã Tân Trụ</h1>
-        <p class="hero-lead">Cổng thông tin và quản lý học tập cộng đồng giúp người dân dễ dàng tìm kiếm lớp học, sự kiện, học liệu và các dịch vụ của Trung tâm.</p>
+        <h1 id="hero-title">Cổng học tập cộng đồng<br /><span>xã Tân Trụ</span></h1>
+        <p class="hero-lead">Tìm lớp học, đăng ký tham gia, tra cứu chứng nhận và cập nhật hoạt động mới nhất.</p>
         <div class="hero-actions">
             <a class="button button-primary" href="/lop-hoc">Xem lớp đang mở đăng ký <span aria-hidden="true">→</span></a>
             <a class="button button-quiet" href="/tra-cuu">Tra cứu chứng nhận</a>
@@ -41,24 +38,17 @@
     </div>
 </section>
 
-<section class="home-stat-strip" aria-label="Tổng quan hoạt động">
-    <div><strong>32</strong><span>Lớp học đang hoạt động</span></div>
-    <div><strong>1.480</strong><span>Học viên tham gia</span></div>
-    <div><strong>09</strong><span>Thôn được phục vụ</span></div>
-    <div><strong>12</strong><span>Câu lạc bộ cộng đồng</span></div>
-</section>
-
 <section class="home-section quick-section" aria-labelledby="quick-title">
     <div class="section-heading">
-        <div><span class="section-kicker">Dịch vụ công khai</span><h2 id="quick-title">Truy cập nhanh</h2><p>Các dịch vụ và thông tin được người dân tìm kiếm nhiều nhất.</p></div>
-        <a class="section-link" href="/gioi-thieu">Xem tất cả <span aria-hidden="true">→</span></a>
+        <div><span class="section-kicker">Tác vụ ưu tiên</span><h2 id="quick-title">Việc bạn cần làm</h2><p>Các dịch vụ chính được đặt ở vị trí dễ thấy nhất.</p></div>
     </div>
-    <div class="quick-grid">
-        @foreach (var link in quickLinks)
+    <div class="quick-grid action-grid">
+        @foreach (var link in primaryActions)
         {
-            <a class="quick-card" href="@link.Href">
+            <a class="quick-card action-card action-card-@link.Tone" href="@link.Href">
                 <span class="quick-icon" aria-hidden="true">@link.Icon</span>
                 <span class="quick-card-copy"><strong>@link.Title</strong><small>@link.Description</small></span>
+                <span class="action-status">@link.Status</span>
                 <span class="quick-arrow" aria-hidden="true">↗</span>
             </a>
         }

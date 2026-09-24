@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Action-first homepage — Tân Trụ</title>
+  <!-- Reference only: map these utility classes to the project's Tailwind build. -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#EEF5FF', 100: '#E7EEFF', 500: '#2157D7', 600: '#1743AE', 700: '#123A91' },
+            ink: '#0B1B3A',
+            muted: '#71819A',
+            line: '#DBE4F0'
+          },
+          boxShadow: {
+            portal: '0 12px 32px rgba(11, 27, 58, 0.08)'
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root { color-scheme: light; --brand: #2157D7; --brand-hover: #1743AE; --ink: #0B1B3A; --muted: #71819A; --line: #DBE4F0; --surface: #FFFFFF; --canvas: #F4F7FC; }
+    [data-theme="dark"] { color-scheme: dark; --brand: #4E83F1; --brand-hover: #79A5FF; --ink: #F7FAFF; --muted: #A7B9D2; --line: #294263; --surface: #10223D; --canvas: #081326; }
+  </style>
+</head>
+<body class="bg-[var(--canvas)] text-[var(--ink)] antialiased">
+  <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <!-- Hero: ưu tiên tác vụ chính, không dùng số liệu giả. -->
+    <section class="grid items-center gap-8 overflow-hidden rounded-2xl bg-[#EEF5FF] px-6 py-8 sm:px-10 lg:grid-cols-2 lg:px-12 lg:py-12">
+      <div>
+        <p class="mb-4 inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1.5 text-xs font-bold text-brand-600">
+          <span class="h-2 w-2 rounded-full bg-amber-400" aria-hidden="true"></span>
+          Học tập cộng đồng suốt đời
+        </p>
+        <h1 class="max-w-xl text-4xl font-bold leading-tight tracking-tight text-ink sm:text-5xl">
+          Cổng học tập cộng đồng <span class="text-brand-500">xã Tân Trụ</span>
+        </h1>
+        <p class="mt-5 max-w-xl text-base leading-7 text-slate-600">
+          Tìm lớp học, đăng ký tham gia, tra cứu chứng nhận và cập nhật hoạt động mới nhất.
+        </p>
+        <div class="mt-7 flex flex-wrap gap-3">
+          <a href="/lop-hoc" class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-900/15 transition hover:-translate-y-0.5 hover:bg-brand-600 focus:outline-none focus:ring-4 focus:ring-blue-500/25">
+            <svg aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5v-16Z"/><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H20"/></svg>
+            Xem lớp đang mở
+          </a>
+          <a href="/tra-cuu" class="inline-flex min-h-11 items-center gap-2 rounded-lg border border-brand-500 bg-white px-5 py-3 text-sm font-bold text-brand-600 transition hover:bg-brand-50 focus:outline-none focus:ring-4 focus:ring-blue-500/25">
+            <svg aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+            Tra cứu chứng nhận
+          </a>
+        </div>
+      </div>
+      <div class="relative hidden min-h-64 items-center justify-center lg:flex" aria-label="Minh họa kết nối học tập">
+        <div class="absolute h-64 w-64 rounded-full bg-blue-200/50 blur-2xl"></div>
+        <div class="relative grid h-28 w-28 place-items-center rounded-3xl bg-brand-500 text-5xl text-white shadow-2xl shadow-blue-900/25">⌁</div>
+        <div class="absolute right-8 top-3 grid h-14 w-14 place-items-center rounded-full bg-brand-500 text-2xl text-white shadow-lg">▣</div>
+        <div class="absolute bottom-4 left-12 grid h-14 w-14 place-items-center rounded-full bg-white text-xl text-brand-500 shadow-lg">✓</div>
+        <div class="absolute bottom-10 right-16 grid h-14 w-14 place-items-center rounded-full bg-white text-xl text-brand-500 shadow-lg">⌂</div>
+      </div>
+    </section>
+
+    <!-- Action hub: bốn nghiệp vụ ưu tiên, giữ thứ tự trên desktop và mobile. -->
+    <section class="mt-10" aria-labelledby="action-title">
+      <div class="mb-5">
+        <p class="text-xs font-bold uppercase tracking-[.14em] text-brand-500">Tác vụ ưu tiên</p>
+        <h2 id="action-title" class="mt-1 text-2xl font-bold tracking-tight text-ink sm:text-3xl">Việc bạn cần làm</h2>
+        <p class="mt-2 text-sm text-[var(--muted)]">Các dịch vụ chính được đặt ở vị trí dễ thấy nhất.</p>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <a href="/lop-hoc" class="group flex min-h-36 flex-col rounded-xl border-2 border-brand-500 bg-[var(--surface)] p-5 shadow-portal transition hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25">
+          <span class="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-xl text-brand-500" aria-hidden="true">▣</span>
+          <strong class="mt-4 text-sm">Lớp học đang mở</strong><span class="mt-1 text-xs leading-5 text-[var(--muted)]">Xem lịch và đăng ký tham gia</span>
+          <span class="mt-auto w-fit rounded-full bg-blue-50 px-2 py-1 text-[11px] font-bold text-brand-600">Đang mở</span>
+        </a>
+        <a href="/su-kien" class="group flex min-h-36 flex-col rounded-xl border border-emerald-100 bg-[var(--surface)] p-5 shadow-portal transition hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25">
+          <span class="grid h-10 w-10 place-items-center rounded-xl bg-emerald-50 text-xl text-emerald-600" aria-hidden="true">▦</span>
+          <strong class="mt-4 text-sm">Lịch hoạt động</strong><span class="mt-1 text-xs leading-5 text-[var(--muted)]">Sự kiện, câu lạc bộ, lịch học</span>
+          <span class="mt-auto w-fit rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700">Cập nhật thường xuyên</span>
+        </a>
+        <a href="/tra-cuu" class="group flex min-h-36 flex-col rounded-xl border border-purple-100 bg-[var(--surface)] p-5 shadow-portal transition hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25">
+          <span class="grid h-10 w-10 place-items-center rounded-xl bg-purple-50 text-xl text-purple-700" aria-hidden="true">✓</span>
+          <strong class="mt-4 text-sm">Tra cứu chứng nhận</strong><span class="mt-1 text-xs leading-5 text-[var(--muted)]">Kiểm tra chứng nhận hoàn thành</span>
+          <span class="mt-auto w-fit rounded-full bg-purple-50 px-2 py-1 text-[11px] font-bold text-purple-700">Nhanh chóng</span>
+        </a>
+        <a href="/lien-he" class="group flex min-h-36 flex-col rounded-xl border border-cyan-100 bg-[var(--surface)] p-5 shadow-portal transition hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/25">
+          <span class="grid h-10 w-10 place-items-center rounded-xl bg-cyan-50 text-xl text-cyan-700" aria-hidden="true">⌁</span>
+          <strong class="mt-4 text-sm">Khảo sát nhu cầu học tập</strong><span class="mt-1 text-xs leading-5 text-[var(--muted)]">Gửi nhu cầu cho Trung tâm</span>
+          <span class="mt-auto w-fit rounded-full bg-cyan-50 px-2 py-1 text-[11px] font-bold text-cyan-700">Ý kiến của bạn quan trọng</span>
+        </a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

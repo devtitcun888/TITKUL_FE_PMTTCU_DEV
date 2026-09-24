@@ -1,0 +1,110 @@
+{
+  "name": "TITKUL Action First Portal",
+  "version": "1.0.0",
+  "brand": {
+    "primary": "#2157D7",
+    "primaryHover": "#1743AE",
+    "primaryActive": "#123A91",
+    "fontFamily": "Roboto, Inter, Segoe UI, Arial, sans-serif"
+  },
+  "light": {
+    "color": {
+      "bg.app": "#F4F7FC",
+      "bg.canvas": "#FFFFFF",
+      "bg.surface": "#FFFFFF",
+      "bg.surfaceMuted": "#F7F9FD",
+      "bg.surfaceHover": "#EEF3FF",
+      "bg.surfaceSelected": "#E7EEFF",
+      "bg.hero": "#EEF5FF",
+      "bg.sidebar": "#0B1B3A",
+      "text.primary": "#0B1B3A",
+      "text.secondary": "#42526B",
+      "text.tertiary": "#71819A",
+      "text.muted": "#98A5B8",
+      "text.inverse": "#FFFFFF",
+      "border.subtle": "#EEF2F8",
+      "border.default": "#DBE4F0",
+      "border.strong": "#BFCDE2",
+      "border.focus": "#2157D7",
+      "focus.ring": "rgba(33, 87, 215, 0.24)",
+      "action.primary": "#2157D7",
+      "action.primaryHover": "#1743AE",
+      "action.primaryActive": "#123A91",
+      "action.secondary": "#FFFFFF",
+      "action.secondaryHover": "#EEF3FF",
+      "status.success.bg": "#E8F8F1",
+      "status.success.text": "#147D62",
+      "status.success.dot": "#22A779",
+      "status.info.bg": "#EAF2FF",
+      "status.info.text": "#2157D7",
+      "status.warning.bg": "#FFF6E5",
+      "status.warning.text": "#9A6C17",
+      "status.danger.bg": "#FFF0F2",
+      "status.danger.text": "#B42335"
+    },
+    "shadow": {
+      "sm": "0 2px 8px rgba(11, 27, 58, 0.05)",
+      "md": "0 8px 24px rgba(11, 27, 58, 0.08)",
+      "lg": "0 18px 44px rgba(11, 27, 58, 0.12)"
+    }
+  },
+  "night": {
+    "color": {
+      "bg.app": "#081326",
+      "bg.canvas": "#0B1B33",
+      "bg.surface": "#10223D",
+      "bg.surfaceMuted": "#142A49",
+      "bg.surfaceHover": "#19345A",
+      "bg.surfaceSelected": "#173B7D",
+      "bg.hero": "#102E63",
+      "bg.sidebar": "#061021",
+      "text.primary": "#F7FAFF",
+      "text.secondary": "#DCE7F8",
+      "text.tertiary": "#A7B9D2",
+      "text.muted": "#7186A5",
+      "text.inverse": "#FFFFFF",
+      "border.subtle": "#172C48",
+      "border.default": "#294263",
+      "border.strong": "#3B5A82",
+      "border.focus": "#79A5FF",
+      "focus.ring": "rgba(121, 165, 255, 0.34)",
+      "action.primary": "#4E83F1",
+      "action.primaryHover": "#79A5FF",
+      "action.primaryActive": "#2157D7",
+      "action.secondary": "#172C48",
+      "action.secondaryHover": "#1D3A63",
+      "status.success.bg": "#0A4238",
+      "status.success.text": "#72E0B8",
+      "status.success.dot": "#39C894",
+      "status.info.bg": "#173B7D",
+      "status.info.text": "#A9C5FF",
+      "status.warning.bg": "#4A310B",
+      "status.warning.text": "#FFD47A",
+      "status.danger.bg": "#4A1922",
+      "status.danger.text": "#FF9EAA"
+    },
+    "shadow": {
+      "sm": "0 2px 8px rgba(0, 0, 0, 0.22)",
+      "md": "0 8px 24px rgba(0, 0, 0, 0.28)",
+      "lg": "0 18px 44px rgba(0, 0, 0, 0.38)"
+    }
+  },
+  "shape": {
+    "radius.sm": "8px",
+    "radius.md": "10px",
+    "radius.lg": "14px",
+    "radius.xl": "20px",
+    "radius.pill": "999px"
+  },
+  "spacing": {
+    "1": "4px",
+    "2": "8px",
+    "3": "12px",
+    "4": "16px",
+    "5": "20px",
+    "6": "24px",
+    "8": "32px",
+    "10": "40px",
+    "12": "48px"
+  }
+}

@@ -13,29 +13,27 @@
 <body>
     <a class="skip-link" href="#noi-dung">Đi tới nội dung</a>
     <header class="portal-header">
-        <div class="wrap">
-            <a class="brand" asp-area="" asp-page="/Index">PMTTCU Tân Trụ</a>
-            <nav aria-label="Chính">
+        <div class="utility-bar">
+            <div class="wrap utility-inner">
+                <span>Trung tâm cung ứng dịch vụ sự nghiệp công xã Tân Trụ</span>
+                <div class="utility-links"><a href="tel:0942429989">☎ 0942 42 9989</a><a href="mailto:kinhdoanh@titkul.com">✉ Liên hệ hỗ trợ</a></div>
+            </div>
+        </div>
+        <div class="wrap main-nav-row">
+            <a class="brand" asp-area="" asp-page="/Index" aria-label="Trang chủ PMTTCU Tân Trụ"><span class="brand-mark" aria-hidden="true">✦</span><span><strong>Trung tâm dịch vụ<br />sự nghiệp công</strong><small>xã Tân Trụ</small></span></a>
+            <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="main-navigation">Menu <span aria-hidden="true">☰</span></button>
+            <nav id="main-navigation" aria-label="Chính">
                 <ul class="nav-list">
                     <li><a asp-area="" asp-page="/Index">Trang chủ</a></li>
+                    <li><a href="/gioi-thieu">Giới thiệu</a></li>
                     <li><a href="/lop-hoc">Lớp học</a></li>
                     <li><a href="/tin-tuc">Tin tức</a></li>
-                    <li><a href="/su-kien">Sự kiện</a></li>
-                    <li><a href="/thong-bao">Thông báo</a></li>
                     <li><a href="/van-ban">Văn bản</a></li>
-                    <li><a href="/bieu-mau">Biểu mẫu</a></li>
                     <li><a href="/hoc-lieu">Học liệu số</a></li>
-                    <li><a href="/thu-vien?loai=IMAGE">Hình ảnh</a></li>
-                    <li><a href="/thu-vien?loai=VIDEO_LINK">Video</a></li>
-                    <li><a href="/gioi-thieu">Giới thiệu</a></li>
-                    <li><a href="/co-cau">Cơ cấu</a></li>
-                    <li><a href="/van-hoa-the-thao">Văn hóa - Thể thao</a></li>
                     <li><a href="/lien-he">Liên hệ</a></li>
-                    <li><a href="/tra-cuu">Tra cứu chứng nhận</a></li>
-                    <li><a asp-area="" asp-page="/Privacy">Thông tin</a></li>
-                    <li><a href="/admin">Quản trị</a></li>
                 </ul>
             </nav>
+            <a class="header-cta" href="/lop-hoc">Đăng ký lớp học <span aria-hidden="true">→</span></a>
         </div>
     </header>
     <main id="noi-dung" class="page">
@@ -44,10 +42,19 @@
         </div>
     </main>
     <footer class="portal-footer">
-        <div class="wrap">
-            <p>Trung tâm cung ứng dịch vụ sự nghiệp công xã Tân Trụ</p>
-            <a asp-area="" asp-page="/Privacy">Thông tin</a>
+        <div class="wrap footer-grid">
+            <div><a class="footer-brand" asp-area="" asp-page="/Index"><span class="brand-mark" aria-hidden="true">✦</span><span><strong>Trung tâm dịch vụ sự nghiệp công</strong><small>xã Tân Trụ</small></span></a><p>Cổng thông tin và quản lý học tập cộng đồng vì một địa phương học tập suốt đời.</p></div>
+            <div><h2>Liên kết nhanh</h2><a href="/lop-hoc">Lớp học</a><a href="/tin-tuc">Tin tức - Thông báo</a><a href="/hoc-lieu">Kho học liệu số</a></div>
+            <div><h2>Liên hệ</h2><span>572/14B Âu Cơ, P. Bảy Hiền, TP.HCM</span><a href="tel:0942429989">0942 42 9989</a><a href="mailto:kinhdoanh@titkul.com">kinhdoanh@titkul.com</a></div>
         </div>
+        <div class="wrap footer-bottom"><span>© 2026 Trung tâm dịch vụ sự nghiệp công xã Tân Trụ</span><a asp-area="" asp-page="/Privacy">Thông tin bảo mật</a></div>
     </footer>
+    <script>
+        document.querySelector('.nav-toggle')?.addEventListener('click', function () {
+            const expanded = this.getAttribute('aria-expanded') === 'true';
+            this.setAttribute('aria-expanded', String(!expanded));
+            document.querySelector('#main-navigation')?.classList.toggle('is-open', !expanded);
+        });
+    </script>
 </body>
 </html>

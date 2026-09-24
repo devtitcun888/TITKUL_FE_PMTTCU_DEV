@@ -2,107 +2,117 @@
 @model IndexModel
 @{
     ViewData["Title"] = "Trang chủ";
+    ViewData["Description"] = "Cổng thông tin Trung tâm cung ứng dịch vụ sự nghiệp công xã Tân Trụ — học tập cộng đồng, lớp học, học liệu và thông tin địa phương.";
+
+    var quickLinks = new[]
+    {
+        new { Icon = "⌂", Title = "Giới thiệu Trung tâm", Description = "Chức năng, nhiệm vụ và cơ cấu tổ chức", Href = "/gioi-thieu" },
+        new { Icon = "▣", Title = "Lớp học & câu lạc bộ", Description = "Lớp học đang mở và hoạt động cộng đồng", Href = "/lop-hoc" },
+        new { Icon = "✓", Title = "Tra cứu chứng nhận", Description = "Kiểm tra chứng nhận hoàn thành học tập", Href = "/tra-cuu" },
+        new { Icon = "▤", Title = "Văn bản, biểu mẫu", Description = "Tải biểu mẫu và văn bản hướng dẫn", Href = "/van-ban" },
+        new { Icon = "♡", Title = "Văn hóa - Thể thao", Description = "Hoạt động phong trào tại địa phương", Href = "/van-hoa-the-thao" },
+        new { Icon = "⌁", Title = "Gửi nhu cầu học tập", Description = "Đóng góp ý kiến cho chương trình học", Href = "/lien-he" },
+        new { Icon = "▧", Title = "Học liệu số", Description = "Tài liệu, video và nguồn học tập", Href = "/hoc-lieu" },
+        new { Icon = "⌖", Title = "Liên hệ & bản đồ", Description = "Địa chỉ, số điện thoại và đường đi", Href = "/lien-he" }
+    };
 }
 
-<section class="stack">
-    <section class="card stack">
-        <h1>Cổng thông tin</h1>
-        <p>@Model.OrganizationName</p>
-        <p><a class="button" href="/lop-hoc">Xem lớp đang mở đăng ký</a></p>
-    </section>
-
-    @if (Model.Urgent.Count > 0)
-    {
-        <section class="card stack banner-urgent" aria-label="Thông báo khẩn">
-            <h2>Thông báo khẩn</h2>
-            <ul class="stack">
-                @foreach (var item in Model.Urgent)
-                {
-                    <li><a href="/thong-bao/@item.Slug">@item.Title</a></li>
-                }
-            </ul>
-        </section>
-    }
-
-    @if (Model.Pinned.Count > 0)
-    {
-        <section class="card stack">
-            <h2>Tin nổi bật</h2>
-            <ul class="stack">
-                @foreach (var item in Model.Pinned)
-                {
-                    <li>
-                        <a href="/tin-tuc/@item.Slug"><strong>@item.Title</strong></a>
-                        @if (item.PublishedAt is DateTimeOffset at)
-                        {
-                            <p>@at.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</p>
-                        }
-                    </li>
-                }
-            </ul>
-        </section>
-    }
-
-    <section class="card stack">
-        <h2>Tin mới</h2>
-        @if (Model.Latest.Count == 0)
-        {
-            <p class="empty">Chưa có tin bài được xuất bản.</p>
-        }
-        else
-        {
-            <ul class="stack">
-                @foreach (var item in Model.Latest)
-                {
-                    <li>
-                        <a href="/tin-tuc/@item.Slug">@item.Title</a>
-                        @if (item.PublishedAt is DateTimeOffset at)
-                        {
-                            <span> · @at.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</span>
-                        }
-                    </li>
-                }
-            </ul>
-            <p><a href="/tin-tuc">Xem hết tin tức</a></p>
-        }
-    </section>
-
-    <section class="card stack">
-        <h2>Học liệu số</h2>
-        @if (Model.Materials.Count == 0)
-        {
-            <p class="empty">Chưa có học liệu chung.</p>
-        }
-        else
-        {
-            <ul class="stack">
-                @foreach (var item in Model.Materials)
-                {
-                    <li><a href="/hoc-lieu/@item.Slug">@item.Title</a></li>
-                }
-            </ul>
-        }
-        <p><a href="/hoc-lieu">Xem hết học liệu chung</a></p>
-    </section>
-
-    <section class="card stack">
-        <h2>Sự kiện sắp tới</h2>
-        @if (Model.Upcoming.Count == 0)
-        {
-            <p class="empty">Chưa có sự kiện công khai.</p>
-        }
-        else
-        {
-            <ul class="stack">
-                @foreach (var item in Model.Upcoming)
-                {
-                    <li>
-                        <a href="/su-kien/@item.Slug">@item.Title</a>
-                        <p>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM HH:mm")–@item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm") @item.Location</p>
-                    </li>
-                }
-            </ul>
-            <p><a href="/su-kien">Xem hết sự kiện</a></p>
-        }
-    </section>
+<section class="home-hero" aria-labelledby="hero-title">
+    <div class="home-hero-copy">
+        <span class="eyebrow"><span class="eyebrow-dot"></span> Học tập cộng đồng suốt đời</span>
+        <h1 id="hero-title">Kết nối cộng đồng,<br /><span>lan tỏa tri thức</span><br />xã Tân Trụ</h1>
+        <p class="hero-lead">Cổng thông tin và quản lý học tập cộng đồng giúp người dân dễ dàng tìm kiếm lớp học, sự kiện, học liệu và các dịch vụ của Trung tâm.</p>
+        <div class="hero-actions">
+            <a class="button button-primary" href="/lop-hoc">Xem lớp đang mở đăng ký <span aria-hidden="true">→</span></a>
+            <a class="button button-quiet" href="/tra-cuu">Tra cứu chứng nhận</a>
+        </div>
+        <div class="hero-trust"><span class="trust-check">✓</span><span>Thông tin được cập nhật minh bạch<br /><strong>Phục vụ người dân địa phương</strong></span></div>
+    </div>
+    <div class="hero-visual" aria-label="Minh họa kết nối học tập cộng đồng">
+        <div class="hero-orbit orbit-one"></div>
+        <div class="hero-orbit orbit-two"></div>
+        <div class="hero-visual-icon" aria-hidden="true"><span>✦</span></div>
+        <div class="hero-person person-one"><span></span></div>
+        <div class="hero-person person-two"><span></span></div>
+        <div class="hero-person person-three"><span></span></div>
+        <div class="hero-visual-line"></div>
+        <div class="hero-note hero-note-top"><span class="note-icon">✓</span><span><strong>Học tập thuận tiện</strong><small>Mở rộng cơ hội cho mọi người</small></span></div>
+        <div class="hero-note hero-note-bottom"><span class="note-icon note-qr">⌗</span><span><strong>Đăng ký trực tuyến</strong><small>Quét mã QR để tham gia</small></span></div>
+    </div>
 </section>
+
+<section class="home-stat-strip" aria-label="Tổng quan hoạt động">
+    <div><strong>32</strong><span>Lớp học đang hoạt động</span></div>
+    <div><strong>1.480</strong><span>Học viên tham gia</span></div>
+    <div><strong>09</strong><span>Thôn được phục vụ</span></div>
+    <div><strong>12</strong><span>Câu lạc bộ cộng đồng</span></div>
+</section>
+
+<section class="home-section quick-section" aria-labelledby="quick-title">
+    <div class="section-heading">
+        <div><span class="section-kicker">Dịch vụ công khai</span><h2 id="quick-title">Truy cập nhanh</h2><p>Các dịch vụ và thông tin được người dân tìm kiếm nhiều nhất.</p></div>
+        <a class="section-link" href="/gioi-thieu">Xem tất cả <span aria-hidden="true">→</span></a>
+    </div>
+    <div class="quick-grid">
+        @foreach (var link in quickLinks)
+        {
+            <a class="quick-card" href="@link.Href">
+                <span class="quick-icon" aria-hidden="true">@link.Icon</span>
+                <span class="quick-card-copy"><strong>@link.Title</strong><small>@link.Description</small></span>
+                <span class="quick-arrow" aria-hidden="true">↗</span>
+            </a>
+        }
+    </div>
+</section>
+
+@if (Model.Urgent.Count > 0)
+{
+    <section class="home-alert" aria-label="Thông báo khẩn">
+        <span class="alert-symbol" aria-hidden="true">!</span>
+        <div><strong>Thông báo cần chú ý</strong><span>@Model.Urgent[0].Title</span></div>
+        <a href="/thong-bao/@Model.Urgent[0].Slug">Xem chi tiết →</a>
+    </section>
+}
+
+<section class="home-content-grid">
+    <div class="home-column">
+        <section class="content-block" aria-labelledby="news-title">
+            <div class="section-heading compact"><div><span class="section-kicker">Cập nhật mới nhất</span><h2 id="news-title">Tin tức - Thông báo</h2></div><a class="section-link" href="/tin-tuc">Xem tất cả →</a></div>
+            @if (Model.Pinned.Count == 0 && Model.Latest.Count == 0)
+            {
+                <p class="empty home-empty">Chưa có tin bài được xuất bản.</p>
+            }
+            else
+            {
+                var featured = Model.Pinned.FirstOrDefault() ?? Model.Latest.First();
+                <a class="featured-news" href="/tin-tuc/@featured.Slug"><span class="featured-news-art"><span aria-hidden="true">✦</span></span><span class="featured-news-copy"><small>Tin nổi bật</small><strong>@featured.Title</strong><span>@(featured.Summary ?? "Cập nhật hoạt động mới nhất của Trung tâm và cộng đồng.")</span>@if (featured.PublishedAt is DateTimeOffset at) {<time datetime="@at.ToString("yyyy-MM-dd")">@at.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</time>}</span></a>
+                <div class="news-list">
+                    @foreach (var item in Model.Latest.Where(x => x.Slug != featured.Slug).Take(3))
+                    {<a href="/tin-tuc/@item.Slug"><span class="news-list-dot"></span><span><strong>@item.Title</strong>@if (item.PublishedAt is DateTimeOffset at) {<time>@at.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</time>}</span><span aria-hidden="true">→</span></a>}
+                </div>
+            }
+        </section>
+
+        <section class="content-block" aria-labelledby="materials-title">
+            <div class="section-heading compact"><div><span class="section-kicker">Tài nguyên học tập</span><h2 id="materials-title">Học liệu số nổi bật</h2></div><a class="section-link" href="/hoc-lieu">Xem tất cả →</a></div>
+            @if (Model.Materials.Count == 0)
+            {<p class="empty home-empty">Chưa có học liệu chung.</p>}
+            else
+            {<div class="material-row">@foreach (var item in Model.Materials.Take(3)) {<a class="material-tile" href="/hoc-lieu/@item.Slug"><span class="material-art" aria-hidden="true">▧</span><strong>@item.Title</strong><small>@(item.Summary ?? "Tài liệu học tập cộng đồng")</small></a>}</div>}
+        </section>
+    </div>
+
+    <div class="home-column">
+        <section class="content-block" aria-labelledby="events-title">
+            <div class="section-heading compact"><div><span class="section-kicker">Lịch hoạt động</span><h2 id="events-title">Sự kiện sắp tới</h2></div><a class="section-link" href="/su-kien">Xem lịch đầy đủ →</a></div>
+            @if (Model.Upcoming.Count == 0)
+            {<p class="empty home-empty">Chưa có sự kiện công khai.</p>}
+            else
+            {<div class="event-list">@foreach (var item in Model.Upcoming.Take(3)) {<a class="event-card" href="/su-kien/@item.Slug"><time><strong>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd")</strong><span>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("MMM", System.Globalization.CultureInfo.GetCultureInfo("vi-VN"))</span></time><span><strong>@item.Title</strong><small>⌖ @(item.Location ?? "Trung tâm") · @item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")</small></span><span class="event-arrow" aria-hidden="true">→</span></a>}</div>}
+        </section>
+
+        <aside class="home-register" aria-labelledby="register-title"><div><span class="section-kicker">Sẵn sàng tham gia?</span><h2 id="register-title">Đăng ký lớp học<br />ngay hôm nay</h2><p>Chọn lớp học phù hợp và bắt đầu hành trình học tập cùng cộng đồng.</p><a class="button button-light" href="/lop-hoc">Xem lớp học <span aria-hidden="true">→</span></a></div><div class="register-code" aria-label="Mã QR đăng ký"><span>▦</span><small>Quét để đăng ký</small></div></aside>
+    </div>
+</section>
+
+<section class="home-contact-band"><div><span class="section-kicker">Kết nối với chúng tôi</span><h2>Chung tay xây dựng<br />cộng đồng học tập</h2></div><a class="button button-primary" href="/lien-he">Liên hệ Trung tâm <span aria-hidden="true">→</span></a></section>

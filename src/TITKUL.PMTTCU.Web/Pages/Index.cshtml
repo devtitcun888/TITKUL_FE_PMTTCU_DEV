@@ -85,7 +85,7 @@
             else
             {
                 var featured = Model.Pinned.FirstOrDefault() ?? Model.Latest.First();
-                <a class="featured-news" href="/tin-tuc/@featured.Slug"><span class="featured-news-art"><span aria-hidden="true">✦</span></span><span class="featured-news-copy"><small>Tin nổi bật</small><strong>@featured.Title</strong><span>@(featured.Summary ?? "Cập nhật hoạt động mới nhất của Trung tâm và cộng đồng.")</span>@if (featured.PublishedAt is DateTimeOffset at) {<time datetime="@at.ToString("yyyy-MM-dd")">@at.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</time>}</span></a>
+                <a class="featured-news" href="/tin-tuc/@featured.Slug"><span class="featured-news-art"><span aria-hidden="true">✦</span></span><span class="featured-news-copy"><small>Tin nổi bật</small><strong>@featured.Title</strong><span>@(featured.Summary ?? "Cập nhật hoạt động mới nhất của Trung tâm và cộng đồng.")</span>@if (featured.PublishedAt is DateTimeOffset featuredPublishedAt) {<time datetime="@featuredPublishedAt.ToString("yyyy-MM-dd")">@featuredPublishedAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</time>}</span></a>
                 <div class="news-list">
                     @foreach (var item in Model.Latest.Where(x => x.Slug != featured.Slug).Take(3))
                     {<a href="/tin-tuc/@item.Slug"><span class="news-list-dot"></span><span><strong>@item.Title</strong>@if (item.PublishedAt is DateTimeOffset at) {<time>@at.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</time>}</span><span aria-hidden="true">→</span></a>}

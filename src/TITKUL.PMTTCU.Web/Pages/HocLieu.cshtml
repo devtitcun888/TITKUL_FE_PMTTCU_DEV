@@ -4,19 +4,31 @@
     ViewData["Title"] = "Học liệu số";
 }
 <section class="card stack">
+    <form class="public-filter" method="get" action="/hoc-lieu" role="search">
+        <label for="learning-query">Tìm học liệu</label>
+        <div><input id="learning-query" name="q" type="search" value="@Model.Query" maxlength="80" placeholder="Tên hoặc mô tả học liệu" /><button class="button" type="submit">Tìm</button></div>
+    </form>
     <h1>Học liệu số</h1>
     <p>Học liệu dùng chung. Học liệu của từng lớp nằm ở trang lớp.</p>
-    @if (Model.Items.Count == 0)
+    @if (Model.ErrorMessage is not null)
     {
-        <p class="empty">Chưa có học liệu chung.</p>
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    else if (Model.Items.Count == 0)
+    {
+        <p class="empty" role="status">@(string.IsNullOrWhiteSpace(Model.Query) ? "Chưa có học liệu chung." : "Không tìm thấy học liệu phù hợp.")</p>
     }
     else
     {
         <ul class="stack">
             @foreach (var item in Model.Items)
             {
-                <li><a href="/hoc-lieu/@item.Slug"><strong>@item.Title</strong></a></li>
+                <li>
+                    <a href="/hoc-lieu/@Uri.EscapeDataString(item.Slug)"><strong>@item.Title</strong></a>
+                    @if (!string.IsNullOrWhiteSpace(item.Summary)) { <p>@item.Summary</p> }
+                </li>
             }
         </ul>
     }
+    @await Html.PartialAsync("_PublicPager", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))
 </section>

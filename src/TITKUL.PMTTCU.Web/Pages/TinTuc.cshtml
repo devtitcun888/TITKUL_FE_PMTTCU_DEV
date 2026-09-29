@@ -6,9 +6,22 @@
 
 <section class="card stack">
     <h1>Tin tức</h1>
-    @if (Model.Items.Count == 0)
+    <form class="public-filter" method="get" action="/tin-tuc" role="search">
+        <label for="news-query">Tìm tin tức</label>
+        <div><input id="news-query" name="q" type="search" value="@Model.Query" placeholder="Nhập tiêu đề hoặc từ khóa" /><button class="button" type="submit">Tìm kiếm</button></div>
+        @if (!string.IsNullOrWhiteSpace(Model.Query)) { <a href="/tin-tuc">Xóa tìm kiếm</a> }
+    </form>
+    @if (!string.IsNullOrWhiteSpace(Model.Query))
     {
-        <p class="empty">Chưa có bài viết công khai.</p>
+        <p>Kết quả tìm kiếm cho: <strong>@Model.Query</strong></p>
+    }
+    @if (Model.ErrorMessage is not null)
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    else if (Model.Items.Count == 0)
+    {
+        <p class="empty" role="status">@(string.IsNullOrWhiteSpace(Model.Query) ? "Chưa có bài viết công khai." : "Không tìm thấy tin phù hợp.")</p>
     }
     else
     {
@@ -16,7 +29,10 @@
             @foreach (var item in Model.Items)
             {
                 <li>
-                    <a href="/tin-tuc/@item.Slug"><strong>@item.Title</strong></a>
+                    <a href="/tin-tuc/@Uri.EscapeDataString(item.Slug)">
+                        @if (!string.IsNullOrWhiteSpace(item.ThumbnailUrl ?? item.CoverUrl)) { <img class="cms-cover-thumb" src="@(item.ThumbnailUrl ?? item.CoverUrl)" alt="" width="320" height="180" loading="lazy" decoding="async" /> }
+                        <strong>@item.Title</strong>
+                    </a>
                     <p>@item.CategoryName @if (item.PublishedAt is DateTimeOffset at) { <span>· @at.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</span> }</p>
                     @if (!string.IsNullOrWhiteSpace(item.Summary))
                     {
@@ -26,4 +42,5 @@
             }
         </ul>
     }
+    @await Html.PartialAsync("_PublicPager", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))
 </section>

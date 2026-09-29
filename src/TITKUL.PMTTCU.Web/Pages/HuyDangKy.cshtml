@@ -1,0 +1,26 @@
+@page "/huy-dang-ky"
+@model HuyDangKyModel
+@{
+    ViewData["Title"] = "Hủy đăng ký lớp";
+    ViewData["Description"] = "Gửi yêu cầu hủy đăng ký lớp học cộng đồng trước ngày khai giảng.";
+    ViewData["Robots"] = "noindex, nofollow, noarchive";
+}
+<section class="card stack">
+    <h1>Hủy đăng ký lớp</h1>
+    <p>Chỉ hủy được đăng ký đang chờ và trước ngày khai giảng. Cần mã đăng ký cùng số điện thoại đã dùng khi đăng ký.</p>
+    @if (!string.IsNullOrWhiteSpace(Model.Message)) { <p class="status-note" role="status">@Model.Message</p> }
+    @if (!string.IsNullOrWhiteSpace(Model.Error)) { <p class="alert" role="alert">@Model.Error</p> }
+    <form method="post" class="stack">
+        <div><label for="registrationCode">Mã đăng ký</label><input id="registrationCode" asp-for="RegistrationCode" autocomplete="off" required maxlength="40" /></div>
+        <div><label for="phone">Số điện thoại đã đăng ký</label><input id="phone" asp-for="Phone" type="tel" autocomplete="tel" required maxlength="20" /></div>
+        <button type="submit">Hủy đăng ký</button>
+    </form>
+    <hr />
+    <h2>Tắt nhắc lịch</h2>
+    <p>Bạn có thể tắt SMS, Zalo và email mà không hủy đăng ký lớp.</p>
+    <form method="post" asp-page-handler="DisableReminders" class="stack">
+        <div><label for="reminderRegistrationCode">Mã đăng ký</label><input id="reminderRegistrationCode" asp-for="RegistrationCode" autocomplete="off" required maxlength="40" /></div>
+        <div><label for="reminderPhone">Số điện thoại đã đăng ký</label><input id="reminderPhone" asp-for="Phone" type="tel" autocomplete="tel" required maxlength="20" /></div>
+        <button type="submit">Tắt nhắc lịch</button>
+    </form>
+</section>

@@ -21,6 +21,9 @@ public class DangNhapModel : PageModel
     [BindProperty]
     public string Password { get; set; } = "";
 
+    [BindProperty]
+    public string OtpCode { get; set; } = "";
+
     public string? ErrorMessage { get; private set; }
 
     public void OnGet()
@@ -29,14 +32,20 @@ public class DangNhapModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var token = await _api.LoginAsync(Username, Password);
-        if (token is null)
+        var result = await _api.LoginAsync(Username, Password, string.IsNullOrWhiteSpace(OtpCode) ? null : OtpCode);
+        if (result.Token is null)
         {
-            ErrorMessage = "Đăng nhập không thành công.";
+            ErrorMessage = result.ErrorCode switch
+            {
+                "AUTH_OTP_REQUIRED" => "Tài khoản đã bật xác thực hai bước. Nhập mã 6 số từ ứng dụng xác thực.",
+                "AUTH_OTP_INVALID" => "Mã xác thực không đúng hoặc đã hết hạn.",
+                "AUTH_LOCKED" => "Tài khoản tạm khóa do nhập sai nhiều lần.",
+                _ => "Đăng nhập không thành công. Kiểm tra tài khoản và mật khẩu."
+            };
             return Page();
         }
 
-        Response.Cookies.Append(AdminGateMiddleware.CookieName, token, new CookieOptions
+        Response.Cookies.Append(AdminGateMiddleware.CookieName, result.Token, new CookieOptions
         {
             HttpOnly = true,
             SameSite = SameSiteMode.Lax,

@@ -2,6 +2,7 @@
 @model DangKyCamOnModel
 @{
     ViewData["Title"] = "Đăng ký thành công";
+    ViewData["Robots"] = "noindex, nofollow, noarchive";
 }
 
 <section class="card stack">
@@ -15,6 +16,7 @@
         <p class="status-note" role="status">Đăng ký lớp @(Model.ClassName ?? Model.RegistrationCode) đã được nhận.</p>
         <p>Mã đăng ký: <strong>@Model.RegistrationCode</strong></p>
         <p>Giữ mã này khi đến lớp. Không gửi CCCD qua tin nhắn.</p>
+        <p><a href="/huy-dang-ky?code=@Uri.EscapeDataString(Model.RegistrationCode ?? string.Empty)">Cần hủy đăng ký lớp?</a></p>
     }
     <p class="row-actions">
         <a class="button" href="/lop-hoc">Các lớp đang mở</a>

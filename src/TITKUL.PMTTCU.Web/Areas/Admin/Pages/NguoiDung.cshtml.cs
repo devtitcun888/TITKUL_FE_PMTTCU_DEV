@@ -14,12 +14,15 @@ public class NguoiDungModel : PageModel
     public IReadOnlyList<AccountRow> Items { get; private set; } = [];
     public string? ErrorMessage { get; private set; }
     public string? Notice { get; private set; }
+    public int CurrentPage { get; private set; } = 1;
+    public int PageSize { get; private set; } = 20;
+    public int Total { get; private set; }
     [BindProperty] public string? Username { get; set; }
     [BindProperty] public string? FullName { get; set; }
     [BindProperty] public string? Password { get; set; }
     [BindProperty] public string? Role { get; set; }
 
-    public async Task<IActionResult> OnGetAsync() => await LoadAsync();
+    public async Task<IActionResult> OnGetAsync(int page = 1) => await LoadAsync(page);
 
     public async Task<IActionResult> OnPostAsync()
     {
@@ -47,12 +50,13 @@ public class NguoiDungModel : PageModel
         return await LoadAsync();
     }
 
-    private async Task<IActionResult> LoadAsync()
+    private async Task<IActionResult> LoadAsync(int page = 1)
     {
         if (!CanManage()) return Redirect("/admin/khong-quyen");
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
-        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/admin/users");
+        CurrentPage = Math.Max(1, page);
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/admin/users?page={CurrentPage}&pageSize={PageSize}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         using var response = await _api.HttpClient.SendAsync(request);
         if (!response.IsSuccessStatusCode)
@@ -63,6 +67,9 @@ public class NguoiDungModel : PageModel
 
         var body = await response.Content.ReadFromJsonAsync<AccountList>();
         Items = body?.Items ?? [];
+        CurrentPage = body?.Page ?? CurrentPage;
+        PageSize = body?.PageSize ?? PageSize;
+        Total = body?.Total ?? Items.Count;
         return Page();
     }
 
@@ -70,5 +77,5 @@ public class NguoiDungModel : PageModel
     private string? Token() => Request.Cookies[AdminGateMiddleware.CookieName];
 
     public sealed record AccountRow(Guid Id, string Username, string FullName, string Status, IReadOnlyList<string> Roles);
-    private sealed record AccountList(IReadOnlyList<AccountRow>? Items);
+    private sealed record AccountList(IReadOnlyList<AccountRow>? Items, int? Page, int? PageSize, int? Total);
 }

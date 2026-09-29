@@ -1,0 +1,33 @@
+@page "/admin/lien-he/{id:guid}"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.LienHeChiTietModel
+@{
+    ViewData["Title"] = "Trao đổi phản ánh";
+}
+<section class="card stack">
+    <p><a href="/admin/lien-he">← Danh sách phản ánh</a></p>
+    @if (!string.IsNullOrWhiteSpace(Model.Error))
+    {
+        <p class="alert" role="alert">@Model.Error</p>
+    }
+    @if (Model.Thread is not null)
+    {
+        <h1>@Model.Thread.Item.Title</h1>
+        <p><strong>@Model.Thread.Item.Name</strong> · @Model.Thread.Item.Phone · @Model.Thread.Item.Status</p>
+        <ol class="contact-thread">
+        @foreach (var message in Model.Thread.Messages)
+        {
+            <li>
+                <p><strong>@(message.Sender == "STAFF" ? "Trung tâm" : "Người gửi")</strong> · @message.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                <p>@message.Body</p>
+            </li>
+        }
+        </ol>
+        @if (Model.CanEdit)
+        {
+            <form method="post" class="stack">
+                <div><label for="body">Phản hồi người gửi</label><textarea id="body" asp-for="Body" rows="5" minlength="3" maxlength="4000" required></textarea></div>
+                <button class="button" type="submit">Gửi phản hồi</button>
+            </form>
+        }
+    }
+</section>

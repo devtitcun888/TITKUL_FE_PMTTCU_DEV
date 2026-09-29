@@ -1,16 +1,35 @@
-@page "/admin/cms/bai-viet/sua/{id:guid?}"
+﻿@page "/admin/cms/bai-viet/sua/{id:guid?}"
 @using TITKUL.PMTTCU.Web.Areas.Admin
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsBaiVietChiTietModel
 @{
+    ViewData["UseCmsEditor"] = true;
     ViewData["Title"] = Model.PostId is null ? "Bài mới" : "Biên tập bài viết";
+    if (Model.Preview) Layout = "/Pages/Shared/_Layout.cshtml";
 }
 
+@if (Model.Preview)
+{
+<article class="portal-article wrap">
+    <p><a href="/admin/cms/bai-viet/sua/@Model.PostId">Quay lại biên tập</a> · Bản xem trước, chưa xuất bản</p>
+    <h1>@Model.Title</h1>
+    @if (!string.IsNullOrWhiteSpace(Model.CoverUrl)) { <img class="cms-cover-preview" src="@Model.CoverUrl" alt="Ảnh bìa bài viết" /> }
+    @if (!string.IsNullOrWhiteSpace(Model.Summary)) { <p class="portal-lead">@Model.Summary</p> }
+    <div class="portal-rich-content ck-content">@Html.Raw(Model.PreviewHtml)</div>
+</article>
+}
+else
+{
 <section class="card stack">
     <h1>@(Model.PostId is null ? "Bài mới" : "Biên tập bài viết")</h1>
     <p><a href="/admin/cms/bai-viet">Về danh sách</a></p>
     @if (!string.IsNullOrEmpty(Model.Status))
     {
         <p>Trạng thái: @EducationUi.Status(Model.Status)</p>
+        @if (Model.PublishedAt > DateTimeOffset.UtcNow) { <p role="status">Đã lên lịch xuất bản: @Model.PublishedAt.Value.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm") (giờ Việt Nam).</p> }
+    }
+@if (Model.PostId is Guid previewId)
+    {
+        <p><a class="button" href="/admin/cms/bai-viet/sua/@previewId?preview=true" target="_blank" rel="noopener">Xem trước như trang công khai</a></p>
     }
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
@@ -30,27 +49,40 @@
             </div>
             <div>
                 <label for="title">Tiêu đề</label>
-                <input id="title" name="Title" value="@Model.Title" required maxlength="250" />
+                <input id="title" name="Title" value="@Model.Title" required maxlength="250" data-slug-source data-seo-title-source />
             </div>
             <div>
-                <label for="slug">Đường dẫn</label>
-                <input id="slug" name="Slug" value="@Model.Slug" maxlength="280" />
+                <label for="slug">Đường dẫn (tự gợi ý từ tiêu đề, có thể chỉnh)</label>
+                <input id="slug" name="Slug" value="@Model.Slug" maxlength="280" data-slug-target data-slug-prefix="/tin-tuc/" />
+                <small>Đường dẫn xem trước: <code data-slug-preview>/tin-tuc/@Model.Slug</code></small>
             </div>
             <div>
                 <label for="summary">Tóm tắt / SEO mô tả</label>
-                <textarea id="summary" name="Summary" rows="3">@Model.Summary</textarea>
+                <textarea id="summary" name="Summary" rows="3" data-seo-description-source>@Model.Summary</textarea>
+            </div>
+            <div class="cms-cover-picker">
+                <label for="coverUpload">Ảnh bìa bài viết (PNG/JPEG, tối đa 5 MiB; tự tối ưu cạnh dài tối đa 1.600 px)</label>
+                <input id="coverUpload" type="file" accept="image/png,image/jpeg" data-cms-cover-upload />
+                <input id="coverKey" type="hidden" name="CoverKey" value="@Model.CoverKey" />
+                <input id="thumbnailKey" type="hidden" name="ThumbnailKey" value="@Model.ThumbnailKey" />
+                <p data-cover-status role="status" aria-live="polite"></p>
+                <img class="cms-cover-preview" data-cover-preview src="@Model.CoverUrl" alt="Xem trước ảnh đại diện" hidden="@(string.IsNullOrWhiteSpace(Model.CoverUrl) ? "hidden" : null)" />
+                <button type="button" class="button-quiet" data-cover-clear>Xóa ảnh đại diện</button>
             </div>
             <div>
                 <label for="html">Nội dung HTML</label>
-                <textarea id="html" name="Html" rows="12" required>@Model.Html</textarea>
+                <textarea id="html" name="Html" rows="12" required data-editor="cms">@Model.Html</textarea>
+                <p class="alert" role="alert" data-editor-validation hidden>Nhập nội dung bài viết trước khi lưu.</p>
             </div>
             <div>
                 <label for="seoTitle">SEO tiêu đề (tối đa 70)</label>
-                <input id="seoTitle" name="SeoTitle" value="@Model.SeoTitle" maxlength="70" />
+                <input id="seoTitle" name="SeoTitle" value="@Model.SeoTitle" maxlength="70" data-seo-title-target />
+                <small data-seo-title-count>@((Model.SeoTitle ?? string.Empty).Length)/70 ký tự · hệ thống gợi ý theo tiêu đề</small>
             </div>
             <div>
                 <label for="seoDescription">SEO mô tả (tối đa 170)</label>
-                <input id="seoDescription" name="SeoDescription" value="@Model.SeoDescription" maxlength="170" />
+                <input id="seoDescription" name="SeoDescription" value="@Model.SeoDescription" maxlength="170" data-seo-description-target />
+                <small data-seo-description-count>@((Model.SeoDescription ?? string.Empty).Length)/170 ký tự · hệ thống gợi ý theo tóm tắt</small>
             </div>
             <div>
                 <label for="pinned"><input id="pinned" name="Pinned" type="checkbox" value="true" checked="@(Model.Pinned ? "checked" : null)" /> Ghim lên trang chủ</label>
@@ -64,6 +96,11 @@
                 {
                     <form method="post" asp-page-handler="Publish">
                         <button type="submit">Đăng bài</button>
+                    </form>
+                    <form method="post" asp-page-handler="Schedule" class="row-actions">
+                        <label for="scheduleAt">Hoặc hẹn giờ xuất bản (giờ Việt Nam)</label>
+                        <input id="scheduleAt" name="ScheduleAt" type="datetime-local" required />
+                        <button type="submit">Đặt lịch</button>
                     </form>
                 }
                 else
@@ -81,7 +118,8 @@
         <h2>Xem trước</h2>
         <article class="card">
             <h3>@Model.Title</h3>
-            @Html.Raw(Model.Html)
+            @Html.Raw(Model.PreviewHtml)
         </article>
     }
 </section>
+}

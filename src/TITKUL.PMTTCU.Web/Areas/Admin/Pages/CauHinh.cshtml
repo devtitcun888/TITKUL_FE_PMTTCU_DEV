@@ -1,6 +1,7 @@
-@page "/admin/cau-hinh"
+﻿@page "/admin/cau-hinh"
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CauHinhModel
 @{
+    ViewData["UseCmsEditor"] = true;
     ViewData["Title"] = "Cấu hình cổng";
     var labels = new Dictionary<string, string>
     {
@@ -28,7 +29,7 @@
                 <label for="@pair.Key">@pair.Value</label>
                 @if (pair.Key.StartsWith("page."))
                 {
-                    <textarea id="@pair.Key" name="Value" rows="6">@current</textarea>
+                    <textarea id="@pair.Key" name="Value" rows="6" data-editor="@(pair.Key.StartsWith("page.", StringComparison.Ordinal) ? "cms" : null)">@current</textarea>
                 }
                 else
                 {

@@ -1,0 +1,36 @@
+@page "/khao-sat"
+@model TITKUL.PMTTCU.Web.Pages.KhaoSatModel
+@{
+    ViewData["Title"] = "Khảo sát đang mở";
+}
+
+<section class="card stack">
+    <p class="eyebrow">THAM GIA Ý KIẾN</p>
+    <h1>Khảo sát đang mở</h1>
+    <form class="public-filter" method="get" action="/khao-sat" role="search">
+        <label for="survey-query">Tìm khảo sát</label>
+        <div><input id="survey-query" name="q" type="search" value="@Model.Query" maxlength="80" placeholder="Tên, nội dung hoặc mã khảo sát" /><button class="button" type="submit">Tìm</button></div>
+    </form>
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    else if (Model.Items.Count == 0)
+    {
+        <p class="empty">Hiện chưa có khảo sát phù hợp đang nhận phản hồi.</p>
+    }
+    else
+    {
+        <ul class="content-list">
+            @foreach (var item in Model.Items)
+            {
+                <li>
+                    <a href="/khao-sat/@Uri.EscapeDataString(item.Code)">@item.Title</a>
+                    @if (!string.IsNullOrWhiteSpace(item.Summary)) { <p>@item.Summary</p> }
+                    <time datetime="@item.EndAt.ToString("O")">Nhận ý kiến đến @item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</time>
+                </li>
+            }
+        </ul>
+    }
+    @await Html.PartialAsync("_PublicPager", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))
+</section>

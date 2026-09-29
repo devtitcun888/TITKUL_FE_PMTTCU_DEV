@@ -16,6 +16,7 @@ public class TraCuuModel : PageModel
     public async Task<IActionResult> OnGetAsync(string? ma)
     {
         if (string.IsNullOrWhiteSpace(ma)) return Page();
+        SetPrivateCacheHeaders();
         Code = ma.Trim();
         await LoadAsync(Code);
         return Page();
@@ -23,6 +24,7 @@ public class TraCuuModel : PageModel
 
     public IActionResult OnPost()
     {
+        SetPrivateCacheHeaders();
         if (string.IsNullOrWhiteSpace(Code))
         {
             ErrorMessage = "Nhập mã tra cứu.";
@@ -34,16 +36,31 @@ public class TraCuuModel : PageModel
 
     public async Task<IActionResult> OnGetPdfAsync(string ma)
     {
-        var file = await _api.GetFileAsync($"/api/v1/public/certificates/{ma}/pdf");
-        if (file.Bytes is null) return NotFound();
-        return File(file.Bytes, "application/pdf", file.FileName ?? "chung-nhan.pdf");
+        SetPrivateCacheHeaders();
+        var file = await _api.GetFileResultAsync($"/api/v1/public/certificates/{Uri.EscapeDataString(ma)}/pdf");
+        if (!file.IsSuccess) return file.IsNotFound ? NotFound() : StatusCode(503);
+        return File(file.Bytes!, "application/pdf", file.FileName ?? "chung-nhan.pdf");
     }
 
     private async Task LoadAsync(string code)
     {
-        var body = await _api.GetPublicJsonAsync<ItemEnvelope>($"/api/v1/public/certificates/{code}");
-        Item = body?.Item;
-        if (Item is null) ErrorMessage = "Không tìm thấy mã này.";
+        var result = await _api.GetPublicJsonResultAsync<ItemEnvelope>($"/api/v1/public/certificates/{Uri.EscapeDataString(code)}");
+        Item = result.Value?.Item;
+        if (Item is null)
+        {
+            var notFound = result.IsNotFound || result.IsAvailable;
+            ErrorMessage = notFound
+                ? "Không tìm thấy mã này. Kiểm tra mã và thử lại."
+                : "Chưa thể tra cứu lúc này. Vui lòng thử lại sau.";
+            Response.StatusCode = notFound
+                ? StatusCodes.Status404NotFound
+                : StatusCodes.Status503ServiceUnavailable;
+        }
+    }
+
+    private void SetPrivateCacheHeaders()
+    {
+        PublicPrivatePageHeaders.Apply(Response);
     }
 
     public sealed record Certificate(string LookupCode, string LearnerName, string ClassName, string ClassCode, DateOnly IssuedOn, decimal Percent, string Status);

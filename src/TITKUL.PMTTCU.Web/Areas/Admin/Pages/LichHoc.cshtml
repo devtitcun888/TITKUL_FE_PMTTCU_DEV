@@ -6,63 +6,142 @@
     var days = Enumerable.Range(0, 7).Select(offset => Model.WeekStart.AddDays(offset)).ToArray();
     var prev = Model.WeekStart.AddDays(-7).ToString("yyyy-MM-dd");
     var next = Model.WeekStart.AddDays(7).ToString("yyyy-MM-dd");
+    var monthPrev = Model.MonthStart.AddMonths(-1).ToString("yyyy-MM");
+    var monthNext = Model.MonthStart.AddMonths(1).ToString("yyyy-MM");
+    var today = DateOnly.FromDateTime(DateTime.Today);
+    var totalSessions = Model.Items.Count;
+    var onlineSessions = Model.Items.Count(item => item.Mode.Contains("ONLINE", StringComparison.OrdinalIgnoreCase) || item.Mode.Contains("TRỰC TUYẾN", StringComparison.OrdinalIgnoreCase));
+    var classesCount = Model.Items.Select(item => item.ClassId).Distinct().Count();
 }
 
-<section class="card stack">
-    <h1>Lịch học tuần</h1>
-    <p class="row-actions">
-        <a class="button button-quiet" href="/admin/lich-hoc?week=@prev">Tuần trước</a>
-        <span>@Model.WeekStart.ToString("dd/MM") – @Model.WeekStart.AddDays(6).ToString("dd/MM/yyyy")</span>
-        <a class="button button-quiet" href="/admin/lich-hoc?week=@next">Tuần sau</a>
-    </p>
+<section class="admin-education-page admin-schedule-page">
+    <header class="education-page-heading">
+        <div>
+            <p class="education-eyebrow">ĐÀO TẠO &amp; NGƯỜI HỌC</p>
+            <h1>Lịch học</h1>
+            <p class="education-page-description">Theo dõi và điều phối lịch học theo tuần hoặc tháng.</p>
+        </div>
+        <nav class="schedule-heading-controls" aria-label="Điều hướng lịch học">
+            @if (Model.MonthView)
+            {
+                <a class="education-cancel-button" href="/admin/lich-hoc?view=month&amp;month=@monthPrev" aria-label="Tháng trước">‹</a>
+                <span class="schedule-range">@Model.MonthStart.ToString("MM/yyyy")</span>
+                <a class="education-cancel-button" href="/admin/lich-hoc?view=month&amp;month=@monthNext" aria-label="Tháng sau">›</a>
+                <a class="education-cancel-button" href="/admin/lich-hoc?view=month&amp;month=@today.ToString("yyyy-MM")">Hôm nay</a>
+                <a class="education-cancel-button" href="/admin/lich-hoc?week=@today.ToString("yyyy-MM-dd")">Tuần</a>
+            }
+            else
+            {
+                <a class="education-cancel-button" href="/admin/lich-hoc?week=@prev" aria-label="Tuần trước">‹</a>
+                <span class="schedule-range">@Model.WeekStart.ToString("dd/MM") – @Model.WeekStart.AddDays(6).ToString("dd/MM/yyyy")</span>
+                <a class="education-cancel-button" href="/admin/lich-hoc?week=@next" aria-label="Tuần sau">›</a>
+                <a class="education-cancel-button" href="/admin/lich-hoc?week=@today.ToString("yyyy-MM-dd")">Hôm nay</a>
+                <a class="education-cancel-button" href="/admin/lich-hoc?view=month&amp;month=@Model.MonthStart.ToString("yyyy-MM")">Tháng</a>
+            }
+        </nav>
+    </header>
+
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <p class="education-alert" role="alert">@Model.ErrorMessage</p>
     }
-    <div class="week-grid" aria-hidden="false">
-        @foreach (var day in days)
-        {
-            <div class="week-day">
-                <h2>@EducationUi.Weekday(day) @day.ToString("dd/MM")</h2>
-                @foreach (var item in Model.ForDay(day))
-                {
-                    <a class="session-chip" href="/admin/diem-danh/@item.Id">
-                        <strong>@(item.ClassCode ?? item.ClassName)</strong>
-                        <span>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")–@item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")</span>
-                        <span>@item.Title — @EducationUi.Status(item.Status)</span>
-                    </a>
-                }
-            </div>
-        }
-    </div>
-    <div class="week-list">
-        @if (Model.Items.Count == 0)
-        {
-            <p class="empty">Tuần này chưa có buổi học.</p>
-        }
-        else
-        {
+
+    <section class="schedule-summary" aria-label="Tổng quan lịch học">
+        <div class="schedule-summary-card"><span class="schedule-summary-icon" aria-hidden="true">▦</span><div><strong>@totalSessions</strong><span>Buổi học trong kỳ</span></div></div>
+        <div class="schedule-summary-card"><span class="schedule-summary-icon" aria-hidden="true">◷</span><div><strong>@classesCount</strong><span>Lớp có lịch học</span></div></div>
+        <div class="schedule-summary-card"><span class="schedule-summary-icon" aria-hidden="true">↗</span><div><strong>@onlineSessions</strong><span>Buổi học trực tuyến</span></div></div>
+    </section>
+
+    @if (Model.Items.Count == 0)
+    {
+        <section class="education-table-card"><div class="education-empty"><span aria-hidden="true">▦</span><strong>Chưa có lịch học trong khoảng thời gian này</strong><p>Chọn tuần hoặc tháng khác để xem lịch đã được xếp.</p></div></section>
+    }
+    else if (Model.MonthView)
+    {
+        <div class="month-grid" aria-label="Lịch học tháng @Model.MonthStart.ToString("MM/yyyy")">
+            @foreach (var label in new[] { "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật" })
+            {
+                <strong class="month-weekday">@label</strong>
+            }
+            @foreach (var day in Model.CalendarDays())
+            {
+                var sessions = Model.ForDay(day);
+                <section class="month-day @(day.Month == Model.MonthStart.Month ? "" : "month-day-outside")" data-calendar-day="@day.ToString("yyyy-MM-dd")" aria-label="@day.ToString("dd/MM/yyyy"), @sessions.Count buổi học">
+                    <h2>@day.ToString("dd")</h2>
+                    @foreach (var item in sessions.Take(3))
+                    {
+                        <a class="month-session" href="/admin/diem-danh/@item.Id" title="@item.Title" draggable="@(Model.CanManage ? "true" : "false")" data-session-id="@item.Id">
+                            <time>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")</time>
+                            <span>@(item.ClassCode ?? item.ClassName ?? item.Title)</span>
+                        </a>
+                    }
+                    @if (sessions.Count > 3)
+                    {
+                        <span class="month-more">+@(sessions.Count - 3) buổi khác</span>
+                    }
+                </section>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="week-grid" aria-label="Lịch học theo tuần">
+            @foreach (var day in days)
+            {
+                <section class="week-day">
+                    <h2>@EducationUi.Weekday(day) @day.ToString("dd/MM")</h2>
+                    @foreach (var item in Model.ForDay(day))
+                    {
+                        <a class="session-chip" href="/admin/diem-danh/@item.Id">
+                            <strong>@(item.ClassCode ?? item.ClassName)</strong>
+                            <span>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")–@item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")</span>
+                            <span>@item.Title · @EducationUi.Status(item.Status)</span>
+                        </a>
+                    }
+                </section>
+            }
+        </div>
+        <div class="week-list">
             @foreach (var day in days)
             {
                 var rows = Model.ForDay(day);
                 <h2>@EducationUi.Weekday(day) @day.ToString("dd/MM")</h2>
                 @if (rows.Count == 0)
                 {
-                    <p class="status-note">Không có buổi.</p>
+                    <p class="status-note">Không có buổi học.</p>
                 }
                 else
                 {
                     <ul>
-                        @foreach (var item in rows)
-                        {
-                            <li>
-                                <a href="/admin/diem-danh/@item.Id">@(item.ClassCode ?? item.ClassName) — @item.Title</a>
-                                <span>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")–@item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm") · @EducationUi.Status(item.Mode) · @EducationUi.Status(item.Status)</span>
-                            </li>
-                        }
+                    @foreach (var item in rows)
+                    {
+                        <li>
+                            <a href="/admin/diem-danh/@item.Id"><strong>@(item.ClassCode ?? item.ClassName)</strong> — @item.Title</a>
+                            <span>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")–@item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm") · @EducationUi.Status(item.Mode) · @EducationUi.Status(item.Status)</span>
+                        </li>
+                    }
                     </ul>
                 }
             }
-        }
-    </div>
+        </div>
+    }
 </section>
+@if (Model.MonthView && Model.CanManage)
+{
+    @foreach (var item in Model.Items)
+    {
+        <form method="post" asp-page-handler="Move" data-session-form="@item.Id" hidden>
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@item.Id" />
+            <input type="hidden" name="targetDay" />
+            <input type="hidden" name="startAt" value="@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("o")" />
+            <input type="hidden" name="endAt" value="@item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("o")" />
+            <input type="hidden" name="roomId" value="@item.RoomId" />
+            <input type="hidden" name="title" value="@item.Title" />
+            <input type="hidden" name="mode" value="@item.Mode" />
+            <input type="hidden" name="meetingUrl" value="@item.MeetingUrl" />
+            <input type="hidden" name="note" value="@item.Note" />
+        </form>
+    }
+    <script src="~/js/admin-calendar-drag.js" asp-append-version="true" defer></script>
+}

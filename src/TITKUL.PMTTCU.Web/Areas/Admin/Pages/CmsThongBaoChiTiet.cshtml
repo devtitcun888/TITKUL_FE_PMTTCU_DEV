@@ -1,16 +1,34 @@
-@page "/admin/cms/thong-bao/sua/{id:guid?}"
+﻿@page "/admin/cms/thong-bao/sua/{id:guid?}"
 @using TITKUL.PMTTCU.Web.Areas.Admin
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsThongBaoChiTietModel
 @{
+    ViewData["UseCmsEditor"] = true;
     ViewData["Title"] = Model.NoticeId is null ? "Thông báo mới" : "Biên tập thông báo";
+    if (Model.Preview) Layout = "/Pages/Shared/_Layout.cshtml";
 }
 
+@if (Model.Preview)
+{
+<article class="portal-article wrap">
+    <p><a href="/admin/cms/thong-bao/sua/@Model.NoticeId">Quay lại biên tập</a> · Bản xem trước, chưa xuất bản</p>
+    <h1>@Model.Title</h1>
+    <p>@Model.Level · @Model.VisibleTo</p>
+    <div class="portal-rich-content ck-content">@Html.Raw(Model.PreviewHtml)</div>
+</article>
+}
+else
+{
 <section class="card stack">
     <h1>@(Model.NoticeId is null ? "Thông báo mới" : "Biên tập thông báo")</h1>
     <p><a href="/admin/cms/thong-bao">Về danh sách</a></p>
     @if (!string.IsNullOrEmpty(Model.Status))
     {
         <p>Trạng thái: @EducationUi.Status(Model.Status)</p>
+        @if (Model.PublishedAt > DateTimeOffset.UtcNow) { <p role="status">Đã lên lịch xuất bản: @Model.PublishedAt.Value.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm") (giờ Việt Nam).</p> }
+    }
+@if (Model.NoticeId is Guid previewId)
+    {
+        <p><a class="button" href="/admin/cms/thong-bao/sua/@previewId?preview=true" target="_blank" rel="noopener">Xem trước như trang công khai</a></p>
     }
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
@@ -21,11 +39,12 @@
         <form method="post" asp-page-handler="Save" class="stack">
             <div>
                 <label for="title">Tiêu đề</label>
-                <input id="title" name="Title" value="@Model.Title" required maxlength="250" />
+                <input id="title" name="Title" value="@Model.Title" required maxlength="250" data-slug-source />
             </div>
             <div>
-                <label for="slug">Đường dẫn</label>
-                <input id="slug" name="Slug" value="@Model.Slug" maxlength="280" />
+                <label for="slug">Đường dẫn (tự gợi ý từ tiêu đề, có thể chỉnh)</label>
+                <input id="slug" name="Slug" value="@Model.Slug" maxlength="280" data-slug-target data-slug-prefix="/thong-bao/" />
+                <small>Đường dẫn xem trước: <code data-slug-preview>/thong-bao/@Model.Slug</code></small>
             </div>
             <div>
                 <label for="level">Mức</label>
@@ -44,7 +63,8 @@
             </div>
             <div>
                 <label for="html">Nội dung HTML</label>
-                <textarea id="html" name="Html" rows="8" required>@Model.Html</textarea>
+                <textarea id="html" name="Html" rows="8" required data-editor="cms">@Model.Html</textarea>
+                <p class="alert" role="alert" data-editor-validation hidden>Nhập nội dung thông báo trước khi lưu.</p>
             </div>
             <button type="submit">Lưu nháp</button>
         </form>
@@ -55,6 +75,11 @@
                 {
                     <form method="post" asp-page-handler="Publish">
                         <button type="submit">Đăng thông báo</button>
+                    </form>
+                    <form method="post" asp-page-handler="Schedule" class="row-actions">
+                        <label for="scheduleAt">Hoặc hẹn giờ xuất bản (giờ Việt Nam)</label>
+                        <input id="scheduleAt" name="ScheduleAt" type="datetime-local" required />
+                        <button type="submit">Đặt lịch</button>
                     </form>
                 }
                 else
@@ -72,7 +97,8 @@
         <h2>Xem trước</h2>
         <article class="card">
             <h3>@Model.Title</h3>
-            @Html.Raw(Model.Html)
+            @Html.Raw(Model.PreviewHtml)
         </article>
     }
 </section>
+}

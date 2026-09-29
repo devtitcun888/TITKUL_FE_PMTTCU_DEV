@@ -1,4 +1,4 @@
-@page "/admin/lop-hoc/{id:guid}"
+﻿@page "/admin/lop-hoc/{id:guid}"
 @using TITKUL.PMTTCU.Web.Areas.Admin
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.LopHocChiTietModel
 @{
@@ -10,6 +10,7 @@
     <p class="row-actions">
         <a href="/admin/lop-hoc">Về danh sách</a>
         <a href="/admin/lop-hoc/@Model.Item?.Id/chung-nhan">Chứng nhận</a>
+        <a href="/admin/lop-hoc/@Model.Item?.Id/don-phep">Đơn xin phép</a>
     </p>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
@@ -27,7 +28,9 @@
                 <p class="row-actions">
                     <a class="button" href="/admin/lop-hoc/@Model.Item.Id?handler=Qr">Tải PNG</a>
                     <a href="/dang-ky/@Model.Item.Code">Mở form công khai</a>
+                    <button type="button" class="button" data-copy-url="/dang-ky/@Model.Item.Code">Sao chép liên kết đăng ký</button>
                 </p>
+                <p data-copy-feedback role="status" aria-live="polite"></p>
             </div>
         }
         @if (Model.CanEdit)
@@ -53,9 +56,13 @@
                     </select>
                 </div>
                 <div>
-                    <label for="code">Mã lớp</label>
-                    <input id="code" name="Code" value="@Model.Code" required maxlength="60" />
+                    <label for="clubId">Câu lạc bộ (nếu có)</label>
+                    <select id="clubId" name="ClubId">
+                        <option value="">Không thuộc câu lạc bộ</option>
+                        @foreach (var club in Model.Clubs) { <option value="@club.Id" selected="@(Model.ClubId == club.Id ? "selected" : null)">@club.Code — @club.Name</option> }
+                    </select>
                 </div>
+                <p class="status-note"><strong>Mã lớp:</strong> <code>@Model.Item.Code</code> · Mã không thay đổi sau khi tạo.</p>
                 <div>
                     <label for="name">Tên lớp</label>
                     <input id="name" name="Name" value="@Model.Name" required maxlength="250" />
@@ -146,6 +153,47 @@
                     </select>
                 </div>
                 <button type="submit">Thêm giảng viên</button>
+            </form>
+        }
+
+        @if (Model.CanManage)
+        {
+            <h2>Cộng tác viên, giáo viên theo biểu mẫu</h2>
+            @if (Model.AssignedCollaborators.Count == 0)
+            {
+                <p class="empty">Chưa phân công nhân sự từ danh mục cộng tác viên.</p>
+            }
+            else
+            {
+                <ul>
+                    @foreach (var person in Model.AssignedCollaborators)
+                    {
+                        <li class="row-actions">
+                            <span>@person.FullName@(string.IsNullOrWhiteSpace(person.WorkUnit) ? "" : " — " + person.WorkUnit)</span>
+                            <form method="post" asp-page-handler="RemoveCollaborator">
+                                <input type="hidden" name="collaboratorId" value="@person.CollaboratorId" />
+                                <button type="submit" class="button-quiet">Gỡ</button>
+                            </form>
+                        </li>
+                    }
+                </ul>
+            }
+            <form method="post" asp-page-handler="AssignCollaborator" class="stack">
+                <div>
+                    <label for="classCollaboratorId">Phân công cộng tác viên, giáo viên</label>
+                    <select id="classCollaboratorId" name="ClassCollaboratorId" required>
+                        <option value="">Chọn người trong danh mục</option>
+                        @foreach (var person in Model.Collaborators)
+                        {
+                            <option value="@person.Id">@person.FullName@(string.IsNullOrWhiteSpace(person.WorkUnit) ? "" : " — " + person.WorkUnit)</option>
+                        }
+                    </select>
+                    @if (Model.Collaborators.Count == 0)
+                    {
+                        <small>Thêm hồ sơ tại mục Nhân sự, cộng tác viên trước khi phân công.</small>
+                    }
+                </div>
+                <button type="submit" disabled="@(Model.Collaborators.Count == 0 ? "disabled" : null)">Phân công</button>
             </form>
         }
 
@@ -299,7 +347,8 @@
                 </div>
                 <div>
                     <label for="materialFile">Tệp PDF hoặc ảnh</label>
-                    <input id="materialFile" name="MaterialFile" type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" required />
+                    <input id="materialFile" name="MaterialFile" type="file" data-file-preview="20971520" data-image-max="5242880" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" required />
+                    <small>Ảnh tối đa 5 MiB; PDF tối đa 20 MiB.</small><small data-file-preview-status aria-live="polite"></small>
                 </div>
                 <div>
                     <label>

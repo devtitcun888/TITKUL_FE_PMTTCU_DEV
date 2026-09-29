@@ -9,14 +9,18 @@ public class LopHocPublicModel : PageModel
     public LopHocPublicModel(BackendApiClient api) => _api = api;
     public IReadOnlyList<Item> Items { get; private set; } = [];
     public string? ErrorMessage { get; private set; }
+    public string? Query { get; private set; }
 
-    public async Task OnGetAsync()
+    public async Task OnGetAsync(string? q)
     {
-        var body = await _api.GetPublicJsonAsync<ListEnvelope<Item>>("/api/v1/public/classes/open");
+        Query = q?.Trim();
+        var path = "/api/v1/public/classes/open?limit=100";
+        if (!string.IsNullOrWhiteSpace(Query)) path += "&q=" + Uri.EscapeDataString(Query);
+        var body = await _api.GetPublicJsonAsync<ListEnvelope<Item>>(path);
         if (body is null) ErrorMessage = "Không tải được danh sách lớp.";
         Items = body?.Items ?? [];
     }
 
-    public sealed record Item(string Code, string Name, string ProgramName, DateOnly StartDate, DateOnly EndDate, int Remaining, bool CanRegister);
+    public sealed record Item(string Code, string Name, string ProgramName, DateOnly StartDate, DateOnly EndDate, int Remaining, bool CanRegister, string? ClosedReason, DateTimeOffset? RegistrationClosesAt = null);
     private sealed record ListEnvelope<T>(IReadOnlyList<T>? Items);
 }

@@ -26,6 +26,10 @@
             <button type="submit">Tạo nháp</button>
         </form>
     }
+    <form class="public-filter" method="get" action="/admin/cms/album">
+        <label for="album-kind-filter">Lọc loại thư viện</label>
+        <div><select id="album-kind-filter" name="kind"><option value="">Tất cả</option><option value="IMAGE" selected="@(Model.FilterKind == "IMAGE")">Ảnh</option><option value="VIDEO_LINK" selected="@(Model.FilterKind == "VIDEO_LINK")">Video</option><option value="HOC_LIEU" selected="@(Model.FilterKind == "HOC_LIEU")">Học liệu</option></select><button class="button" type="submit">Lọc</button></div>
+    </form>
     @if (Model.Items.Count == 0)
     {
         <p class="empty">Chưa có album.</p>
@@ -50,3 +54,4 @@
         </div>
     }
 </section>
+@await Html.PartialAsync("/Pages/Shared/_PublicPager.cshtml", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))

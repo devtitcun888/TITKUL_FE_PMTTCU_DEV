@@ -2,9 +2,11 @@
 @model TITKUL.PMTTCU.Web.Pages.KhaoSatCamOnModel
 @{
     ViewData["Title"] = "Đã gửi khảo sát";
+    ViewData["Robots"] = "noindex, nofollow, noarchive";
 }
 <section class="card stack">
     <h1>Đã ghi nhận phiếu khảo sát</h1>
-    <p>Cảm ơn bạn đã dành thời gian trả lời.</p>
+    <p>@(string.IsNullOrWhiteSpace(Model.Thanks) ? "Cảm ơn bạn đã dành thời gian trả lời." : Model.Thanks)</p>
+    <p><a href="/khao-sat">Xem khảo sát đang mở</a></p>
     <p><a href="/">Về trang chủ</a></p>
 </section>

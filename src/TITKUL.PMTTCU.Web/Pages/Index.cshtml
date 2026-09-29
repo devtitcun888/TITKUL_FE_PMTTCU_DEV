@@ -2,106 +2,417 @@
 @model IndexModel
 @{
     ViewData["Title"] = "Trang chủ";
-    ViewData["Description"] = "Cổng thông tin Trung tâm cung ứng dịch vụ sự nghiệp công xã Tân Trụ — học tập cộng đồng, lớp học, học liệu và thông tin địa phương.";
+    ViewData["Description"] = "Cổng thông tin học tập cộng đồng xã Tân Trụ: lớp học, tin tức, hoạt động, học liệu và dịch vụ dành cho người dân.";
     ViewData["BodyClass"] = "home-page";
 
-    var primaryActions = new[]
-    {
-        new { Icon = "▣", Title = "Lớp học đang mở", Description = "Xem lịch và đăng ký tham gia", Href = "/lop-hoc", Tone = "blue", Status = "Đang mở" },
-        new { Icon = "▦", Title = "Lịch hoạt động", Description = "Sự kiện, câu lạc bộ, lịch học", Href = "/su-kien", Tone = "green", Status = "Cập nhật thường xuyên" },
-        new { Icon = "✓", Title = "Tra cứu chứng nhận", Description = "Kiểm tra chứng nhận hoàn thành", Href = "/tra-cuu", Tone = "purple", Status = "Nhanh chóng" },
-        new { Icon = "⌁", Title = "Khảo sát nhu cầu học tập", Description = "Gửi nhu cầu cho Trung tâm", Href = "/lien-he", Tone = "teal", Status = "Ý kiến của bạn quan trọng" }
-    };
-
+    var featured = Model.Pinned.FirstOrDefault() ?? Model.Latest.FirstOrDefault();
+    var latestPosts = Model.Latest
+        .Where(item => featured is null || item.Slug != featured.Slug)
+        .DistinctBy(item => item.Slug)
+        .Take(10)
+        .ToArray();
+    var localTime = TimeSpan.FromHours(7);
 }
 
-<section class="home-hero" aria-labelledby="hero-title">
-    <div class="home-hero-copy">
-        <span class="eyebrow"><span class="eyebrow-dot"></span> Học tập cộng đồng suốt đời</span>
-        <h1 id="hero-title">Cổng học tập cộng đồng<br /><span>xã Tân Trụ</span></h1>
-        <p class="hero-lead">Tìm lớp học, đăng ký tham gia, tra cứu chứng nhận và cập nhật hoạt động mới nhất.</p>
-        <div class="hero-actions">
-            <a class="button button-primary" href="/lop-hoc">Xem lớp đang mở đăng ký <span aria-hidden="true">→</span></a>
-            <a class="button button-quiet" href="/tra-cuu">Tra cứu chứng nhận</a>
+<section class="portal-home-intro" aria-labelledby="home-intro-title">
+    <div class="portal-home-intro-copy">
+        <p class="portal-home-kicker">CỔNG THÔNG TIN HỌC TẬP CỘNG ĐỒNG</p>
+        <h1 id="home-intro-title">Học tập suốt đời, gần gũi với người dân</h1>
+        <p>Trung tâm kết nối người dân với lớp học, hoạt động cộng đồng và nguồn học liệu tại địa phương.</p>
+        <div class="portal-home-actions">
+            <a class="portal-home-action-primary" href="/lop-hoc">Tìm lớp đang tuyển sinh <span aria-hidden="true">→</span></a>
+            <a class="portal-home-action-secondary" href="/khao-sat">Chia sẻ nhu cầu học tập</a>
         </div>
-        <div class="hero-trust"><span class="trust-check">✓</span><span>Thông tin được cập nhật minh bạch<br /><strong>Phục vụ người dân địa phương</strong></span></div>
     </div>
-    <div class="hero-visual" aria-label="Minh họa kết nối học tập cộng đồng">
-        <div class="hero-orbit orbit-one"></div>
-        <div class="hero-orbit orbit-two"></div>
-        <div class="hero-visual-icon" aria-hidden="true"><span>✦</span></div>
-        <div class="hero-person person-one"><span></span></div>
-        <div class="hero-person person-two"><span></span></div>
-        <div class="hero-person person-three"><span></span></div>
-        <div class="hero-visual-line"></div>
-        <div class="hero-note hero-note-top"><span class="note-icon">✓</span><span><strong>Học tập thuận tiện</strong><small>Mở rộng cơ hội cho mọi người</small></span></div>
-        <div class="hero-note hero-note-bottom"><span class="note-icon note-qr">⌗</span><span><strong>Đăng ký trực tuyến</strong><small>Quét mã QR để tham gia</small></span></div>
-    </div>
+    <address class="portal-home-contact">
+        <strong>Liên hệ Trung tâm</strong>
+        @if (!string.IsNullOrWhiteSpace(Model.Address)) { <span>@Model.Address</span> }
+        @if (!string.IsNullOrWhiteSpace(Model.TelephoneHref)) { <a href="tel:@Model.TelephoneHref">Gọi @Model.Hotline</a> }
+        @if (!string.IsNullOrWhiteSpace(Model.WorkingHours)) { <span>Giờ làm việc: @Model.WorkingHours</span> }
+        @if (!string.IsNullOrWhiteSpace(Model.MapsUrl)) { <a href="@Model.MapsUrl" target="_blank" rel="noopener noreferrer">Mở địa chỉ trên bản đồ <span aria-hidden="true">↗</span></a> }
+        else { <a href="/lien-he">Xem thông tin liên hệ <span aria-hidden="true">→</span></a> }
+    </address>
 </section>
 
-<section class="home-section quick-section" aria-labelledby="quick-title">
-    <div class="section-heading">
-        <div><span class="section-kicker">Tác vụ ưu tiên</span><h2 id="quick-title">Việc bạn cần làm</h2><p>Các dịch vụ chính được đặt ở vị trí dễ thấy nhất.</p></div>
-    </div>
-    <div class="quick-grid action-grid">
-        @foreach (var link in primaryActions)
-        {
-            <a class="quick-card action-card action-card-@link.Tone" href="@link.Href">
-                <span class="quick-icon" aria-hidden="true">@link.Icon</span>
-                <span class="quick-card-copy"><strong>@link.Title</strong><small>@link.Description</small></span>
-                <span class="action-status">@link.Status</span>
-                <span class="quick-arrow" aria-hidden="true">↗</span>
-            </a>
-        }
-    </div>
-</section>
-
-@if (Model.Urgent.Count > 0)
+@if (Model.HomeUnavailable)
 {
-    <section class="home-alert" aria-label="Thông báo khẩn">
-        <span class="alert-symbol" aria-hidden="true">!</span>
-        <div><strong>Thông báo cần chú ý</strong><span>@Model.Urgent[0].Title</span></div>
-        <a href="/thong-bao/@Model.Urgent[0].Slug">Xem chi tiết →</a>
-    </section>
+    <p class="alert" role="alert">Chưa thể tải đầy đủ nội dung trang chủ. Vui lòng thử tải lại sau.</p>
 }
 
-<section class="home-content-grid">
-    <div class="home-column">
-        <section class="content-block" aria-labelledby="news-title">
-            <div class="section-heading compact"><div><span class="section-kicker">Cập nhật mới nhất</span><h2 id="news-title">Tin tức - Thông báo</h2></div><a class="section-link" href="/tin-tuc">Xem tất cả →</a></div>
-            @if (Model.Pinned.Count == 0 && Model.Latest.Count == 0)
+<div class="portal-home-grid">
+    <div class="portal-home-main">
+        <section class="portal-module portal-feature-module" aria-labelledby="feature-title">
+            <div class="portal-module-heading">
+                <h2 id="feature-title">Thông tin nổi bật</h2>
+                <a href="/tin-tuc">Xem tin tức <span aria-hidden="true">→</span></a>
+            </div>
+            @if (featured is not null)
             {
-                <p class="empty home-empty">Chưa có tin bài được xuất bản.</p>
+                <a class="portal-feature" href="/tin-tuc/@Uri.EscapeDataString(featured.Slug)">
+                    @if (!string.IsNullOrWhiteSpace(featured.CoverUrl))
+                    {
+                        <img class="portal-feature-image" src="@featured.CoverUrl" alt="" width="1200" height="630" fetchpriority="high" decoding="async" />
+                    }
+                    else
+                    {
+                        <span class="portal-feature-visual" aria-hidden="true">
+                            <span class="feature-visual-lines"></span>
+                            <span class="feature-visual-mark">TT</span>
+                            <span class="feature-visual-word">HỌC TẬP<br />CỘNG ĐỒNG</span>
+                        </span>
+                    }
+                    <span class="portal-feature-copy">
+                        <span class="portal-feature-tag">Tin nổi bật</span>
+                        <strong>@featured.Title</strong>
+                        <span class="portal-feature-summary">@(featured.Summary ?? "Thông tin mới từ Trung tâm học tập cộng đồng.")</span>
+                        @if (featured.PublishedAt is DateTimeOffset publishedAt)
+                        {
+                            <time datetime="@publishedAt.ToString("yyyy-MM-dd")">@publishedAt.ToOffset(localTime).ToString("dd/MM/yyyy")</time>
+                        }
+                    </span>
+                </a>
             }
             else
             {
-                var featured = Model.Pinned.FirstOrDefault() ?? Model.Latest.First();
-                <a class="featured-news" href="/tin-tuc/@featured.Slug"><span class="featured-news-art"><span aria-hidden="true">✦</span></span><span class="featured-news-copy"><small>Tin nổi bật</small><strong>@featured.Title</strong><span>@(featured.Summary ?? "Cập nhật hoạt động mới nhất của Trung tâm và cộng đồng.")</span>@if (featured.PublishedAt is DateTimeOffset featuredPublishedAt) {<time datetime="@featuredPublishedAt.ToString("yyyy-MM-dd")">@featuredPublishedAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</time>}</span></a>
-                <div class="news-list">
-                    @foreach (var item in Model.Latest.Where(x => x.Slug != featured.Slug).Take(3))
-                    {<a href="/tin-tuc/@item.Slug"><span class="news-list-dot"></span><span><strong>@item.Title</strong>@if (item.PublishedAt is DateTimeOffset at) {<time>@at.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</time>}</span><span aria-hidden="true">→</span></a>}
+                <div class="portal-empty">Chưa có tin bài được xuất bản. Nội dung sẽ được Trung tâm cập nhật tại đây.</div>
+            }
+        </section>
+
+        <div class="portal-module-pair">
+            <section class="portal-module" aria-labelledby="notice-title">
+                <div class="portal-module-heading">
+                    <h2 id="notice-title">Thông báo</h2>
+                    <a href="/thong-bao">Xem thêm <span aria-hidden="true">→</span></a>
+                </div>
+                @if (Model.Notices.Count == 0)
+                {
+                    <div class="portal-empty">Chưa có thông báo mới.</div>
+                }
+                else
+                {
+                    <ul class="portal-list portal-home-scroll portal-home-notices-scroll" aria-label="Danh sách thông báo" tabindex="0">
+                        @foreach (var item in Model.Notices.Take(10))
+                        {
+                            <li><a href="/thong-bao/@Uri.EscapeDataString(item.Slug)">@item.Title</a></li>
+                        }
+                    </ul>
+                }
+            </section>
+
+            <section class="portal-module" aria-labelledby="documents-title">
+                <div class="portal-module-heading">
+                    <h2 id="documents-title">Văn bản</h2>
+                    <a href="/van-ban">Xem thêm <span aria-hidden="true">→</span></a>
+                </div>
+                @if (Model.DocumentsUnavailable)
+                {
+                    <div class="alert" role="alert">Chưa thể tải danh sách văn bản.</div>
+                }
+                else if (Model.Documents.Count == 0)
+                {
+                    <div class="portal-empty">Chưa có văn bản công khai.</div>
+                }
+                else
+                {
+                    <ul class="portal-list portal-home-scroll portal-home-documents-scroll" aria-label="Danh sách văn bản" tabindex="0">
+                        @foreach (var item in Model.Documents.Take(10))
+                        {
+                            <li>
+                                <a href="/van-ban?handler=Tai&amp;id=@item.Id">@item.Title</a>
+                                @if (!string.IsNullOrWhiteSpace(item.Issuer)) { <span>@item.Issuer</span> }
+                                @if (item.IssuedOn is DateOnly issuedOn)
+                                {
+                                    <time datetime="@issuedOn.ToString("yyyy-MM-dd")">@issuedOn.ToString("dd/MM/yyyy")</time>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+        </div>
+
+        <section class="portal-module portal-classes" aria-labelledby="classes-title">
+            <div class="portal-module-heading">
+                <h2 id="classes-title">Lớp học đang mở</h2>
+                <a href="/lop-hoc">Tất cả lớp học <span aria-hidden="true">→</span></a>
+            </div>
+            @if (Model.Classes.Count == 0)
+            {
+                <div class="portal-empty">Hiện chưa có lớp công khai đang mở. Xem danh sách lớp để theo dõi đợt tuyển sinh tiếp theo.</div>
+            }
+            else
+            {
+                <div class="portal-class-list portal-home-scroll" role="region" aria-label="Danh sách lớp học đang mở" tabindex="0">
+                    @foreach (var item in Model.Classes.Take(10))
+                    {
+                        <article class="portal-class">
+                            <div class="portal-class-date"><strong>@item.StartDate.ToString("dd")</strong><span>Tháng @item.StartDate.ToString("MM")</span></div>
+                            <div class="portal-class-info">
+                                <span class="portal-overline">@item.ProgramName</span>
+                                <h3><a href="/lop-hoc/@Uri.EscapeDataString(item.Code)">@item.Name</a></h3>
+                                <span>@(item.CanRegister ? $"Đang nhận đăng ký · còn {item.Remaining} chỗ" : item.ClosedReason == "EDU_FULL" ? "Đã đủ chỗ" : "Ngoài thời gian đăng ký") · Kết thúc @item.EndDate.ToString("dd/MM/yyyy")</span>
+                                @if (item.RegistrationClosesAt is DateTimeOffset closesAt) { <span class="portal-class-deadline">Hạn đăng ký @closesAt.ToOffset(localTime).ToString("dd/MM/yyyy HH:mm")</span> }
+                            </div>
+                            @if (item.CanRegister)
+                            {
+                            <a class="portal-class-cta" href="/dang-ky/@Uri.EscapeDataString(item.Code)">Đăng ký <span aria-hidden="true">→</span></a>
+                            }
+                            else
+                            {
+                                <a class="portal-class-cta portal-class-cta-muted" href="/lop-hoc/@Uri.EscapeDataString(item.Code)">Chi tiết <span aria-hidden="true">→</span></a>
+                            }
+                        </article>
+                    }
                 </div>
             }
         </section>
 
-        <section class="content-block" aria-labelledby="materials-title">
-            <div class="section-heading compact"><div><span class="section-kicker">Tài nguyên học tập</span><h2 id="materials-title">Học liệu số nổi bật</h2></div><a class="section-link" href="/hoc-lieu">Xem tất cả →</a></div>
+        <section class="portal-module portal-events" aria-labelledby="events-title">
+            <div class="portal-module-heading">
+                <h2 id="events-title">Lịch buổi học và sự kiện</h2>
+                <a href="/su-kien">Lọc ngày, địa điểm <span aria-hidden="true">→</span></a>
+            </div>
+            @if (Model.ActivitiesUnavailable)
+            {
+                <div class="alert" role="alert">Chưa tải được lịch tổng hợp. Một số hoạt động có thể chưa xuất hiện; vui lòng mở trang lịch để thử lại.</div>
+            }
+            @if (Model.Activities.Count == 0 && !Model.ActivitiesUnavailable)
+            {
+                <div class="portal-empty">Chưa có buổi học hoặc sự kiện công khai trong lịch sắp tới.</div>
+            }
+            else
+            {
+                <div class="portal-event-list portal-home-scroll" role="region" aria-label="Danh sách lịch buổi học và sự kiện" tabindex="0">
+                    @foreach (var item in Model.Activities.Take(10))
+                    {
+                        var isClass = item.Kind == "CLASS_SESSION" && !string.IsNullOrWhiteSpace(item.ClassCode);
+                        var href = isClass ? $"/lop-hoc/{Uri.EscapeDataString(item.ClassCode!)}" : $"/su-kien/{Uri.EscapeDataString(item.EventSlug ?? string.Empty)}";
+                        <article class="portal-activity-card">
+                            <time datetime="@item.StartAt.ToString("O")"><strong>@item.StartAt.ToOffset(localTime).ToString("dd")</strong><span>@item.StartAt.ToOffset(localTime).ToString("MM/yyyy")</span></time>
+                            <div class="portal-activity-copy">
+                                <span class="portal-activity-kind">@(isClass ? "Buổi học · " + item.Summary : "Sự kiện")</span>
+                                <a href="@href"><strong>@item.Title</strong></a>
+                                <small>@(string.IsNullOrWhiteSpace(item.Location) ? "Chưa cập nhật địa điểm" : item.Location) · @item.StartAt.ToOffset(localTime).ToString("HH:mm")–@item.EndAt.ToOffset(localTime).ToString("HH:mm")</small>
+                                @if (isClass)
+                                {
+                                    <small class="portal-activity-registration">@(item.CanRegister == true ? $"Đang nhận đăng ký · còn {item.Remaining} chỗ" : item.RegistrationState == "EDU_FULL" ? "Đã đủ chỗ" : "Lớp hiện chưa nhận đăng ký")@if (item.RegistrationClosesAt is DateTimeOffset closesAt) { <span> · Hạn đăng ký @closesAt.ToOffset(localTime).ToString("dd/MM/yyyy HH:mm")</span> }</small>
+                                }
+                            </div>
+                            @if (isClass && item.CanRegister == true)
+                            {
+                                <a class="portal-class-cta" href="/dang-ky/@Uri.EscapeDataString(item.ClassCode!)">Đăng ký</a>
+                            }
+                            else
+                            {
+                                <a class="portal-class-cta portal-class-cta-muted" href="@href">Chi tiết</a>
+                            }
+                        </article>
+                    }
+                </div>
+            }
+        </section>
+
+        <section class="portal-module portal-learning-module portal-digital-literacy" aria-labelledby="digital-literacy-title">
+            <div class="portal-module-heading">
+                <h2 id="digital-literacy-title">Bình dân học vụ số</h2>
+                <a href="/binh-dan-hoc-vu-so">Xem tất cả <span aria-hidden="true">→</span></a>
+            </div>
+            @if (Model.DigitalLiteracyPosts.Count == 0)
+            {
+                <div class="portal-empty">Chưa có bài viết Bình dân học vụ số được xuất bản. <a href="/binh-dan-hoc-vu-so">Mở chuyên mục</a></div>
+            }
+            else
+            {
+                <div class="portal-learning-grid">
+                    @foreach (var item in Model.DigitalLiteracyPosts.Take(4))
+                    {
+                        var imageUrl = item.ThumbnailUrl ?? item.CoverUrl;
+                        <article class="portal-learning-card">
+                            <a class="portal-learning-image" href="/tin-tuc/@Uri.EscapeDataString(item.Slug)">
+                                @if (!string.IsNullOrWhiteSpace(imageUrl))
+                                {
+                                    <img src="@imageUrl" alt="" loading="lazy" decoding="async" />
+                                }
+                                else
+                                {
+                                    <span class="portal-learning-image-fallback" aria-hidden="true">▤</span>
+                                }
+                            </a>
+                            <div class="portal-learning-copy">
+                                <h3><a href="/tin-tuc/@Uri.EscapeDataString(item.Slug)">@item.Title</a></h3>
+                                @if (!string.IsNullOrWhiteSpace(item.Summary)) { <p>@item.Summary</p> }
+                                @if (item.PublishedAt is DateTimeOffset publishedAt) { <time datetime="@publishedAt.ToString("O")">@publishedAt.ToOffset(localTime).ToString("dd/MM/yyyy HH:mm")</time> }
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+        </section>
+
+        <section class="portal-module portal-learning-module portal-vocational" aria-labelledby="vocational-title">
+            <div class="portal-module-heading portal-vocational-heading">
+                <h2 id="vocational-title">Các khóa học nghề</h2>
+                <nav aria-label="Nhóm nội dung học nghề">
+                    @foreach (var category in Model.VocationalCategories.Take(3))
+                    {
+                        var groupSlug = category.Slug["khoa-hoc-nghe-".Length..];
+                        <a href="/khoa-hoc-nghe/@Uri.EscapeDataString(groupSlug)">@category.Name</a>
+                    }
+                    <a href="/khoa-hoc-nghe">Xem tất cả <span aria-hidden="true">→</span></a>
+                </nav>
+            </div>
+            @if (Model.VocationalPosts.Count == 0)
+            {
+                <div class="portal-empty">Chưa có bài viết khóa học nghề được xuất bản. <a href="/khoa-hoc-nghe">Mở chuyên mục</a></div>
+            }
+            else
+            {
+                var featuredVocational = Model.VocationalPosts[0];
+                var featuredVocationalImage = featuredVocational.ThumbnailUrl ?? featuredVocational.CoverUrl;
+                <div class="portal-vocational-grid">
+                    <article class="portal-vocational-feature">
+                        <a class="portal-vocational-image" href="/tin-tuc/@Uri.EscapeDataString(featuredVocational.Slug)">
+                            @if (!string.IsNullOrWhiteSpace(featuredVocationalImage))
+                            {
+                                <img src="@featuredVocationalImage" alt="" loading="lazy" decoding="async" />
+                            }
+                            else
+                            {
+                                <span class="portal-learning-image-fallback" aria-hidden="true">✦</span>
+                            }
+                        </a>
+                        <h3><a href="/tin-tuc/@Uri.EscapeDataString(featuredVocational.Slug)">@featuredVocational.Title</a></h3>
+                        @if (!string.IsNullOrWhiteSpace(featuredVocational.Summary)) { <p>@featuredVocational.Summary</p> }
+                        @if (featuredVocational.PublishedAt is DateTimeOffset vocationalPublishedAt) { <time datetime="@vocationalPublishedAt.ToString("O")">@vocationalPublishedAt.ToOffset(localTime).ToString("dd/MM/yyyy HH:mm")</time> }
+                    </article>
+                    <div class="portal-vocational-related">
+                        @foreach (var item in Model.VocationalPosts.Skip(1).Take(3))
+                        {
+                            var imageUrl = item.ThumbnailUrl ?? item.CoverUrl;
+                            <article class="portal-vocational-related-card">
+                                <a class="portal-vocational-thumb" href="/tin-tuc/@Uri.EscapeDataString(item.Slug)">
+                                    @if (!string.IsNullOrWhiteSpace(imageUrl))
+                                    {
+                                        <img src="@imageUrl" alt="" loading="lazy" decoding="async" />
+                                    }
+                                    else
+                                    {
+                                        <span class="portal-learning-image-fallback" aria-hidden="true">▧</span>
+                                    }
+                                </a>
+                                <div>
+                                    <h3><a href="/tin-tuc/@Uri.EscapeDataString(item.Slug)">@item.Title</a></h3>
+                                    @if (item.PublishedAt is DateTimeOffset publishedAt) { <time datetime="@publishedAt.ToString("O")">@publishedAt.ToOffset(localTime).ToString("dd/MM/yyyy HH:mm")</time> }
+                                </div>
+                            </article>
+                        }
+                    </div>
+                </div>
+            }
+        </section>
+    </div>
+
+    <div class="portal-home-side">
+        <section class="portal-module" aria-labelledby="latest-title">
+            <div class="portal-module-heading"><h2 id="latest-title">Tin mới nhất</h2></div>
+            @if (latestPosts.Length == 0)
+            {
+                <div class="portal-empty">Chưa có tin mới.</div>
+            }
+            else
+            {
+                <ol class="portal-latest-list portal-home-scroll" aria-label="Danh sách tin mới nhất" tabindex="0">
+                    @foreach (var item in latestPosts)
+                    {
+                        <li>
+                            <a href="/tin-tuc/@Uri.EscapeDataString(item.Slug)">@item.Title</a>
+                            @if (item.PublishedAt is DateTimeOffset publishedAt)
+                            {
+                                <time datetime="@publishedAt.ToString("yyyy-MM-dd")">@publishedAt.ToOffset(localTime).ToString("dd/MM/yyyy")</time>
+                            }
+                        </li>
+                    }
+                </ol>
+            }
+        </section>
+
+        <section class="portal-module portal-services" aria-labelledby="services-title">
+            <div class="portal-module-heading"><h2 id="services-title">Dịch vụ học tập</h2></div>
+            <nav aria-label="Dịch vụ học tập">
+                <a href="/tra-cuu"><span aria-hidden="true">01</span><strong>Tra cứu chứng nhận</strong><b aria-hidden="true">→</b></a>
+                <a href="/hoc-lieu"><span aria-hidden="true">02</span><strong>Tìm học liệu số</strong><b aria-hidden="true">→</b></a>
+                <a href="/lien-he"><span aria-hidden="true">03</span><strong>Liên hệ, gửi phản ánh</strong><b aria-hidden="true">→</b></a>
+            </nav>
+        </section>
+
+        <section class="portal-module portal-resources" aria-labelledby="materials-title">
+            <div class="portal-module-heading">
+                <h2 id="materials-title">Học liệu số</h2>
+                <a href="/hoc-lieu">Xem tất cả <span aria-hidden="true">→</span></a>
+            </div>
             @if (Model.Materials.Count == 0)
-            {<p class="empty home-empty">Chưa có học liệu chung.</p>}
+            {
+                <div class="portal-empty">Chưa có học liệu công khai.</div>
+            }
             else
-            {<div class="material-row">@foreach (var item in Model.Materials.Take(3)) {<a class="material-tile" href="/hoc-lieu/@item.Slug"><span class="material-art" aria-hidden="true">▧</span><strong>@item.Title</strong><small>@(item.Summary ?? "Tài liệu học tập cộng đồng")</small></a>}</div>}
+            {
+                <ul class="portal-resource-list portal-home-scroll portal-home-materials-scroll" aria-label="Danh sách học liệu số" tabindex="0">
+                    @foreach (var item in Model.Materials.Take(10))
+                    {
+                        <li><span aria-hidden="true">▤</span><a href="/hoc-lieu/@Uri.EscapeDataString(item.Slug)">@item.Title</a></li>
+                    }
+                </ul>
+            }
         </section>
-    </div>
 
-    <div class="home-column">
-        <section class="content-block" aria-labelledby="events-title">
-            <div class="section-heading compact"><div><span class="section-kicker">Lịch hoạt động</span><h2 id="events-title">Sự kiện sắp tới</h2></div><a class="section-link" href="/su-kien">Xem lịch đầy đủ →</a></div>
-            @if (Model.Upcoming.Count == 0)
-            {<p class="empty home-empty">Chưa có sự kiện công khai.</p>}
+        @if (Model.Galleries.Count > 0)
+        {
+            <section class="portal-module portal-gallery" aria-labelledby="gallery-title">
+                <div class="portal-module-heading">
+                    <h2 id="gallery-title">Hình ảnh hoạt động</h2>
+                    <a href="/thu-vien?loai=IMAGE">Thư viện <span aria-hidden="true">→</span></a>
+                </div>
+                <div class="portal-gallery-grid">
+                    @foreach (var item in Model.Galleries.Take(3))
+                    {
+                        <a href="/thu-vien/@Uri.EscapeDataString(item.Slug)" aria-label="@(string.IsNullOrWhiteSpace(item.Title) ? "Mở album thư viện" : item.Title)">
+                            @if (item.Cover?.FileId is Guid fileId)
+                            {
+                                <img src="/?handler=Media&amp;id=@fileId" alt="@(string.IsNullOrWhiteSpace(item.Cover.AltText) ? (string.IsNullOrWhiteSpace(item.Title) ? "Hình ảnh hoạt động" : item.Title) : item.Cover.AltText)" loading="lazy" />
+                            }
+                            else
+                            {
+                                <span class="portal-gallery-fallback" aria-hidden="true">▧</span>
+                            }
+                            <strong>@(string.IsNullOrWhiteSpace(item.Title) ? "Album thư viện" : item.Title)</strong>
+                        </a>
+                    }
+                </div>
+            </section>
+        }
+        <section class="portal-module portal-visit-stats" aria-labelledby="visit-stats-title">
+            <div class="portal-module-heading"><h2 id="visit-stats-title">Thống kê truy cập</h2></div>
+            @if (Model.VisitStats is { } visits)
+            {
+                <div class="portal-visit-total">
+                    <span>Tổng lượt truy cập</span>
+                    <strong aria-label="@($"{IndexModel.FormatVisitCount(visits.Total)} lượt truy cập")"><span aria-hidden="true">@visits.Total.ToString("D8", System.Globalization.CultureInfo.InvariantCulture)</span></strong>
+                </div>
+                <dl class="portal-visit-stats-list">
+                    <div><dt>Đang online</dt><dd>@IndexModel.FormatVisitCount(visits.OnlineNow)</dd></div>
+                    <div><dt>Hôm nay</dt><dd>@IndexModel.FormatVisitCount(visits.Today)</dd></div>
+                    <div><dt>Hôm qua</dt><dd>@IndexModel.FormatVisitCount(visits.Yesterday)</dd></div>
+                    <div><dt>Tuần này</dt><dd>@IndexModel.FormatVisitCount(visits.ThisWeek)</dd></div>
+                    <div><dt>Tuần trước</dt><dd>@IndexModel.FormatVisitCount(visits.LastWeek)</dd></div>
+                    <div><dt>Tháng này</dt><dd>@IndexModel.FormatVisitCount(visits.ThisMonth)</dd></div>
+                    <div><dt>Tháng trước</dt><dd>@IndexModel.FormatVisitCount(visits.LastMonth)</dd></div>
+                </dl>
+            }
             else
-            {<div class="event-list">@foreach (var item in Model.Upcoming.Take(3)) {<a class="event-card" href="/su-kien/@item.Slug"><time><strong>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd")</strong><span>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("MMM", System.Globalization.CultureInfo.GetCultureInfo("vi-VN"))</span></time><span><strong>@item.Title</strong><small>⌖ @(item.Location ?? "Trung tâm") · @item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")</small></span><span class="event-arrow" aria-hidden="true">→</span></a>}</div>}
+            {
+                <div class="portal-empty" role="status">Chưa tải được số liệu truy cập.</div>
+            }
         </section>
 
     </div>
-</section>
-<aside class="home-register" aria-labelledby="register-title"><div class="admin-promo-icon" aria-hidden="true">⚙</div><div class="admin-promo-copy"><h2 id="register-title">Dành cho cán bộ Trung tâm</h2><p>Quản lý lớp học, học viên, điểm danh và báo cáo</p></div><a class="button button-light" href="/admin">Truy cập Cổng quản trị <span aria-hidden="true">→</span></a></aside>
+</div>

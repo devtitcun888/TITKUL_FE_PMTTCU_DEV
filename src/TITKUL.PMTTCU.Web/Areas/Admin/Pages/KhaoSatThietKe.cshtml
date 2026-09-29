@@ -11,15 +11,40 @@
     {
         <h1>@Model.Survey.Title</h1>
         <p>@EducationUi.Status(Model.Survey.Status) · @Model.Questions.Count/30 câu</p>
+        @if (Model.CanManage)
+        {
+            <details>
+                <summary>Thiết lập khảo sát và thông tin liên hệ</summary>
+                <form method="post" asp-page-handler="Settings" class="stack">
+                    <div><label for="surveyTitle">Tiêu đề</label><input id="surveyTitle" name="SurveyTitle" value="@Model.SurveyTitle" required maxlength="250" /></div>
+                    <div><label for="surveySummary">Mô tả</label><textarea id="surveySummary" name="SurveySummary" rows="3">@Model.SurveySummary</textarea></div>
+                    <div><label for="surveyStartAt">Bắt đầu</label><input id="surveyStartAt" name="SurveyStartAt" type="datetime-local" value="@Model.SurveyStartAt" required /></div>
+                    <div><label for="surveyEndAt">Kết thúc</label><input id="surveyEndAt" name="SurveyEndAt" type="datetime-local" value="@Model.SurveyEndAt" required /></div>
+                    <div><label for="surveyThanks">Lời cảm ơn</label><input id="surveyThanks" name="SurveyThanks" value="@Model.SurveyThanks" maxlength="1000" /></div>
+                    <div><label for="requirePhone"><input id="requirePhone" name="RequirePhone" type="checkbox" value="true" checked="@(Model.RequirePhone ? "checked" : null)" /> Yêu cầu nhập số điện thoại</label></div>
+                    <div><label for="limitOnePerPhone"><input id="limitOnePerPhone" name="LimitOnePerPhone" type="checkbox" value="true" checked="@(Model.LimitOnePerPhone ? "checked" : null)" /> Mỗi số điện thoại chỉ gửi một lần</label></div>
+                    <button type="submit">Lưu thiết lập</button>
+                </form>
+            </details>
+        }
         <p class="row-actions">
             <a class="button" href="/admin/khao-sat/@Model.Survey.Id/preview">Xem trước</a>
             <a class="button" href="/admin/khao-sat/@Model.Survey.Id/thiet-ke?handler=Qr">Tải QR</a>
             <a class="button" href="/admin/khao-sat/@Model.Survey.Id/ket-qua">Kết quả</a>
+            @if (Model.Survey.Status == "OPEN")
+            {
+                <button type="button" class="button" data-copy-url="/khao-sat/@Model.Survey.Code">Sao chép liên kết công khai</button>
+            }
         </p>
+        @if (Model.Survey.Status == "OPEN")
+        {
+            <p><img class="admin-qr-preview" src="/admin/khao-sat/@Model.Survey.Id/thiet-ke?handler=QrPreview" alt="Mã QR khảo sát @Model.Survey.Title" width="180" height="180" /></p>
+            <p data-copy-feedback role="status" aria-live="polite"></p>
+        }
         @if (Model.CanManage && Model.Survey.Status == "DRAFT")
         {
             <form method="post" asp-page-handler="Question" class="stack">
-                <div><label for="text">Nội dung câu</label><input id="text" name="Text" required maxlength="1000" /></div>
+                <div><label for="text">Nội dung câu</label><input id="text" name="Text" value="@Model.Text" required maxlength="1000" /></div>
                 <div>
                     <label for="type">Loại</label>
                     <select id="type" name="Type">
@@ -30,17 +55,36 @@
                     </select>
                 </div>
                 <div><label for="required"><input id="required" name="Required" type="checkbox" value="true" /> Bắt buộc</label></div>
-                <div><label for="choices">Lựa chọn, mỗi dòng một ý</label><textarea id="choices" name="Choices" rows="4"></textarea></div>
+                <div><label for="choices">Lựa chọn, mỗi dòng một ý. Với câu một lựa chọn, thêm | số thứ tự câu để nhảy (ví dụ: Không | 4)</label><textarea id="choices" name="Choices" rows="4">@Model.Choices</textarea><small>Đích nhảy cần là câu phía sau và phải tồn tại trước khi mở khảo sát.</small></div>
                 <div><label for="scaleMin">Thang từ</label><input id="scaleMin" name="ScaleMin" type="number" value="1" /></div>
                 <div><label for="scaleMax">Thang đến</label><input id="scaleMax" name="ScaleMax" type="number" value="5" /></div>
                 <button type="submit">Thêm câu</button>
             </form>
             <form method="post" asp-page-handler="Open"><button type="submit">Mở khảo sát</button></form>
         }
+        @if (Model.CanManage && Model.Survey.Status == "OPEN")
+        {
+            <form method="post" asp-page-handler="Close"><button type="submit">Đóng khảo sát</button></form>
+        }
         <ol class="stack">
             @foreach (var item in Model.Questions)
             {
-                <li>@item.Text · @EducationUi.Status(item.Type) @(item.Required ? "· bắt buộc" : "")</li>
+                <li>
+                    @item.Text · @EducationUi.Status(item.Type) @(item.Required ? "· bắt buộc" : "")
+                    @if (item.Type == "SINGLE")
+                    {
+                        var branches = Model.Options.Where(option => option.QuestionId == item.Id && option.JumpToOrder is not null).ToArray();
+                        @if (branches.Length > 0)
+                        {
+                            <ul>
+                            @foreach (var branch in branches)
+                            {
+                                <li>@branch.Text → câu @branch.JumpToOrder</li>
+                            }
+                            </ul>
+                        }
+                    }
+                </li>
             }
         </ol>
     }

@@ -1,0 +1,45 @@
+/* Lift secondary text to a readable size while preserving headings and hierarchy. */
+html.public-site .gov-topline strong,
+html.public-site .gov-topline .utility-links,
+html.public-site .gov-topline .utility-links a,
+html.public-site .gov-brand small,
+html.public-site .gov-brand em,
+html.public-site .gov-nav .nav-list a,
+html.public-site .gov-nav .header-cta,
+html.public-site .portal-statusbar-inner,
+html.public-site .portal-statusbar-inner time,
+html.public-site .portal-statusbar-inner p,
+html.public-site .portal-statusbar-inner p strong,
+html.public-site .footer-bottom,
+html.public-site .portal-home-kicker,
+html.public-site .portal-module-heading a,
+html.public-site .portal-feature-tag,
+html.public-site .portal-feature-copy time,
+html.public-site .portal-latest-list time,
+html.public-site .portal-list time,
+html.public-site .portal-services nav a > span,
+html.public-site .portal-class-date span,
+html.public-site .portal-overline,
+html.public-site .portal-class-info > span:last-child,
+html.public-site .portal-class-cta,
+html.public-site .portal-activity-card time span,
+html.public-site .portal-activity-kind,
+html.public-site .portal-activity-copy small,
+html.public-site .portal-gallery-grid strong,
+html.public-site .portal-visit-total > span,
+html.public-site .portal-visit-stats-list dt,
+html.public-site .portal-visit-stats-list dd,
+html.public-site .public-activity-heading > .eyebrow,
+html.public-site .public-activity-date span,
+html.public-site .public-activity-content .eyebrow {
+  font-size: .75rem;
+}
+
+@media (max-width: 1000px) {
+  html.public-site .gov-nav .nav-list a { font-size: .72rem; }
+}
+
+@media (max-width: 480px) {
+  html.public-site .portal-statusbar-inner time { font-size: .75rem; }
+  html.public-site .gov-brand em { font-size: .72rem; }
+}

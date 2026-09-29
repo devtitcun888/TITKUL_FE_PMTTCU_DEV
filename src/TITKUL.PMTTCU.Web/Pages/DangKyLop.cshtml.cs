@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TITKUL.PMTTCU.Web.ApiClients;
@@ -12,6 +13,9 @@ public class DangKyLopModel : PageModel
     public PublicClass? Class { get; private set; }
     public IReadOnlyList<Hamlet> Hamlets { get; private set; } = [];
     public string? ErrorMessage { get; private set; }
+    public string? SubmissionMessage { get; private set; }
+    public bool SubmissionAcceptedWithoutCode { get; private set; }
+    public bool HamletCatalogUnavailable { get; private set; }
 
     [BindProperty] public string FullName { get; set; } = "";
     [BindProperty] public string Phone { get; set; } = "";
@@ -19,18 +23,28 @@ public class DangKyLopModel : PageModel
     [BindProperty] public DateOnly? BirthDate { get; set; }
     [BindProperty] public string Gender { get; set; } = "NAM";
     [BindProperty] public Guid? HamletId { get; set; }
+    [BindProperty] public string? HamletName { get; set; }
     [BindProperty] public string? Note { get; set; }
     [BindProperty] public bool Consent { get; set; }
+    [BindProperty] public string? ReminderEmail { get; set; }
+    [BindProperty] public bool ReminderSms { get; set; }
+    [BindProperty] public bool ReminderEmailOptIn { get; set; }
+    [BindProperty] public bool ReminderZalo { get; set; }
     [BindProperty] public string? Website { get; set; }
     [BindProperty] public string IdempotencyKey { get; set; } = Guid.NewGuid().ToString("N");
 
-    public async Task<IActionResult> OnGetAsync(string ma) => await LoadAsync(ma);
+    public async Task<IActionResult> OnGetAsync(string ma)
+    {
+        PublicPrivatePageHeaders.Apply(Response);
+        return await LoadAsync(ma);
+    }
 
     public async Task<IActionResult> OnPostAsync(string ma)
     {
+        PublicPrivatePageHeaders.Apply(Response);
         var loaded = await LoadAsync(ma);
         if (Class is null || !Class.CanRegister) return loaded;
-        var response = await _api.PostPublicJsonAsync($"/api/v1/public/classes/{ma}/registrations", new
+        using var response = await _api.PostPublicJsonAsync($"/api/v1/public/classes/{Uri.EscapeDataString(ma)}/registrations", new
         {
             fullName = FullName,
             phone = Phone,
@@ -38,8 +52,13 @@ public class DangKyLopModel : PageModel
             birthDate = BirthDate,
             gender = Gender,
             hamletId = HamletId,
+            hamletName = HamletName,
             note = Note,
             consent = Consent,
+            reminderEmail = ReminderEmail,
+            reminderSms = ReminderSms,
+            reminderEmailOptIn = ReminderEmailOptIn,
+            reminderZalo = ReminderZalo,
             website = Website
         }, IdempotencyKey);
         if (response is null)
@@ -50,12 +69,24 @@ public class DangKyLopModel : PageModel
 
         if (response.IsSuccessStatusCode)
         {
-            var body = await response.Content.ReadFromJsonAsync<ItemEnvelope<Result>>();
+            ItemEnvelope<Result>? body = null;
+            try
+            {
+                body = await response.Content.ReadFromJsonAsync<ItemEnvelope<Result>>();
+            }
+            catch (JsonException)
+            {
+                // The API accepted the registration; do not tell the learner to submit it again.
+            }
             var code = body?.Item?.Code;
             if (!string.IsNullOrWhiteSpace(code))
             {
                 return Redirect($"/dang-ky/{ma}/cam-on?code={Uri.EscapeDataString(code)}");
             }
+
+            SubmissionAcceptedWithoutCode = true;
+            SubmissionMessage = "Đăng ký đã được tiếp nhận nhưng chưa lấy được mã đăng ký. Vui lòng liên hệ Trung tâm để xác nhận; tránh gửi lại biểu mẫu.";
+            return Page();
         }
 
         try
@@ -65,9 +96,12 @@ public class DangKyLopModel : PageModel
             {
                 "EDU_FULL" => "Lớp đã đủ chỗ. Không nhận thêm đăng ký.",
                 "REG_DUPLICATE" => "Số điện thoại hoặc CCCD này đã đăng ký lớp này.",
+                "REG_HAMLET" => "Chọn thôn/ấp trong danh mục hoặc nhập tên thôn/ấp.",
                 "EDU_CLOSED" or "EDU_WINDOW" => "Lớp chưa mở, đã đóng hoặc hết hạn đăng ký.",
                 "REG_IDEMPOTENCY" => "Phiên gửi bị gián đoạn. Tải lại trang rồi gửi lại.",
                 "REG_RATE" => "Bạn gửi quá nhanh. Thử lại sau.",
+                "REG_REMINDER_EMAIL" => "Vui lòng nhập email hợp lệ nếu chọn nhận nhắc qua email.",
+                "REG_CONSENT" => "Bạn cần đồng ý cho Trung tâm sử dụng dữ liệu để quản lý lớp học.",
                 _ => err?.Message ?? "Không đăng ký được."
             };
         }
@@ -81,11 +115,23 @@ public class DangKyLopModel : PageModel
 
     private async Task<IActionResult> LoadAsync(string ma)
     {
-        var cls = await _api.GetPublicJsonAsync<ItemEnvelope<PublicClass>>($"/api/v1/public/classes/{ma}");
-        var hamlets = await _api.GetPublicJsonAsync<ListEnvelope<Hamlet>>("/api/v1/public/hamlets");
-        Class = cls?.Item;
-        Hamlets = hamlets?.Items ?? [];
-        if (Class is null) ErrorMessage ??= "Không tìm thấy lớp.";
+        var classTask = _api.GetPublicJsonResultAsync<ItemEnvelope<PublicClass>>($"/api/v1/public/classes/{Uri.EscapeDataString(ma)}");
+        var hamletsTask = _api.GetPublicJsonResultAsync<ListEnvelope<Hamlet>>("/api/v1/public/hamlets");
+        await Task.WhenAll(classTask, hamletsTask);
+        var cls = await classTask;
+        var hamlets = await hamletsTask;
+        Class = cls.Value?.Item;
+        HamletCatalogUnavailable = !hamlets.IsAvailable || hamlets.Value is null;
+        Hamlets = hamlets.Value?.Items ?? [];
+        if (Class is null)
+        {
+            ErrorMessage ??= cls.IsNotFound || cls.IsAvailable
+                ? "Không tìm thấy lớp."
+                : "Chưa thể tải thông tin lớp. Vui lòng thử lại sau.";
+            Response.StatusCode = cls.IsNotFound || cls.IsAvailable
+                ? StatusCodes.Status404NotFound
+                : StatusCodes.Status503ServiceUnavailable;
+        }
         return Page();
     }
 

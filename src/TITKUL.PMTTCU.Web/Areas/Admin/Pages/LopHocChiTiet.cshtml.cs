@@ -14,9 +14,12 @@ public class LopHocChiTietModel : PageModel
     public IReadOnlyList<string> AllowedTransitions { get; private set; } = [];
     public IReadOnlyList<OptionItem> Programs { get; private set; } = [];
     public IReadOnlyList<OptionItem> Rooms { get; private set; } = [];
+    public IReadOnlyList<OptionItem> Clubs { get; private set; } = [];
     public IReadOnlyList<SessionItem> Sessions { get; private set; } = [];
     public IReadOnlyList<TeacherItem> Teachers { get; private set; } = [];
     public IReadOnlyList<StaffItem> Staff { get; private set; } = [];
+    public IReadOnlyList<CollaboratorOption> Collaborators { get; private set; } = [];
+    public IReadOnlyList<CollaboratorAssignmentItem> AssignedCollaborators { get; private set; } = [];
     public IReadOnlyList<EnrollmentItem> Enrollments { get; private set; } = [];
     public IReadOnlyList<MaterialItem> Materials { get; private set; } = [];
     public string? ErrorMessage { get; private set; }
@@ -26,6 +29,7 @@ public class LopHocChiTietModel : PageModel
 
     [BindProperty] public Guid? ProgramId { get; set; }
     [BindProperty] public Guid? RoomId { get; set; }
+    [BindProperty] public Guid? ClubId { get; set; }
     [BindProperty] public string Code { get; set; } = "";
     [BindProperty] public string Name { get; set; } = "";
     [BindProperty] public DateOnly? StartDate { get; set; }
@@ -40,6 +44,7 @@ public class LopHocChiTietModel : PageModel
     [BindProperty] public string SessionMode { get; set; } = "OFFLINE";
     [BindProperty] public string? MeetingUrl { get; set; }
     [BindProperty] public Guid? TeacherUserId { get; set; }
+    [BindProperty] public Guid? ClassCollaboratorId { get; set; }
     [BindProperty] public string MaterialTitle { get; set; } = "";
     [BindProperty] public string? MaterialDescription { get; set; }
     [BindProperty] public bool MaterialPublic { get; set; }
@@ -68,6 +73,7 @@ public class LopHocChiTietModel : PageModel
         {
             programId = ProgramId,
             roomId = RoomId,
+            clubId = ClubId,
             code = Code,
             name = Name,
             startDate = StartDate,
@@ -162,6 +168,13 @@ public class LopHocChiTietModel : PageModel
             ErrorMessage = "Chọn tệp PDF hoặc ảnh JPEG/PNG.";
             return await LoadAsync(id);
         }
+        var isImage = Path.GetExtension(MaterialFile.FileName).ToLowerInvariant() is ".jpg" or ".jpeg" or ".png";
+        var maxMaterialBytes = isImage ? 5L * 1024 * 1024 : 20L * 1024 * 1024;
+        if (MaterialFile.Length > maxMaterialBytes)
+        {
+            ErrorMessage = isImage ? "Ảnh học liệu không được vượt quá 5 MiB." : "Tệp học liệu không được vượt quá 20 MiB.";
+            return await LoadAsync(id);
+        }
 
         using var content = new MultipartFormDataContent();
         await using var stream = MaterialFile.OpenReadStream();
@@ -221,6 +234,37 @@ public class LopHocChiTietModel : PageModel
         return Redirect($"/admin/lop-hoc/{id}");
     }
 
+    public async Task<IActionResult> OnPostAssignCollaboratorAsync(Guid id)
+    {
+        if (!HasManage()) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        var response = await _api.SendJsonAsync(HttpMethod.Post, $"/api/v1/admin/classes/{id}/collaborators", token,
+            new { collaboratorId = ClassCollaboratorId });
+        if (response is null || !response.IsSuccessStatusCode)
+        {
+            ErrorMessage = await ReadErrorAsync(response) ?? "Không phân công được cộng tác viên.";
+            return await LoadAsync(id);
+        }
+
+        return Redirect($"/admin/lop-hoc/{id}");
+    }
+
+    public async Task<IActionResult> OnPostRemoveCollaboratorAsync(Guid id, Guid collaboratorId)
+    {
+        if (!HasManage()) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        var response = await _api.SendJsonAsync(HttpMethod.Delete, $"/api/v1/admin/classes/{id}/collaborators/{collaboratorId}", token, new { });
+        if (response is null || !response.IsSuccessStatusCode)
+        {
+            ErrorMessage = await ReadErrorAsync(response) ?? "Không gỡ được cộng tác viên.";
+            return await LoadAsync(id);
+        }
+
+        return Redirect($"/admin/lop-hoc/{id}");
+    }
+
     private bool HasManage() => Has("education.manage");
     private bool HasView() => Has("education.manage") || Has("education.view") || Has("report.own_classes.view");
     private bool Has(string permission) => (HttpContext.Items["StaffProfile"] as StaffProfile)?.Permissions?.Contains(permission) == true;
@@ -240,14 +284,23 @@ public class LopHocChiTietModel : PageModel
         {
             var programs = await _api.GetJsonAsync<ListEnvelope<OptionItem>>("/api/v1/admin/programs?pageSize=100", token);
             var rooms = await _api.GetJsonAsync<ListEnvelope<OptionItem>>("/api/v1/admin/rooms?pageSize=100", token);
+            var clubs = await _api.GetJsonAsync<ListEnvelope<OptionItem>>("/api/v1/admin/clubs?pageSize=100&status=ACTIVE", token);
             var staff = await _api.GetJsonAsync<ListEnvelope<StaffItem>>("/api/v1/admin/education/staff", token);
+            var collaborators = await _api.GetJsonAsync<PagedEnvelope<CollaboratorOption>>("/api/v1/admin/collaborators?pageSize=100", token);
             Programs = programs?.Items ?? [];
             Rooms = rooms?.Items ?? [];
+            Clubs = clubs?.Items ?? [];
             Staff = staff?.Items ?? [];
+            Collaborators = collaborators?.Items ?? [];
         }
 
         var sessions = await _api.GetJsonAsync<ListEnvelope<SessionItem>>($"/api/v1/admin/classes/{id}/sessions", token);
         var teachers = await _api.GetJsonAsync<ListEnvelope<TeacherItem>>($"/api/v1/admin/classes/{id}/teachers", token);
+        if (CanManage)
+        {
+            var assignedCollaborators = await _api.GetJsonAsync<ListEnvelope<CollaboratorAssignmentItem>>($"/api/v1/admin/classes/{id}/collaborators", token);
+            AssignedCollaborators = assignedCollaborators?.Items ?? [];
+        }
         var enrollments = await _api.GetJsonAsync<ListEnvelope<EnrollmentItem>>($"/api/v1/admin/classes/{id}/enrollments", token);
         var materials = await _api.GetJsonAsync<ListEnvelope<MaterialItem>>($"/api/v1/admin/classes/{id}/materials", token);
         Sessions = sessions?.Items ?? [];
@@ -262,6 +315,7 @@ public class LopHocChiTietModel : PageModel
         {
             ProgramId = Item.ProgramId;
             RoomId = Item.RoomId;
+            ClubId = Item.ClubId;
             Code = Item.Code;
             Name = Item.Name;
             StartDate = Item.StartDate;
@@ -292,15 +346,19 @@ public class LopHocChiTietModel : PageModel
         }
     }
 
-    public sealed record ClassItem(Guid Id, Guid ProgramId, Guid? RoomId, string Code, string Name, DateOnly StartDate, DateOnly EndDate, int Capacity, string Status, bool Public);
+    public sealed record ClassItem(Guid Id, Guid ProgramId, Guid? RoomId, string Code, string Name, DateOnly StartDate, DateOnly EndDate, int Capacity, string Status, bool Public, Guid? ClubId);
     public sealed record OptionItem(Guid Id, string Code, string Name);
     public sealed record SessionItem(Guid Id, Guid ClassId, Guid? RoomId, string Title, DateTimeOffset StartAt, DateTimeOffset EndAt, string Mode, string? MeetingUrl, string Status);
     public sealed record TeacherItem(Guid Id, Guid ClassId, Guid UserId, string Username, string Role);
     public sealed record StaffItem(Guid Id, string Username, IReadOnlyList<string>? Roles);
+    public sealed record CollaboratorOption(Guid Id, string FullName, string? WorkUnit, string? Position, string? Phone);
+    public sealed record CollaboratorAssignmentItem(Guid Id, Guid ClassId, Guid CollaboratorId, string FullName,
+        string? WorkUnit, string? Position, DateOnly? FromDate, DateOnly? ToDate);
     public sealed record EnrollmentItem(Guid Id, string Code, string FullName, string Phone, string Status, DateTimeOffset RegisteredAt);
     public sealed record MaterialItem(Guid Id, string Title, string? Description, string FileName, string MimeType, long Size, bool Public, string Status);
     private sealed record UploadBody(string? StorageKey);
     private sealed record ClassEnvelope(ClassItem? Item, IReadOnlyList<string>? AllowedTransitions);
     private sealed record ListEnvelope<T>(IReadOnlyList<T>? Items);
+    private sealed record PagedEnvelope<T>(IReadOnlyList<T>? Items, int Page, int PageSize, int Total);
     private sealed record ApiErr(string? Code, string? Message);
 }

@@ -14,7 +14,12 @@ public class CmsBaiVietChiTietModel : PageModel
     public IReadOnlyList<CategoryItem> Categories { get; private set; } = [];
     public string? ErrorMessage { get; private set; }
     public string? Status { get; private set; }
+    public DateTimeOffset? PublishedAt { get; private set; }
     public bool CanEdit { get; private set; }
+    public bool Preview { get; private set; }
+    public string? PreviewHtml { get; private set; }
+    public string? CoverUrl { get; private set; }
+    public string? ThumbnailUrl { get; private set; }
 
     [BindProperty] public Guid CategoryId { get; set; }
     [BindProperty] public string Title { get; set; } = "";
@@ -23,27 +28,31 @@ public class CmsBaiVietChiTietModel : PageModel
     [BindProperty] public string Html { get; set; } = "";
     [BindProperty] public string? SeoTitle { get; set; }
     [BindProperty] public string? SeoDescription { get; set; }
+    [BindProperty] public string? CoverKey { get; set; }
+    [BindProperty] public string? ThumbnailKey { get; set; }
     [BindProperty] public bool Pinned { get; set; }
+    [BindProperty] public string? ScheduleAt { get; set; }
 
-    public async Task<IActionResult> OnGetAsync(Guid? id)
+    public async Task<IActionResult> OnGetAsync(Guid? id, bool preview = false)
     {
         if (!HasView()) return Redirect("/admin/khong-quyen");
+        Preview = preview && id.HasValue;
         return await LoadAsync(id);
     }
 
     public async Task<IActionResult> OnPostSaveAsync(Guid? id)
     {
-        if (!Has("cms.create") && !Has("cms.update")) return Redirect("/admin/khong-quyen");
+        if (id.HasValue ? !Has("cms.update") : !Has("cms.create")) return Redirect("/admin/khong-quyen");
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
-        var payload = new { categoryId = CategoryId, title = Title, slug = Slug, summary = Summary, html = Html, pinned = Pinned, seoTitle = SeoTitle, seoDescription = SeoDescription };
+        var payload = new { categoryId = CategoryId, title = Title, slug = Slug, summary = Summary, html = Html, coverKey = CoverKey, thumbnailKey = ThumbnailKey, pinned = Pinned, seoTitle = SeoTitle, seoDescription = SeoDescription };
         var response = id is Guid existing
             ? await _api.SendJsonAsync(HttpMethod.Put, "/api/v1/admin/posts/" + existing, token, payload)
             : await _api.SendJsonAsync(HttpMethod.Post, "/api/v1/admin/posts", token, payload);
         if (response is null || !response.IsSuccessStatusCode)
         {
             ErrorMessage = "Không lưu được bài. Kiểm tra chuyên mục và nội dung.";
-            return await LoadAsync(id);
+            return await LoadAsync(id, preserveForm: true);
         }
 
         var saved = await response.Content.ReadFromJsonAsync<ItemEnvelope<Saved>>();
@@ -60,6 +69,21 @@ public class CmsBaiVietChiTietModel : PageModel
         return await LoadAsync(id);
     }
 
+    public async Task<IActionResult> OnPostScheduleAsync(Guid id)
+    {
+        if (!Has("cms.publish")) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        if (!DateTimeOffset.TryParse(ScheduleAt + "+07:00", out var publishAt) || publishAt <= DateTimeOffset.UtcNow)
+        {
+            ErrorMessage = "Chọn thời điểm xuất bản trong tương lai theo giờ Việt Nam.";
+            return await LoadAsync(id, preserveForm: true);
+        }
+        var response = await _api.SendJsonAsync(HttpMethod.Post, "/api/v1/admin/posts/" + id + "/schedule", token, new { publishAt });
+        if (response is null || !response.IsSuccessStatusCode) ErrorMessage = "Không đặt được lịch xuất bản.";
+        return await LoadAsync(id);
+    }
+
     public async Task<IActionResult> OnPostUnpublishAsync(Guid id)
     {
         if (!Has("cms.publish")) return Redirect("/admin/khong-quyen");
@@ -69,11 +93,11 @@ public class CmsBaiVietChiTietModel : PageModel
         return await LoadAsync(id);
     }
 
-    private async Task<IActionResult> LoadAsync(Guid? id)
+    private async Task<IActionResult> LoadAsync(Guid? id, bool preserveForm = false)
     {
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
-        CanEdit = Has("cms.create") || Has("cms.update");
+        CanEdit = id.HasValue ? Has("cms.update") : Has("cms.create");
         var cats = await _api.GetJsonAsync<ListEnvelope<CategoryItem>>("/api/v1/admin/categories", token);
         Categories = cats?.Items ?? [];
         if (id is Guid existing)
@@ -82,14 +106,24 @@ public class CmsBaiVietChiTietModel : PageModel
             var body = await _api.GetJsonAsync<ItemEnvelope<PostDetail>>("/api/v1/admin/posts/" + existing, token);
             if (body?.Item is { } item)
             {
-                CategoryId = item.CategoryId;
-                Title = item.Title;
-                Slug = item.Slug;
-                Summary = item.Summary;
-                Html = item.Html;
-                SeoTitle = item.SeoTitle;
-                SeoDescription = item.SeoDescription;
+                if (!preserveForm)
+                {
+                    CategoryId = item.CategoryId;
+                    Title = item.Title;
+                    Slug = item.Slug;
+                    Summary = item.Summary;
+                    Html = item.Html;
+                    SeoTitle = item.SeoTitle;
+                    SeoDescription = item.SeoDescription;
+                    CoverKey = item.CoverKey;
+                    ThumbnailKey = item.ThumbnailKey;
+                    Pinned = item.Pinned;
+                }
+                PreviewHtml = body.PreviewHtml;
+                CoverUrl = body.CoverUrl;
+                ThumbnailUrl = body.ThumbnailUrl;
                 Status = item.Status;
+                PublishedAt = item.PublishedAt;
                 Pinned = item.Pinned;
             }
             else ErrorMessage ??= "Không tìm thấy bài viết.";
@@ -98,13 +132,13 @@ public class CmsBaiVietChiTietModel : PageModel
         return Page();
     }
 
-    private bool HasView() => Has("cms.view") || Has("cms.create");
+    private bool HasView() => Has("cms.view") || Has("cms.create") || Has("cms.update");
     private bool Has(string permission) => (HttpContext.Items["StaffProfile"] as StaffProfile)?.Permissions?.Contains(permission) == true;
     private string? Token() => Request.Cookies[AdminGateMiddleware.CookieName];
 
     public sealed record CategoryItem(Guid Id, string Name);
-    public sealed record PostDetail(Guid Id, Guid CategoryId, string Title, string Slug, string? Summary, string Html, string Status, bool Pinned, string? SeoTitle, string? SeoDescription);
+    public sealed record PostDetail(Guid Id, Guid CategoryId, string Title, string Slug, string? Summary, string Html, string? CoverKey, string Status, bool Pinned, string? SeoTitle, string? SeoDescription, DateTimeOffset? PublishedAt, string? ThumbnailKey = null);
     public sealed record Saved(Guid Id);
-    private sealed record ItemEnvelope<T>(T? Item);
+    private sealed record ItemEnvelope<T>(T? Item, string? PreviewHtml, string? CoverUrl, string? ThumbnailUrl);
     private sealed record ListEnvelope<T>(IReadOnlyList<T>? Items);
 }

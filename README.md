@@ -26,4 +26,6 @@ Hai endpoint trả JSON `status: Healthy` khi tiến trình phục vụ HTTP. Ch
 
 `Backend:BaseUrl` trong Git là `https://be.invalid`. Môi trường thật ghi đè bằng `Backend__BaseUrl`. Không commit mật khẩu, token hay connection string.
 
+SEO canonical và Open Graph URL cần host public chuẩn. Cấu hình `Public:PortalBaseUrl` (biến môi trường `Public__PortalBaseUrl`) bằng origin chính thức, ví dụ `https://congdong.example.gov.vn`; Development đã đặt `http://localhost:5115`. Không lấy canonical host từ request để tránh ghi nhận Host header không đáng tin.
+
 Quyết định đã chốt nằm ở `docs/adr/`.

@@ -15,11 +15,19 @@
         <form method="post" enctype="multipart/form-data" class="stack">
             <div><label for="title">Tiêu đề</label><input id="title" name="Title" required maxlength="300" /></div>
             <div><label for="symbol">Số ký hiệu</label><input id="symbol" name="Symbol" maxlength="100" /></div>
+            <div><label for="issuer">Cơ quan ban hành</label><input id="issuer" name="Issuer" maxlength="200" /></div>
+            <div><label for="issued-on">Ngày ban hành</label><input id="issued-on" name="IssuedOn" type="date" /></div>
             <div><label for="field">Lĩnh vực</label><input id="field" name="Field" maxlength="120" /></div>
-            <div><label for="upload">Tệp PDF, Word, Excel</label><input id="upload" name="Upload" type="file" required /></div>
+            <div><label for="effective-from">Có hiệu lực từ</label><input id="effective-from" name="EffectiveFrom" type="date" /></div>
+            <div><label for="expires-on">Có hiệu lực đến</label><input id="expires-on" name="ExpiresOn" type="date" /></div>
+            <div><label for="upload">Tệp PDF, Word, Excel (tối đa 20 MiB)</label><input id="upload" name="Upload" type="file" data-file-preview="20971520" accept=".pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required /><small data-file-preview-status aria-live="polite"></small></div>
             <button type="submit">Lưu nháp</button>
         </form>
     }
+    <form class="public-filter" method="get" action="/admin/cms/van-ban" role="search">
+        <label for="admin-document-query">Tìm và lọc văn bản</label>
+        <div><input id="admin-document-query" name="q" type="search" value="@Model.Query" placeholder="Số ký hiệu, tên hoặc lĩnh vực" /><input name="field" value="@Model.FieldFilter" aria-label="Lĩnh vực chính xác" placeholder="Lĩnh vực chính xác" /><button class="button" type="submit">Lọc</button></div>
+    </form>
     @if (Model.Items.Count == 0)
     {
         <p class="empty">Chưa có văn bản.</p>
@@ -29,12 +37,14 @@
         <div class="table-scroll">
             <table>
                 <caption>Danh sách văn bản</caption>
-                <thead><tr><th scope="col">Tiêu đề</th><th scope="col">Lĩnh vực</th><th scope="col">Trạng thái</th><th scope="col"></th></tr></thead>
+                <thead><tr><th scope="col">Văn bản</th><th scope="col">Ngày ban hành</th><th scope="col">Thời hạn</th><th scope="col">Lĩnh vực</th><th scope="col">Trạng thái</th><th scope="col"></th></tr></thead>
                 <tbody>
                 @foreach (var item in Model.Items)
                 {
                     <tr>
-                        <td>@item.Title</td>
+                        <td><strong>@item.Title</strong>@if (!string.IsNullOrWhiteSpace(item.Symbol)) { <small class="muted"> · @item.Symbol</small> }@if (!string.IsNullOrWhiteSpace(item.Issuer)) { <small class="muted"> · @item.Issuer</small> }</td>
+                        <td>@(item.IssuedOn?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td>@(item.EffectiveFrom?.ToString("dd/MM/yyyy") ?? "—") – @(item.ExpiresOn?.ToString("dd/MM/yyyy") ?? "không giới hạn")</td>
                         <td>@item.Field</td>
                         <td>@EducationUi.Status(item.Status)</td>
                         <td>
@@ -50,3 +60,4 @@
         </div>
     }
 </section>
+@await Html.PartialAsync("/Pages/Shared/_PublicPager.cshtml", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))

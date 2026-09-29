@@ -1,11 +1,11 @@
-@page "/admin/lop-hoc"
+﻿@page "/admin/lop-hoc"
 @using TITKUL.PMTTCU.Web.Areas.Admin
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.LopHocModel
 @{
     ViewData["Title"] = "Lớp học";
 }
 
-<section class="card stack">
+<section class="card stack admin-education-page education-legacy-page">
     <h1>Lớp học</h1>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
@@ -63,9 +63,13 @@
                 </select>
             </div>
             <div>
-                <label for="code">Mã lớp</label>
-                <input id="code" name="Code" value="@Model.Code" required maxlength="60" autocomplete="off" />
+                <label for="clubId">Câu lạc bộ (nếu có)</label>
+                <select id="clubId" name="ClubId">
+                    <option value="">Không thuộc câu lạc bộ</option>
+                    @foreach (var club in Model.Clubs) { <option value="@club.Id">@club.Code — @club.Name</option> }
+                </select>
             </div>
+            <p class="status-note">Mã lớp sẽ được hệ thống tự cấp khi tạo.</p>
             <div>
                 <label for="name">Tên lớp</label>
                 <input id="name" name="Name" value="@Model.Name" required maxlength="250" />

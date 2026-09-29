@@ -12,6 +12,7 @@ public class LopHocModel : PageModel
     public IReadOnlyList<ClassItem> Items { get; private set; } = [];
     public IReadOnlyList<OptionItem> Programs { get; private set; } = [];
     public IReadOnlyList<OptionItem> Rooms { get; private set; } = [];
+    public IReadOnlyList<OptionItem> Clubs { get; private set; } = [];
     public string? ErrorMessage { get; private set; }
     public bool CanManage { get; private set; }
     public int PageNumber { get; private set; } = 1;
@@ -22,6 +23,7 @@ public class LopHocModel : PageModel
 
     [BindProperty] public Guid? ProgramId { get; set; }
     [BindProperty] public Guid? RoomId { get; set; }
+    [BindProperty] public Guid? ClubId { get; set; }
     [BindProperty] public string Code { get; set; } = "";
     [BindProperty] public string Name { get; set; } = "";
     [BindProperty] public DateOnly? StartDate { get; set; }
@@ -40,6 +42,7 @@ public class LopHocModel : PageModel
         {
             programId = ProgramId,
             roomId = RoomId,
+            clubId = ClubId,
             code = Code,
             name = Name,
             startDate = StartDate,
@@ -78,11 +81,13 @@ public class LopHocModel : PageModel
         var classes = await _api.GetJsonAsync<ListEnvelope<ClassItem>>(query, token);
         var programs = await _api.GetJsonAsync<ListEnvelope<OptionItem>>("/api/v1/admin/programs?pageSize=100", token);
         var rooms = await _api.GetJsonAsync<ListEnvelope<OptionItem>>("/api/v1/admin/rooms?pageSize=100", token);
+        var clubs = await _api.GetJsonAsync<ListEnvelope<OptionItem>>("/api/v1/admin/clubs?pageSize=100&status=ACTIVE", token);
         if (classes is null) ErrorMessage ??= "Không tải được danh sách lớp.";
         Items = classes?.Items ?? [];
         Total = classes?.Total ?? Items.Count;
         Programs = programs?.Items ?? [];
         Rooms = rooms?.Items ?? [];
+        Clubs = clubs?.Items ?? [];
         return Page();
     }
 

@@ -1,4 +1,4 @@
-@page "/admin/cms/bieu-mau"
+﻿@page "/admin/cms/bieu-mau"
 @using TITKUL.PMTTCU.Web.Areas.Admin
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsBieuMauModel
 @{
@@ -10,16 +10,26 @@
     {
         <p class="alert" role="alert">@Model.ErrorMessage</p>
     }
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <p class="status-note" role="status">@Model.SuccessMessage</p>
+    }
     @if (Model.CanEdit)
     {
         <form method="post" enctype="multipart/form-data" class="stack">
             <div><label for="title">Tiêu đề</label><input id="title" name="Title" required maxlength="300" /></div>
-            <div><label for="code">Mã</label><input id="code" name="Code" maxlength="60" /></div>
+            <p class="status-note">Mã biểu mẫu sẽ do hệ thống tự cấp sau khi lưu.</p>
             <div><label for="summary">Mô tả</label><textarea id="summary" name="Summary" rows="2"></textarea></div>
-            <div><label for="upload">Tệp PDF, Word, Excel</label><input id="upload" name="Upload" type="file" required /></div>
+            <div><label for="form-effective-from">Có hiệu lực từ</label><input id="form-effective-from" name="EffectiveFrom" type="date" /></div>
+            <div><label for="form-expires-on">Có hiệu lực đến</label><input id="form-expires-on" name="ExpiresOn" type="date" /></div>
+            <div><label for="upload">Tệp PDF, Word, Excel (tối đa 20 MiB)</label><input id="upload" name="Upload" type="file" data-file-preview="20971520" accept=".pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required /><small data-file-preview-status aria-live="polite"></small></div>
             <button type="submit">Lưu nháp</button>
         </form>
     }
+    <form class="public-filter" method="get" action="/admin/cms/bieu-mau" role="search">
+        <label for="admin-form-query">Tìm biểu mẫu</label>
+        <div><input id="admin-form-query" name="q" type="search" value="@Model.Query" placeholder="Tên hoặc mã biểu mẫu" /><button class="button" type="submit">Tìm</button></div>
+    </form>
     @if (Model.Items.Count == 0)
     {
         <p class="empty">Chưa có biểu mẫu.</p>
@@ -29,12 +39,15 @@
         <div class="table-scroll">
             <table>
                 <caption>Danh sách biểu mẫu</caption>
-                <thead><tr><th scope="col">Tiêu đề</th><th scope="col">Trạng thái</th><th scope="col"></th></tr></thead>
+                <thead><tr><th scope="col">Mã</th><th scope="col">Biểu mẫu</th><th scope="col">Ngày công bố</th><th scope="col">Thời hạn</th><th scope="col">Trạng thái</th><th scope="col"></th></tr></thead>
                 <tbody>
                 @foreach (var item in Model.Items)
                 {
                     <tr>
+                        <td><code>@(item.Code ?? "—")</code></td>
                         <td>@item.Title</td>
+                        <td>@(item.PublishedAt?.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td>@(item.EffectiveFrom?.ToString("dd/MM/yyyy") ?? "—") – @(item.ExpiresOn?.ToString("dd/MM/yyyy") ?? "không giới hạn")</td>
                         <td>@EducationUi.Status(item.Status)</td>
                         <td>
                             @if (Model.CanEdit && item.Status != "PUBLISHED")
@@ -49,3 +62,4 @@
         </div>
     }
 </section>
+@await Html.PartialAsync("/Pages/Shared/_PublicPager.cshtml", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))

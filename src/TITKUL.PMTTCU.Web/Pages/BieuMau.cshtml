@@ -2,24 +2,40 @@
 @model TITKUL.PMTTCU.Web.Pages.BieuMauModel
 @{
     ViewData["Title"] = "Biểu mẫu";
+    var today = DateOnly.FromDateTime(DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(7)).DateTime);
 }
 <section class="card stack">
     <h1>Biểu mẫu</h1>
-    @if (Model.Items.Count == 0)
+    <form class="public-filter" method="get" action="/bieu-mau" role="search">
+        <label for="form-query">Tìm biểu mẫu</label>
+        <div><input id="form-query" name="q" type="search" value="@Model.Query" placeholder="Tên hoặc mã biểu mẫu" /><button class="button" type="submit">Tìm kiếm</button></div>
+        @if (!string.IsNullOrWhiteSpace(Model.Query)) { <a href="/bieu-mau">Xóa tìm kiếm</a> }
+    </form>
+    @if (Model.ErrorMessage is not null)
     {
-        <p class="empty">Chưa có biểu mẫu công khai.</p>
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    else if (Model.Items.Count == 0)
+    {
+        <p class="empty">@(string.IsNullOrWhiteSpace(Model.Query) ? "Chưa có biểu mẫu công khai." : "Không tìm thấy biểu mẫu phù hợp.")</p>
     }
     else
     {
         <ul class="stack">
             @foreach (var item in Model.Items)
             {
+                var expired = item.ExpiresOn is DateOnly expiresOn && expiresOn < today;
+                var notYetEffective = item.EffectiveFrom is DateOnly effectiveFrom && effectiveFrom > today;
                 <li>
                     <strong>@item.Title</strong>
+                    @if (!string.IsNullOrWhiteSpace(item.Code)) { <span> · Mã @item.Code</span> }
+                    @if (item.PublishedAt is DateTimeOffset publishedAt) { <p class="muted">Công bố ngày @publishedAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</p> }
+                    @if (item.EffectiveFrom is not null || item.ExpiresOn is not null) { <p class="status-note">Thời hạn: @(item.EffectiveFrom?.ToString("dd/MM/yyyy") ?? "chưa ghi ngày bắt đầu") – @(item.ExpiresOn?.ToString("dd/MM/yyyy") ?? "không giới hạn") · @(expired ? "Đã hết hiệu lực" : notYetEffective ? "Chưa đến ngày hiệu lực" : "Trong thời hạn")</p> }
                     @if (!string.IsNullOrWhiteSpace(item.Summary)) { <p>@item.Summary</p> }
                     <p><a class="button" href="/bieu-mau?handler=Tai&amp;id=@item.Id">Tải @item.FileName</a></p>
                 </li>
             }
         </ul>
     }
+    @await Html.PartialAsync("_PublicPager", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))
 </section>

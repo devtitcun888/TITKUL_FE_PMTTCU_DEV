@@ -1,0 +1,105 @@
+@page "/admin/cau-lac-bo/{id:guid}"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CauLacBoChiTietModel
+@{
+    ViewData["Title"] = Model.Club?.Name ?? "Lịch câu lạc bộ";
+}
+<section class="card stack">
+    <p><a href="/admin/cau-lac-bo">← Danh sách câu lạc bộ</a></p>
+    @if (!string.IsNullOrWhiteSpace(Model.Error)) { <p class="alert" role="alert">@Model.Error</p> }
+    @if (!string.IsNullOrWhiteSpace(Model.Message)) { <p class="status-note" role="status">@Model.Message</p> }
+    @if (Model.Club is not null)
+    {
+        <h1>@Model.Club.Name</h1>
+        <p>@Model.Club.Location · @Model.Club.RegularSchedule</p>
+        @if (Model.CanManage && Model.Club.Status == "ACTIVE")
+        {
+            <details open>
+                <summary>Thêm buổi sinh hoạt</summary>
+                <form method="post" asp-page-handler="Create" class="stack">
+                    <input type="hidden" name="month" value="@Model.CalendarMonth.ToString("yyyy-MM")" />
+                    <div><label for="title">Nội dung</label><input id="title" name="title" required minlength="3" maxlength="250" /></div>
+                    <div><label for="startAt">Bắt đầu</label><input id="startAt" name="startAt" type="datetime-local" required /></div>
+                    <div><label for="endAt">Kết thúc</label><input id="endAt" name="endAt" type="datetime-local" required /></div>
+                    <div><label for="location">Địa điểm</label><input id="location" name="location" maxlength="300" value="@Model.Club.Location" /></div>
+                    <div><label for="facilitatorId">Người phụ trách</label><select id="facilitatorId" name="facilitatorId"><option value="">Chưa phân công</option>@foreach (var person in Model.Staff) { <option value="@person.Id">@person.Username</option> }</select></div>
+                    <div><label for="note">Ghi chú</label><textarea id="note" name="note" rows="2" maxlength="1000"></textarea></div>
+                    <button class="button" type="submit">Tạo buổi sinh hoạt</button>
+                </form>
+            </details>
+        }
+        <h2>Lịch các buổi</h2>
+        <nav class="club-calendar-nav" aria-label="Điều hướng tháng">
+            <a class="button button-quiet" href="/admin/cau-lac-bo/@Model.Club.Id?month=@Model.CalendarMonth.AddMonths(-1).ToString("yyyy-MM")">← Tháng trước</a>
+            <strong>Tháng @Model.CalendarMonth.ToString("MM/yyyy")</strong>
+            <a class="button button-quiet" href="/admin/cau-lac-bo/@Model.Club.Id">Tháng này</a>
+            <a class="button button-quiet" href="/admin/cau-lac-bo/@Model.Club.Id?month=@Model.CalendarMonth.AddMonths(1).ToString("yyyy-MM")">Tháng sau →</a>
+        </nav>
+        <div class="club-calendar" aria-label="Lịch sinh hoạt tháng @Model.CalendarMonth.ToString("MM/yyyy")">
+            <div class="club-calendar-week club-calendar-weekdays" aria-hidden="true">
+                @foreach (var weekday in new[] { "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ nhật" })
+                {
+                    <div>@weekday</div>
+                }
+            </div>
+            @foreach (var week in Model.CalendarWeeks)
+            {
+                <div class="club-calendar-week">
+                    @foreach (var day in week.Days)
+                    {
+                        <section class="club-calendar-day @(day.InMonth ? "" : "is-other-month")">
+                            <h3><time datetime="@day.Date.ToString("yyyy-MM-dd")">@day.Date.ToString("dd/MM")</time></h3>
+                            @foreach (var session in day.Sessions)
+                            {
+                                <a class="club-calendar-event" href="#session-@session.Id">
+                                    <time datetime="@session.StartAt.ToString("O")">@session.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")</time>
+                                    <span>@session.Title</span>
+                                    <small>@EducationUi.Status(session.Status)</small>
+                                </a>
+                            }
+                            @if (day.Sessions.Count == 0)
+                            {
+                                <span class="club-calendar-empty">Không có lịch</span>
+                            }
+                        </section>
+                    }
+                </div>
+            }
+        </div>
+        @if (Model.MonthSessions.Count == 0)
+        {
+            <p class="empty">Tháng này chưa có buổi sinh hoạt được lên lịch.</p>
+        }
+        else
+        {
+            <div class="stack">
+            @foreach (var session in Model.MonthSessions)
+            {
+                <details class="card">
+                    <summary id="session-@session.Id">@session.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm") · @session.Title · @EducationUi.Status(session.Status)</summary>
+                    <dl class="definition-list">
+                        <dt>Kết thúc</dt><dd>@session.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</dd>
+                        <dt>Địa điểm</dt><dd>@(session.Location ?? "Chưa cập nhật")</dd>
+                        <dt>Người phụ trách</dt><dd>@(session.FacilitatorName ?? "Chưa phân công")</dd>
+                        @if (!string.IsNullOrWhiteSpace(session.Note)) { <dt>Ghi chú</dt><dd>@session.Note</dd> }
+                    </dl>
+                    @if (Model.CanManage && session.Status == "SCHEDULED")
+                    {
+                        <form method="post" asp-page-handler="Update" class="stack">
+                            <input type="hidden" name="month" value="@Model.CalendarMonth.ToString("yyyy-MM")" />
+                            <input type="hidden" name="sessionId" value="@session.Id" />
+                            <div><label for="title-@session.Id">Nội dung</label><input id="title-@session.Id" name="title" value="@session.Title" required maxlength="250" /></div>
+                            <div><label for="start-@session.Id">Bắt đầu</label><input id="start-@session.Id" name="startAt" type="datetime-local" value="@session.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("yyyy-MM-ddTHH:mm")" required /></div>
+                            <div><label for="end-@session.Id">Kết thúc</label><input id="end-@session.Id" name="endAt" type="datetime-local" value="@session.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("yyyy-MM-ddTHH:mm")" required /></div>
+                            <div><label for="place-@session.Id">Địa điểm</label><input id="place-@session.Id" name="location" value="@session.Location" maxlength="300" /></div>
+                            <div><label for="facilitator-@session.Id">Người phụ trách</label><select id="facilitator-@session.Id" name="facilitatorId"><option value="">Chưa phân công</option>@foreach (var person in Model.Staff) { <option value="@person.Id" selected="@(person.Id == session.FacilitatorId)">@person.Username</option> }</select></div>
+                            <div><label for="note-@session.Id">Ghi chú</label><textarea id="note-@session.Id" name="note" rows="2" maxlength="1000">@session.Note</textarea></div>
+                            <button type="submit">Lưu thay đổi</button>
+                        </form>
+                        <form method="post" asp-page-handler="Cancel" asp-route-sessionId="@session.Id"><input type="hidden" name="month" value="@Model.CalendarMonth.ToString("yyyy-MM")" /><button type="submit">Hủy buổi</button></form>
+                    }
+                </details>
+            }
+            </div>
+        }
+    }
+</section>

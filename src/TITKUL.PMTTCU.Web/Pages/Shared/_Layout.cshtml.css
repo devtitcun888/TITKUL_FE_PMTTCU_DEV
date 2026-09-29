@@ -46,3 +46,67 @@ button.accept-policy {
   white-space: nowrap;
   line-height: 60px;
 }
+
+.search-page {
+  gap: 1.25rem;
+}
+
+.search-result-group {
+  padding-top: 1rem;
+  border-top: 1px solid #dbe3eb;
+}
+
+.search-result-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .5rem;
+}
+
+.search-result-heading h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.search-result-heading span,
+.search-result-group time {
+  color: #64748b;
+  font-size: .875rem;
+}
+
+.search-result-group .content-list p {
+  margin: .35rem 0;
+  color: #475569;
+}
+
+.search-preferences {
+  padding: .8rem 1rem;
+  border: 1px solid #dbe3eb;
+  border-radius: .75rem;
+  background: #f8fafc;
+}
+
+.search-preferences > summary {
+  color: #12395b;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.search-preferences-body {
+  display: grid;
+  gap: .75rem;
+  padding-top: .65rem;
+}
+
+.search-preferences-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem 1rem;
+}
+
+.search-preferences-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+}

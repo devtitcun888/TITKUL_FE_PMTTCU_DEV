@@ -14,6 +14,11 @@
     }
     @if (Model.Item is not null)
     {
+        @if (Model.Item.HasPhoto)
+        {
+            <p><img src="/admin/hoc-vien/@Model.Item.Id/anh" alt="Ảnh hồ sơ của @Model.Item.FullName" width="160" height="160" loading="lazy" /></p>
+        }
+        <p><a class="button" href="/admin/hoc-vien/@Model.Item.Id/anh">@(Model.Item.HasPhoto ? "Cập nhật ảnh hồ sơ" : "Thêm ảnh hồ sơ")</a></p>
         <p><strong>@Model.Item.FullName</strong></p>
         <p>Điện thoại: @Model.Item.Phone</p>
         <p>CCCD: @Model.Item.CccdMasked</p>

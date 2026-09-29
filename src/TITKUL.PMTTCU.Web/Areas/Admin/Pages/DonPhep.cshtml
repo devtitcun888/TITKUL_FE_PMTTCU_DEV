@@ -1,0 +1,59 @@
+@page "/admin/lop-hoc/{id:guid}/don-phep"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.DonPhepModel
+@{
+    ViewData["Title"] = "Đơn xin phép";
+}
+<section class="card stack">
+    <h1>Đơn xin phép</h1>
+    <p><a href="/admin/lop-hoc/@Model.ClassId">Quay lại lớp</a></p>
+    @if (!string.IsNullOrWhiteSpace(Model.Message)) { <p class="status-note" role="status">@Model.Message</p> }
+    @if (!string.IsNullOrWhiteSpace(Model.Error)) { <p class="alert" role="alert">@Model.Error</p> }
+    @if (Model.CanManage)
+    {
+        <h2>Ghi nhận đơn</h2>
+        @if (Model.Enrollments.Count == 0 || Model.Sessions.Count == 0)
+        {
+            <p class="empty">Lớp chưa có học viên hoặc buổi học phù hợp.</p>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Create" class="stack">
+                <div><label for="enrollment">Học viên</label><select id="enrollment" name="EnrollmentId" required><option value="">Chọn học viên</option>@foreach (var row in Model.Enrollments) { <option value="@row.Id" selected="@(Model.EnrollmentId == row.Id ? "selected" : null)">@row.FullName</option> }</select></div>
+                <div><label for="session">Buổi học</label><select id="session" name="SessionId" required><option value="">Chọn buổi học</option>@foreach (var row in Model.Sessions) { <option value="@row.Id" selected="@(Model.SessionId == row.Id ? "selected" : null)">@row.StartAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") · @row.Title</option> }</select></div>
+                <div><label for="reason">Lý do xin phép</label><textarea id="reason" name="Reason" rows="3" minlength="5" maxlength="500" required>@Model.Reason</textarea></div>
+                <button type="submit">Ghi nhận đơn chờ duyệt</button>
+            </form>
+        }
+    }
+    <h2>Danh sách đơn</h2>
+    @if (Model.Items.Count == 0) { <p class="empty">Chưa có đơn xin phép.</p> }
+    else
+    {
+        <div class="table-scroll"><table>
+            <thead><tr><th>Học viên / Buổi</th><th>Lý do</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+            <tbody>@foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td>@item.LearnerName<br /><small>@item.SessionTitle</small></td>
+                    <td>@item.Reason @if (!string.IsNullOrWhiteSpace(item.DecisionNote)) { <p>Ghi chú xử lý: @item.DecisionNote</p> }</td>
+                    <td>@(item.Status switch { "CHO_DUYET" => "Chờ duyệt", "DA_DUYET" => "Đã duyệt", "TU_CHOI" => "Từ chối", _ => item.Status })</td>
+                    <td>
+                        @if (item.Status == "CHO_DUYET")
+                        {
+                            @if (Model.CanManage)
+                            {
+                                <form method="post" asp-page-handler="Decision" class="stack">
+                                    <input type="hidden" name="RequestId" value="@item.Id" />
+                                    <label for="decisionNote-@item.Id">Ghi chú xử lý</label><input id="decisionNote-@item.Id" name="DecisionNote" value="@(Model.RequestId == item.Id ? Model.DecisionNote : "")" maxlength="500" />
+                                    <button type="submit" name="decision" value="APPROVE">Duyệt, ghi Có phép</button>
+                                    <button type="submit" name="decision" value="REJECT">Từ chối</button>
+                                </form>
+                            }
+                            else { <span>Chỉ xem</span> }
+                        }
+                    </td>
+                </tr>
+            }</tbody>
+        </table></div>
+    }
+</section>

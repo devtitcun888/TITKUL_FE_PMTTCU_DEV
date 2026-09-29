@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TITKUL.PMTTCU.Web.ApiClients;
 using TITKUL.PMTTCU.Web.Observability;
@@ -15,6 +15,7 @@ public class ChuongTrinhModel : PageModel
     public string? ErrorMessage { get; private set; }
     public bool CanManage { get; private set; }
     public bool Editing => Id.HasValue;
+    public bool ShowModal { get; private set; }
 
     [BindProperty] public Guid? Id { get; set; }
     [BindProperty] public string Code { get; set; } = "";
@@ -22,21 +23,26 @@ public class ChuongTrinhModel : PageModel
     [BindProperty] public string Goal { get; set; } = "";
     [BindProperty] public string Status { get; set; } = "ACTIVE";
 
-    public async Task<IActionResult> OnGetAsync(Guid? id) => await LoadAsync(id);
+    public async Task<IActionResult> OnGetAsync(Guid? id, bool create = false)
+    {
+        ShowModal = create || id.HasValue;
+        return await LoadAsync(id);
+    }
 
     public async Task<IActionResult> OnPostAsync()
     {
         if (!HasManage()) return Redirect("/admin/khong-quyen");
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
-        var body = new { code = Code, name = Name, goal = Goal, status = Status };
+        var body = new { name = Name, goal = Goal, status = Status };
         var response = Id is Guid id
             ? await _api.SendJsonAsync(HttpMethod.Put, $"/api/v1/admin/programs/{id}", token, body)
             : await _api.SendJsonAsync(HttpMethod.Post, "/api/v1/admin/programs", token, body);
         if (response is null || !response.IsSuccessStatusCode)
         {
             ErrorMessage = "Không lưu được chương trình. Kiểm tra mã trùng hoặc dữ liệu bắt buộc.";
-            return await LoadAsync(Id);
+            ShowModal = true;
+            return await LoadAsync(null, hydrateDetail: false);
         }
 
         return Redirect("/admin/chuong-trinh");
@@ -62,7 +68,7 @@ public class ChuongTrinhModel : PageModel
     private bool Has(string permission) => (HttpContext.Items["StaffProfile"] as StaffProfile)?.Permissions?.Contains(permission) == true;
     private string? Token() => Request.Cookies[AdminGateMiddleware.CookieName];
 
-    private async Task<IActionResult> LoadAsync(Guid? id)
+    private async Task<IActionResult> LoadAsync(Guid? id, bool hydrateDetail = true)
     {
         CanManage = HasManage();
         if (!HasView()) return Redirect("/admin/khong-quyen");
@@ -71,7 +77,7 @@ public class ChuongTrinhModel : PageModel
         var body = await _api.GetJsonAsync<ListEnvelope<Item>>("/api/v1/admin/programs?pageSize=100", token);
         if (body is null) ErrorMessage ??= "Không tải được danh sách.";
         Items = body?.Items ?? [];
-        if (id is Guid editId)
+        if (hydrateDetail && id is Guid editId)
         {
             var detail = await _api.GetJsonAsync<ItemEnvelope<Detail>>($"/api/v1/admin/programs/{editId}", token);
             if (detail?.Item is Detail item)

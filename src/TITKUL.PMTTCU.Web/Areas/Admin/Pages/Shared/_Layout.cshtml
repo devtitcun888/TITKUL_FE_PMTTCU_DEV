@@ -1,4 +1,4 @@
-@using TITKUL.PMTTCU.Web.ApiClients
+﻿@using TITKUL.PMTTCU.Web.ApiClients
 @{
     var profile = Context.Items["StaffProfile"] as StaffProfile;
     var permissions = profile?.Permissions ?? [];
@@ -9,78 +9,145 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Quản trị PMTTCU</title>
+    @if (ViewData["UseCmsEditor"] is true)
+    {
+        <link rel="stylesheet" href="~/lib/ckeditor5/48.5.2/ckeditor5-editor.css" asp-append-version="true" />
+    }
     <link rel="stylesheet" href="~/css/pmttcu.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-education.css" asp-append-version="true" />
 </head>
 <body>
     <a class="skip-link" href="#noi-dung">Đi tới nội dung</a>
     <div class="admin-shell">
         <nav class="side-nav" aria-label="Quản trị">
-            @if (permissions.Contains("report.system.view") || permissions.Contains("report.own_classes.view"))
-            {
-                <a href="/admin/tong-quan">Tổng quan</a>
-                <a href="/admin/bao-cao">Báo cáo</a>
-                @if (permissions.Contains("report.export"))
+            <div class="side-nav-head">
+                <div class="side-nav-brand"><span aria-hidden="true">TT</span><strong>Quản trị</strong></div>
+                <button class="side-nav-mobile-toggle" type="button" aria-expanded="false" aria-controls="admin-nav-body">Mở menu</button>
+            </div>
+            <div class="side-nav-body" id="admin-nav-body">
+                <a class="side-nav-home" href="/admin/tong-quan">Tổng quan</a>
+                <a href="/admin/bao-mat">Bảo mật tài khoản</a>
+                <label class="side-nav-search-label" for="admin-nav-search">Đi tới chức năng</label>
+                <input id="admin-nav-search" class="side-nav-search" type="search" placeholder="Tìm trong menu" autocomplete="off" />
+                <p class="side-nav-search-status" aria-live="polite"></p>
+                @if (permissions.Contains("education.manage") || permissions.Contains("education.view") || permissions.Contains("report.own_classes.view") || permissions.Contains("learner.view") || permissions.Contains("learner.manage"))
                 {
-                    <a href="/admin/bao-cao/thang">Báo cáo tháng</a>
+                    <details class="side-nav-group">
+                        <summary>Đào tạo &amp; người học</summary>
+                        <div class="side-nav-items">
+                            @if (permissions.Contains("education.manage") || permissions.Contains("education.view"))
+                            {
+                                <a href="/admin/chuong-trinh">Chương trình</a>
+                                <a href="/admin/doi-tuong">Đối tượng</a>
+                                <a href="/admin/thon-ap">Thôn/ấp</a>
+                                <a href="/admin/phong-hoc">Phòng học</a>
+                                <a href="/admin/cau-lac-bo">Câu lạc bộ</a>
+                                @if (permissions.Contains("education.manage"))
+                                {
+                                    <a href="/admin/ke-hoach-hoat-dong">Kế hoạch hoạt động</a>
+                                    <a href="/admin/nhan-su">Nhân sự, cộng tác viên</a>
+                                    <a href="/admin/pcgd-xmc">Điều tra PCGD/XMC</a>
+                                    <a href="/admin/xoa-mu-chu">Sổ theo dõi xóa mù chữ</a>
+                                    <a href="/admin/so-tai-san-tai-lieu">Sổ tài sản, tài liệu và mượn–trả</a>
+                                }
+                                <a href="/admin/lop-hoc">Lớp học</a>
+                                <a href="/admin/lich-hoc">Lịch học</a>
+                            }
+                            else if (permissions.Contains("report.own_classes.view"))
+                            {
+                                <a href="/admin/lop-hoc">Lớp học</a>
+                                <a href="/admin/lich-hoc">Lịch học</a>
+                            }
+                            @if (permissions.Contains("learner.view") || permissions.Contains("learner.manage"))
+                            {
+                                <a href="/admin/hoc-vien">Học viên</a>
+                            }
+                        </div>
+                    </details>
                 }
-            }
-            else
-            {
-                <a href="/admin">Tổng quan</a>
-            }
-            @if (permissions.Contains("education.manage") || permissions.Contains("education.view"))
-            {
-                <a href="/admin/chuong-trinh">Chương trình</a>
-                <a href="/admin/doi-tuong">Đối tượng</a>
-                <a href="/admin/thon-ap">Thôn/ấp</a>
-                <a href="/admin/phong-hoc">Phòng học</a>
-            }
-            @if (permissions.Contains("education.manage") || permissions.Contains("education.view") || permissions.Contains("report.own_classes.view"))
-            {
-                <a href="/admin/lop-hoc">Lớp học</a>
-                <a href="/admin/lich-hoc">Lịch học</a>
-            }
-            @if (permissions.Contains("learner.view") || permissions.Contains("learner.manage"))
-            {
-                <a href="/admin/hoc-vien">Học viên</a>
-            }
-            @if (permissions.Contains("cms.view") || permissions.Contains("cms.create"))
-            {
-                <a href="/admin/cms/chuyen-muc">Chuyên mục</a>
-                <a href="/admin/cms/bai-viet">Bài viết</a>
-                <a href="/admin/cms/su-kien">Sự kiện</a>
-                <a href="/admin/cms/thong-bao">Thông báo</a>
-                <a href="/admin/cms/van-ban">Văn bản</a>
-                <a href="/admin/cms/bieu-mau">Biểu mẫu</a>
-                <a href="/admin/cms/album">Thư viện</a>
-                <a href="/admin/cau-hinh">Cấu hình</a>
-                <a href="/admin/lien-he">Phản ánh</a>
-            }
-            @if (permissions.Contains("survey.view") || permissions.Contains("survey.manage"))
-            {
-                <a href="/admin/khao-sat">Khảo sát</a>
-            }
-            @if (permissions.Contains("user.manage"))
-            {
-                <a href="/admin/nguoi-dung">Người dùng</a>
-                <a href="/admin/vai-tro">Vai trò</a>
-            }
-            @if (permissions.Contains("audit.view"))
-            {
-                <a href="/admin/nhat-ky">Nhật ký</a>
-            }
-            @if (permissions.Contains("backup.view"))
-            {
-                <a href="/admin/sao-luu">Sao lưu</a>
-            }
-            <a href="/admin/dang-xuat">Đăng xuất</a>
+                @if (permissions.Contains("cms.view") || permissions.Contains("cms.create") || permissions.Contains("cms.update"))
+                {
+                    <details class="side-nav-group">
+                        <summary>Nội dung &amp; dịch vụ công</summary>
+                        <div class="side-nav-items">
+                            <a href="/admin/cms/chuyen-muc">Chuyên mục</a>
+                            <a href="/admin/cms/bai-viet">Bài viết</a>
+                            <a href="/admin/cms/su-kien">Sự kiện</a>
+                            <a href="/admin/cms/thong-bao">Thông báo</a>
+                            <a href="/admin/cms/van-ban">Văn bản</a>
+                            <a href="/admin/cms/bieu-mau">Biểu mẫu</a>
+                            <a href="/admin/cms/album">Thư viện</a>
+                            <a href="/admin/cau-hinh">Cấu hình cổng</a>
+                            <a href="/admin/lien-he">Phản ánh của người dân</a>
+                        </div>
+                    </details>
+                }
+                @if (permissions.Contains("survey.view") || permissions.Contains("survey.manage") || permissions.Contains("survey.result.view") || permissions.Contains("report.system.view") || permissions.Contains("report.own_classes.view"))
+                {
+                    <details class="side-nav-group">
+                        <summary>Khảo sát &amp; báo cáo</summary>
+                        <div class="side-nav-items">
+                            @if (permissions.Contains("survey.view") || permissions.Contains("survey.manage"))
+                            {
+                                <a href="/admin/khao-sat">Đợt khảo sát</a>
+                            }
+                            @if (permissions.Contains("survey.manage"))
+                            {
+                                <a href="/admin/dieu-tra-nhu-cau">Điều tra nhu cầu học tập</a>
+                            }
+                            @if (permissions.Contains("survey.result.view"))
+                            {
+                                <a href="/admin/khao-sat/so-sanh">Đối chiếu khảo sát</a>
+                            }
+                            @if (permissions.Contains("report.system.view") || permissions.Contains("report.own_classes.view"))
+                            {
+                                <a href="/admin/bao-cao">Báo cáo tổng hợp</a>
+                            }
+                            @if (permissions.Contains("report.export"))
+                            {
+                                <a href="/admin/bao-cao/thang">Báo cáo tháng</a>
+                            }
+                        </div>
+                    </details>
+                }
+                @if (permissions.Contains("user.manage") || permissions.Contains("audit.view") || permissions.Contains("backup.view"))
+                {
+                    <details class="side-nav-group">
+                        <summary>Quản trị hệ thống</summary>
+                        <div class="side-nav-items">
+                            @if (permissions.Contains("user.manage"))
+                            {
+                                <a href="/admin/nguoi-dung">Người dùng</a>
+                                <a href="/admin/vai-tro">Vai trò và quyền</a>
+                            }
+                            @if (permissions.Contains("audit.view"))
+                            {
+                                <a href="/admin/nhat-ky">Nhật ký hoạt động</a>
+                            }
+                            @if (permissions.Contains("backup.view"))
+                            {
+                                <a href="/admin/sao-luu">Sao lưu dữ liệu</a>
+                            }
+                        </div>
+                    </details>
+                }
+                <a class="side-nav-logout" href="/admin/dang-xuat">Đăng xuất</a>
+            </div>
         </nav>
         <div>
             <header class="admin-topbar">
                 <div class="admin-topbar-inner wrap">
-                    <strong>Quản trị PMTTCU</strong>
-                    <span>@(profile?.Roles?.FirstOrDefault() ?? "Đã đăng nhập")</span>
-                    <a href="/">Về cổng thông tin</a>
+                    <nav class="admin-breadcrumb" aria-label="Đường dẫn">
+                        <a class="admin-breadcrumb-home" href="/admin/tong-quan" aria-label="Tổng quan">⌂</a>
+                        <span aria-hidden="true">›</span>
+                        <span>Quản trị PMTTCU</span>
+                        <span aria-hidden="true">›</span>
+                        <strong>@(ViewData["Title"] ?? "Tổng quan")</strong>
+                    </nav>
+                    <div class="admin-account-tools">
+                        <span class="admin-role-badge"><span aria-hidden="true">♟</span>@(profile?.Roles?.FirstOrDefault() ?? "Đã đăng nhập")</span>
+                        <a href="/">Về cổng thông tin <span aria-hidden="true">↗</span></a>
+                    </div>
                 </div>
             </header>
             <main id="noi-dung" class="admin-main">
@@ -88,5 +155,19 @@
             </main>
         </div>
     </div>
+    <script src="~/js/admin-metadata.js" asp-append-version="true"></script>
+    <script src="~/js/admin-tools.js" asp-append-version="true"></script>
+    <script src="~/js/admin-navigation.js" asp-append-version="true"></script>
+    @if (ViewData["UseCmsEditor"] is true)
+    {
+        <script src="~/lib/ckeditor5/48.5.2/vi.umd.js" asp-append-version="true"></script>
+        <script src="~/lib/ckeditor5/48.5.2/ckeditor5.umd.js" asp-append-version="true"></script>
+        <script type="module" src="~/js/admin-editor.js" asp-append-version="true"></script>
+    }
+    @if (ViewData["UseAdminCharts"] is true)
+    {
+        <script src="~/lib/chartjs/4.5.1/chart.umd.min.js" asp-append-version="true"></script>
+        <script src="~/js/admin-charts.js" asp-append-version="true"></script>
+    }
 </body>
 </html>

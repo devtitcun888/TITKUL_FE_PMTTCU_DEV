@@ -6,20 +6,27 @@
     {
         ViewData["Title"] = "Thông báo";
     }
+    var hasWideTable = PortalRichContent.ContainsTable(Model.Item?.Html);
 }
 
 <section class="card stack">
     <p><a href="/thong-bao">Về danh sách thông báo</a></p>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <h1>@(Model.ResourceNotFound ? "Không tìm thấy thông báo" : "Chưa tải được thông báo")</h1>
+        <p class="@(Model.ResourceNotFound ? "empty" : "alert")" role="@(Model.ResourceNotFound ? "status" : "alert")">@Model.ErrorMessage</p>
     }
     @if (Model.Item is not null)
     {
         <article class="stack">
             <h1>@Model.Item.Title</h1>
             <p>@EducationUi.Status(Model.Item.Level)</p>
-            @Html.Raw(Model.Item.Html)
+            @if (Model.Item.VisibleFrom is not null || Model.Item.VisibleTo is not null)
+            {
+                <p class="muted">Thời gian hiển thị: @if (Model.Item.VisibleFrom is DateTimeOffset from) { <span>từ @from.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</span> }@if (Model.Item.VisibleTo is DateTimeOffset until) { <span>đến @until.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</span> }</p>
+            }
+            @if (hasWideTable) { <p id="cms-table-scroll-hint" class="portal-table-hint">Nếu bảng rộng, vuốt ngang để xem đủ cột. Dùng phím Tab để chọn bảng, sau đó dùng phím mũi tên.</p> }
+            <div class="portal-rich-content">@Html.Raw(PortalRichContent.WithScrollableTables(Model.Item.Html))</div>
         </article>
     }
 </section>

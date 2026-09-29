@@ -5,92 +5,97 @@
     ViewData["Title"] = "Chương trình";
 }
 
-<section class="card stack">
-    <h1>Chương trình</h1>
+<section class="admin-education-page">
+    <header class="education-page-heading">
+        <div>
+            <p class="education-eyebrow">ĐÀO TẠO &amp; NGƯỜI HỌC</p>
+            <h1>Chương trình</h1>
+            <p class="education-page-description">Quản lý chương trình và mục tiêu đào tạo của trung tâm.</p>
+        </div>
+        @if (Model.CanManage)
+        {
+            <a class="education-primary-button" href="/admin/chuong-trinh?create=true"><span aria-hidden="true">＋</span> Thêm chương trình</a>
+        }
+    </header>
+
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <p class="education-alert" role="alert">@Model.ErrorMessage</p>
     }
-    @if (Model.CanManage)
-    {
-        <form method="post" class="stack">
-            @if (Model.Id is Guid editId)
-            {
-                <input type="hidden" name="Id" value="@editId" />
-                <p class="status-note">Đang sửa @Model.Code</p>
-            }
-            <div>
-                <label for="code">Mã</label>
-                <input id="code" name="Code" value="@Model.Code" required maxlength="50" autocomplete="off" />
+
+    <section class="education-toolbar" aria-label="Tìm và lọc chương trình">
+        <label class="education-search">
+            <span aria-hidden="true">⌕</span>
+            <span class="visually-hidden">Tìm theo mã hoặc tên chương trình</span>
+            <input type="search" placeholder="Tìm theo mã hoặc tên chương trình" data-program-search />
+        </label>
+        <label class="education-status-filter">
+            <span class="visually-hidden">Lọc theo trạng thái</span>
+            <select data-program-status>
+                <option value="">Tất cả trạng thái</option>
+                <option value="ACTIVE">Đang dùng</option>
+                <option value="DRAFT">Nháp</option>
+                <option value="INACTIVE">Ngưng</option>
+            </select>
+        </label>
+    </section>
+
+    <section class="education-table-card" aria-labelledby="program-table-title">
+        <header class="education-table-heading">
+            <div><h2 id="program-table-title">Danh sách chương trình</h2><p><span data-program-count>@Model.Items.Count</span> chương trình</p></div>
+        </header>
+        @if (Model.Items.Count == 0)
+        {
+            <div class="education-empty"><span aria-hidden="true">▤</span><strong>Chưa có chương trình</strong><p>Tạo chương trình đầu tiên để bắt đầu quản lý nội dung đào tạo.</p></div>
+        }
+        else
+        {
+            <div class="education-table-scroll">
+                <table class="education-table">
+                    <thead><tr><th scope="col">Mã chương trình</th><th scope="col">Tên chương trình</th><th scope="col">Trạng thái</th>@if (Model.CanManage) { <th scope="col" class="education-actions-cell">Thao tác</th> }</tr></thead>
+                    <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        var normalizedStatus = item.Status?.ToUpperInvariant() ?? "";
+                        <tr data-program-row data-status="@normalizedStatus" data-search="@item.Code @item.Name">
+                            <td><code class="education-code">@item.Code</code></td>
+                            <td><strong class="education-item-name">@item.Name</strong></td>
+                            <td><span class="education-status education-status-@normalizedStatus.ToLowerInvariant()"><i aria-hidden="true"></i>@EducationUi.Status(item.Status ?? "")</span></td>
+                            @if (Model.CanManage)
+                            {
+                                <td class="education-actions-cell"><div class="education-row-actions">
+                                    <a class="education-edit-button" href="/admin/chuong-trinh?id=@item.Id">Sửa</a>
+                                    <form method="post" asp-page-handler="Delete" onsubmit="return confirm('Xóa chương trình này?');"><input type="hidden" name="id" value="@item.Id" /><button class="education-delete-button" type="submit">Xóa</button></form>
+                                </div></td>
+                            }
+                        </tr>
+                    }
+                    <tr data-program-empty hidden><td colspan="4"><div class="education-filter-empty">Không tìm thấy chương trình phù hợp.</div></td></tr>
+                    </tbody>
+                </table>
             </div>
-            <div>
-                <label for="name">Tên</label>
-                <input id="name" name="Name" value="@Model.Name" required maxlength="250" />
-            </div>
-            <div>
-                <label for="goal">Mục tiêu</label>
-                <input id="goal" name="Goal" value="@Model.Goal" required />
-            </div>
-            <div>
-                <label for="status">Trạng thái</label>
-                <select id="status" name="Status">
-                    <option value="DRAFT" selected="@(Model.Status == "DRAFT" ? "selected" : null)">Nháp</option>
-                    <option value="ACTIVE" selected="@(Model.Status == "ACTIVE" ? "selected" : null)">Đang dùng</option>
-                    <option value="INACTIVE" selected="@(Model.Status == "INACTIVE" ? "selected" : null)">Ngưng</option>
-                </select>
-            </div>
-            <div class="row-actions">
-                <button type="submit">@(Model.Editing ? "Lưu chương trình" : "Thêm chương trình")</button>
-                @if (Model.Editing)
-                {
-                    <a class="button button-quiet" href="/admin/chuong-trinh">Hủy sửa</a>
-                }
-            </div>
-        </form>
-    }
-    @if (Model.Items.Count == 0)
-    {
-        <p class="empty">Chưa có chương trình.</p>
-    }
-    else
-    {
-        <div class="table-scroll">
-            <table>
-                <caption>Danh sách chương trình</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">Mã</th>
-                        <th scope="col">Tên</th>
-                        <th scope="col">Trạng thái</th>
-                        @if (Model.CanManage)
-                        {
-                            <th scope="col">Thao tác</th>
-                        }
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var item in Model.Items)
-                {
-                    <tr>
-                        <td>@item.Code</td>
-                        <td>@item.Name</td>
-                        <td>@EducationUi.Status(item.Status)</td>
-                        @if (Model.CanManage)
-                        {
-                            <td>
-                                <div class="row-actions">
-                                    <a href="/admin/chuong-trinh?id=@item.Id">Sửa</a>
-                                    <form method="post" asp-page-handler="Delete">
-                                        <input type="hidden" name="id" value="@item.Id" />
-                                        <button type="submit" class="button-quiet">Xóa</button>
-                                    </form>
-                                </div>
-                            </td>
-                        }
-                    </tr>
-                }
-                </tbody>
-            </table>
-        </div>
-    }
+        }
+    </section>
 </section>
+
+@if (Model.ShowModal && Model.CanManage)
+{
+    <dialog class="education-modal" open aria-labelledby="program-modal-title">
+        <div class="education-modal-backdrop"></div>
+        <section class="education-modal-panel" role="dialog" aria-modal="true" aria-labelledby="program-modal-title">
+            <header class="education-modal-heading"><div><p class="education-eyebrow">THÔNG TIN ĐÀO TẠO</p><h2 id="program-modal-title">@(Model.Editing ? "Cập nhật chương trình" : "Thêm chương trình")</h2></div><a class="education-modal-close" href="/admin/chuong-trinh" aria-label="Đóng">×</a></header>
+            <form method="post" class="education-program-form">
+                @Html.AntiForgeryToken()
+                @if (Model.Id is Guid editId) { <input type="hidden" name="Id" value="@editId" /> }
+                @if (Model.Editing) { <input type="hidden" name="Code" value="@Model.Code" /> }
+                <div class="education-form-field"><label for="program-code">Mã chương trình</label><p class="education-field-hint">Mã do hệ thống tự động tạo và không thay đổi sau khi lưu.</p><input id="program-code" class="education-readonly-field" value="@(Model.Editing ? Model.Code : "Tự động tạo sau khi lưu")" readonly aria-readonly="true" /></div>
+                <div class="education-form-field"><label for="program-name">Tên chương trình <span>*</span></label><input id="program-name" name="Name" value="@Model.Name" placeholder="Nhập tên chương trình" required maxlength="250" autocomplete="off" /></div>
+                <div class="education-form-field"><label for="program-goal">Mục tiêu <span>*</span></label><textarea id="program-goal" name="Goal" placeholder="Mô tả mục tiêu chương trình" rows="4" required>@Model.Goal</textarea></div>
+                <div class="education-form-field"><label for="program-status">Trạng thái <span>*</span></label><select id="program-status" name="Status"><option value="ACTIVE" selected="@(Model.Status == "ACTIVE" ? "selected" : null)">Đang dùng</option><option value="DRAFT" selected="@(Model.Status == "DRAFT" ? "selected" : null)">Nháp</option><option value="INACTIVE" selected="@(Model.Status == "INACTIVE" ? "selected" : null)">Ngưng</option></select></div>
+                <footer class="education-modal-actions"><a class="education-cancel-button" href="/admin/chuong-trinh">Hủy</a><button class="education-primary-button" type="submit">Lưu chương trình</button></footer>
+            </form>
+        </section>
+    </dialog>
+}
+
+<script src="~/js/admin-education.js" asp-append-version="true" defer></script>

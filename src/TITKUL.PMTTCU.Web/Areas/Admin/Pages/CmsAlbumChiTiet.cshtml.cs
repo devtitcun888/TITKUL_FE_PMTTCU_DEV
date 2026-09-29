@@ -35,6 +35,12 @@ public class CmsAlbumChiTietModel : PageModel
             ErrorMessage = "Chọn tệp.";
             return await LoadAsync(id);
         }
+        var maxBytes = Item?.Kind == "IMAGE" ? 5L * 1024 * 1024 : 20L * 1024 * 1024;
+        if (Upload.Length > maxBytes)
+        {
+            ErrorMessage = Item?.Kind == "IMAGE" ? "Ảnh không được vượt quá 5 MiB." : "Tệp học liệu không được vượt quá 20 MiB.";
+            return await LoadAsync(id);
+        }
 
         using var content = new MultipartFormDataContent();
         if (!string.IsNullOrWhiteSpace(MediaTitle)) content.Add(new StringContent(MediaTitle), "title");

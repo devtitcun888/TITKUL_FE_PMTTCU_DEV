@@ -1,0 +1,46 @@
+@using Microsoft.AspNetCore.WebUtilities
+@model TITKUL.PMTTCU.Web.Pages.PublicPagerModel
+@{
+    var pageCount = Math.Max(1, (int)Math.Ceiling(Model.Total / (double)Math.Max(Model.PageSize, 1)));
+    var firstPage = Math.Max(1, Model.CurrentPage - 2);
+    var lastPage = Math.Min(pageCount, Model.CurrentPage + 2);
+
+    string PageUrl(int page)
+    {
+        var query = ViewContext.HttpContext.Request.Query
+            .Where(pair => !string.Equals(pair.Key, "page", StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(pair => pair.Key, pair => (string?)pair.Value.ToString());
+        query["page"] = page.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return QueryHelpers.AddQueryString(ViewContext.HttpContext.Request.Path, query);
+    }
+}
+@if (Model.Total > 0)
+{
+    <div class="public-pager">
+        <span class="public-pager-summary">Hiển thị @(((Model.CurrentPage - 1) * Model.PageSize) + 1)–@Math.Min(Model.CurrentPage * Model.PageSize, Model.Total) trong @Model.Total mục</span>
+        @if (pageCount > 1)
+        {
+            <nav aria-label="Phân trang">
+                @if (Model.CurrentPage > 1)
+                {
+                    <a href="@PageUrl(Model.CurrentPage - 1)" rel="prev">Trước</a>
+                }
+                @for (var pageNumber = firstPage; pageNumber <= lastPage; pageNumber++)
+                {
+                    if (pageNumber == Model.CurrentPage)
+                    {
+                        <span aria-current="page">@pageNumber</span>
+                    }
+                    else
+                    {
+                        <a href="@PageUrl(pageNumber)">@pageNumber</a>
+                    }
+                }
+                @if (Model.CurrentPage < pageCount)
+                {
+                    <a href="@PageUrl(Model.CurrentPage + 1)" rel="next">Sau</a>
+                }
+            </nav>
+        }
+    </div>
+}

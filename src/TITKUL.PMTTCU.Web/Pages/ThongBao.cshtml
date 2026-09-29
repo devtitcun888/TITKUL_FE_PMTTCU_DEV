@@ -13,14 +13,18 @@
             <ul class="stack">
                 @foreach (var item in Model.Urgent)
                 {
-                    <li><a href="/thong-bao/@item.Slug">@item.Title</a></li>
+                    <li><a href="/thong-bao/@Uri.EscapeDataString(item.Slug)">@item.Title</a>@if (item.VisibleTo is DateTimeOffset until) { <small> · Hiển thị đến @until.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</small> }</li>
                 }
             </ul>
         </section>
     }
     <section class="card stack">
         <h1>Thông báo</h1>
-        @if (Model.Items.Count == 0)
+        @if (Model.ErrorMessage is not null)
+        {
+            <p class="alert" role="alert">@Model.ErrorMessage</p>
+        }
+        else if (Model.Items.Count == 0)
         {
             <p class="empty">Chưa có thông báo công khai.</p>
         }
@@ -30,11 +34,16 @@
                 @foreach (var item in Model.Items)
                 {
                     <li>
-                        <a href="/thong-bao/@item.Slug">@item.Title</a>
+                        <a href="/thong-bao/@Uri.EscapeDataString(item.Slug)">@item.Title</a>
                         <span> · @EducationUi.Status(item.Level)</span>
+                        @if (item.VisibleFrom is not null || item.VisibleTo is not null)
+                        {
+                            <small> · Hiển thị @if (item.VisibleFrom is DateTimeOffset startsAt) { <span>từ @startsAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</span> }@if (item.VisibleTo is DateTimeOffset endsAt) { <span>đến @endsAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</span> }</small>
+                        }
                     </li>
                 }
             </ul>
         }
+        @await Html.PartialAsync("_PublicPager", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))
     </section>
 </section>

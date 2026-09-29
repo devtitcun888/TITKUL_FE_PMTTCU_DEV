@@ -13,9 +13,75 @@
     {
         <p class="status-note" role="status">@Model.SuccessMessage</p>
     }
+    @if (Model.IssuedCertificateIds.Count > 0)
+    {
+        <form method="post" asp-page-handler="DownloadBulk" class="row-actions">
+            @foreach (var certificateId in Model.IssuedCertificateIds)
+            {
+                <input type="hidden" name="CertificateIds" value="@certificateId" />
+            }
+            <button type="submit">Tải PDF chứng nhận (.zip)</button>
+        </form>
+    }
+    @if (!string.IsNullOrEmpty(Model.IssuedPublicUrl))
+    {
+        <p class="row-actions">
+            <a class="button" href="@Model.IssuedPublicUrl" target="_blank" rel="noopener">Mở tra cứu công khai</a>
+            <button class="button" type="button" data-copy-url="@Model.IssuedPublicUrl">Sao chép liên kết</button>
+        </p>
+        <p data-copy-feedback role="status" aria-live="polite"></p>
+    }
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
         <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.IssuedItems.Count > 0)
+    {
+        <h2>Chứng nhận đã phát hành</h2>
+        var downloadable = Model.IssuedItems.Where(item => item.Status == "ISSUED").ToArray();
+        @if (Model.CanIssue && downloadable.Length > 0)
+        {
+            <form id="issuedCertificateDownload" method="post" asp-page-handler="DownloadBulk" class="row-actions">
+                <button type="submit">Tải chứng nhận đã chọn (.zip)</button>
+            </form>
+        }
+        <div class="table-scroll">
+            <table>
+                <caption>Danh sách chứng nhận của lớp</caption>
+                <thead><tr><th scope="col">Học viên</th><th scope="col">Ngày cấp</th><th scope="col">Chuyên cần</th><th scope="col">Trạng thái</th><th scope="col">Mã tra cứu</th><th scope="col">Thao tác</th></tr></thead>
+                <tbody>
+                @foreach (var certificate in Model.IssuedItems)
+                {
+                    <tr>
+                        <td>@certificate.LearnerName</td>
+                        <td>@certificate.IssuedOn.ToString("dd/MM/yyyy")</td>
+                        <td>@certificate.Percent.ToString("0.##")%</td>
+                        <td>@(certificate.Status == "ISSUED" ? "Đã phát hành" : "Đã thu hồi")</td>
+                        <td><a href="/tra-cuu/@Uri.EscapeDataString(certificate.LookupCode)" target="_blank" rel="noopener">@certificate.LookupCode</a></td>
+                        <td class="row-actions">
+                            @if (certificate.Status == "ISSUED")
+                            {
+                                @if (Model.CanIssue)
+                                {
+                                    <input type="checkbox" name="CertificateIds" value="@certificate.Id" form="issuedCertificateDownload" aria-label="Chọn chứng nhận của @certificate.LearnerName để tải" />
+                                }
+                                <a href="/admin/lop-hoc/@Model.ClassId/chung-nhan?handler=Pdf&amp;certificateId=@certificate.Id">Tải PDF</a>
+                                @if (Model.CanRevoke)
+                                {
+                                    <form method="post" asp-page-handler="Revoke" class="stack">
+                                        <input type="hidden" name="CertificateId" value="@certificate.Id" />
+                                        <label for="revokeReason-@certificate.Id">Lý do thu hồi</label>
+                                        <input id="revokeReason-@certificate.Id" name="RevokeReason" value="@(Model.CertificateId == certificate.Id ? Model.RevokeReason : "")" required minlength="3" maxlength="500" />
+                                        <button type="submit" class="button-quiet">Thu hồi</button>
+                                    </form>
+                                }
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
     }
     @if (Model.Items.Count == 0)
     {
@@ -23,6 +89,12 @@
     }
     else
     {
+        @if (Model.CanIssue && Model.Items.Any(row => row.Eligible))
+        {
+            <form id="bulkIssueForm" method="post" asp-page-handler="IssueBulk" class="row-actions">
+                <button type="submit">Phát hành chứng nhận đã chọn (tối đa 100)</button>
+            </form>
+        }
         <div class="table-scroll">
             <table>
                 <caption>Xét cấp chứng nhận</caption>
@@ -31,6 +103,7 @@
                         <th scope="col">Họ tên</th>
                         <th scope="col">Chuyên cần</th>
                         <th scope="col">Kết quả</th>
+                        @if (Model.CanIssue) { <th scope="col">Chọn cấp</th> }
                         <th scope="col"></th>
                     </tr>
                 </thead>
@@ -41,6 +114,10 @@
                         <td>@row.FullName</td>
                         <td>@row.Percent.ToString("0.##")%</td>
                         <td>@(row.Eligible ? "Đủ điều kiện" : EducationUi.Status(row.Reason ?? ""))</td>
+                        @if (Model.CanIssue)
+                        {
+                            <td>@if (row.Eligible) { <input type="checkbox" name="SelectedEnrollmentIds" value="@row.EnrollmentId" form="bulkIssueForm" checked="@(Model.SelectedEnrollmentIds.Contains(row.EnrollmentId) ? "checked" : null)" aria-label="Chọn cấp chứng nhận cho @row.FullName" /> }</td>
+                        }
                         <td class="row-actions">
                             @if (Model.CanIssue && row.Eligible)
                             {

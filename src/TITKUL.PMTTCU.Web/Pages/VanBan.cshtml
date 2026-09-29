@@ -2,24 +2,44 @@
 @model TITKUL.PMTTCU.Web.Pages.VanBanModel
 @{
     ViewData["Title"] = "Văn bản";
+    var today = DateOnly.FromDateTime(DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(7)).DateTime);
 }
 <section class="card stack">
     <h1>Văn bản</h1>
-    @if (Model.Items.Count == 0)
+    <form class="public-filter" method="get" action="/van-ban" role="search">
+        <label for="document-query">Tìm văn bản</label>
+        <div><input id="document-query" name="q" type="search" value="@Model.Query" placeholder="Số ký hiệu, tên hoặc cơ quan ban hành" /><input name="field" value="@Model.Field" maxlength="120" aria-label="Lọc theo đúng lĩnh vực" placeholder="Lĩnh vực (đúng tên)" /><button class="button" type="submit">Tìm kiếm</button></div>
+        @if (!string.IsNullOrWhiteSpace(Model.Query) || !string.IsNullOrWhiteSpace(Model.Field)) { <a href="/van-ban">Xóa bộ lọc</a> }
+    </form>
+    @if (Model.ErrorMessage is not null)
     {
-        <p class="empty">Chưa có văn bản công khai.</p>
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    else if (Model.Items.Count == 0)
+    {
+        <p class="empty">@(string.IsNullOrWhiteSpace(Model.Query) && string.IsNullOrWhiteSpace(Model.Field) ? "Chưa có văn bản công khai." : "Không tìm thấy văn bản phù hợp.")</p>
     }
     else
     {
         <ul class="stack">
             @foreach (var item in Model.Items)
             {
+                var expired = item.ExpiresOn is DateOnly expiresOn && expiresOn < today;
+                var notYetEffective = item.EffectiveFrom is DateOnly effectiveFrom && effectiveFrom > today;
                 <li>
                     <strong>@item.Title</strong>
+                    @if (!string.IsNullOrWhiteSpace(item.Symbol)) { <span> · Số ký hiệu: @item.Symbol</span> }
+                    @if (!string.IsNullOrWhiteSpace(item.Issuer)) { <span> · Cơ quan ban hành: @item.Issuer</span> }
+                    @if (item.IssuedOn is DateOnly issuedOn) { <span> · Ngày ban hành: @issuedOn.ToString("dd/MM/yyyy")</span> }
                     @if (!string.IsNullOrWhiteSpace(item.Field)) { <span> · @item.Field</span> }
+                    @if (item.EffectiveFrom is not null || item.ExpiresOn is not null)
+                    {
+                        <p class="status-note">Thời hạn: @(item.EffectiveFrom?.ToString("dd/MM/yyyy") ?? "chưa ghi ngày bắt đầu") – @(item.ExpiresOn?.ToString("dd/MM/yyyy") ?? "không giới hạn") · @(expired ? "Đã hết hiệu lực" : notYetEffective ? "Chưa đến ngày hiệu lực" : "Trong thời hạn")</p>
+                    }
                     <p><a class="button" href="/van-ban?handler=Tai&amp;id=@item.Id">Tải @item.FileName</a></p>
                 </li>
             }
         </ul>
     }
+    @await Html.PartialAsync("_PublicPager", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))
 </section>

@@ -1,0 +1,151 @@
+@page "/admin/ke-hoach-hoat-dong"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.KeHoachHoatDongModel
+@{
+    ViewData["Title"] = "Kế hoạch hoạt động";
+}
+
+<section class="card stack admin-education-page">
+    <h1>Kế hoạch hoạt động</h1>
+    <p>Quản lý kế hoạch năm và nội dung hoạt động theo hai sheet KH và ND HĐ của biểu mẫu.</p>
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+
+    <form method="get" class="row-actions">
+        <label for="yearFilter">Năm</label>
+        <input id="yearFilter" name="Year" type="number" min="1" max="9999" value="@Model.Year" />
+        <button type="submit">Lọc</button>
+        <a class="button button-quiet" href="/admin/ke-hoach-hoat-dong">Bỏ lọc</a>
+    </form>
+
+    <div class="table-scroll">
+        <table>
+            <caption>Kế hoạch đã lập</caption>
+            <thead>
+                <tr><th scope="col">Năm</th><th scope="col">Khoảng năm</th><th scope="col">Trạng thái</th><th scope="col">Người lập</th><th scope="col">Duyệt</th><th scope="col">Thao tác</th></tr>
+            </thead>
+            <tbody>
+                @if (Model.Plans.Count == 0)
+                {
+                    <tr><td colspan="6">Chưa có kế hoạch.</td></tr>
+                }
+                @foreach (var plan in Model.Plans)
+                {
+                    <tr>
+                        <td>@plan.PlanYear</td>
+                        <td>@plan.FromYear – @plan.ToYear</td>
+                        <td>@(plan.Status == "APPROVED" ? "Đã duyệt" : "Bản nháp")</td>
+                        <td>@plan.Planner</td>
+                        <td>@plan.Approver</td>
+                        <td><a href="/admin/ke-hoach-hoat-dong?id=@plan.Id">Mở</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <details class="card stack" open="@(Model.Id.HasValue ? "open" : null)">
+        <summary>@(Model.Id.HasValue ? "Thông tin kế hoạch" : "Tạo kế hoạch")</summary>
+        <form method="post" asp-page-handler="SavePlan" class="stack">
+            @if (Model.Id is Guid id)
+            {
+                <input type="hidden" name="Id" value="@id" />
+            }
+            <div class="row-actions">
+                <div><label for="fromYear">Từ năm</label><input id="fromYear" name="FromYear" type="number" min="1" max="9999" value="@Model.FromYear" /></div>
+                <div><label for="toYear">Đến năm</label><input id="toYear" name="ToYear" type="number" min="1" max="9999" value="@Model.ToYear" /></div>
+                <div><label for="planYear">Kế hoạch hoạt động năm</label><input id="planYear" name="PlanYear" type="number" min="1" max="9999" value="@Model.PlanYear" /></div>
+            </div>
+            <div><label for="priorityActivities">Hoạt động qua điều tra xác định ưu tiên</label><textarea id="priorityActivities" name="PriorityActivities" rows="3">@Model.PriorityActivities</textarea></div>
+            <div><label for="regularActivities">Hoạt động thường xuyên</label><textarea id="regularActivities" name="RegularActivities" rows="3">@Model.RegularActivities</textarea></div>
+            <div class="row-actions">
+                <div><label for="approver">Duyệt của Giám đốc</label><input id="approver" name="Approver" maxlength="240" value="@Model.Approver" /></div>
+                <div><label for="planner">Người lập kế hoạch</label><input id="planner" name="Planner" maxlength="240" value="@Model.Planner" /></div>
+            </div>
+            <button type="submit">Lưu kế hoạch</button>
+        </form>
+        @if (Model.SelectedPlan is { Status: "DRAFT" } selected)
+        {
+            <form method="post" asp-page-handler="Approve">
+                <input type="hidden" name="id" value="@selected.Id" />
+                <button type="submit">Đánh dấu đã duyệt</button>
+            </form>
+        }
+        @if (Model.SelectedPlan is { Status: "APPROVED" })
+        {
+            <p class="status-note">Đã duyệt. Khi lưu thay đổi kế hoạch hoặc hoạt động, trạng thái sẽ trở về bản nháp.</p>
+        }
+    </details>
+
+    @if (Model.SelectedPlan is not null)
+    {
+        <p><a class="button button-quiet" href="/admin/ke-hoach-hoat-dong?handler=Export&amp;id=@Model.SelectedPlan.Id">Xuất Excel theo hai sheet KH / ND HĐ</a></p>
+        <section class="card stack">
+            <h2>Hoạt động trong kế hoạch</h2>
+            @if (Model.Activities.Count == 0)
+            {
+                <p class="empty">Chưa có hoạt động. Thêm các dòng theo cột trong sheet KH.</p>
+            }
+            else
+            {
+                <div class="table-scroll">
+                    <table>
+                        <caption>Danh sách hoạt động</caption>
+                        <thead><tr><th scope="col">STT</th><th scope="col">Hoạt động và thời gian</th><th scope="col">Đối tượng</th><th scope="col">Kết quả mong muốn</th><th scope="col">Nguồn lực</th><th scope="col">Thao tác</th></tr></thead>
+                        <tbody>
+                            @foreach (var activity in Model.Activities)
+                            {
+                                <tr>
+                                    <td>@activity.Sequence</td><td>@activity.ActivityAndTime</td><td>@activity.Audience</td><td>@activity.ExpectedResult</td><td>@activity.Resources</td>
+                                    <td class="row-actions">
+                                        <a href="/admin/ke-hoach-hoat-dong?id=@activity.PlanId&amp;activityId=@activity.Id">Sửa</a>
+                                        <form method="post" asp-page-handler="DeleteActivity">
+                                            <input type="hidden" name="id" value="@activity.PlanId" />
+                                            <input type="hidden" name="activityId" value="@activity.Id" />
+                                            <button type="submit" class="button-quiet">Xóa</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <details class="stack" open="@(Model.ActivityId.HasValue ? "open" : null)">
+                <summary>@(Model.ActivityId.HasValue ? "Sửa hoạt động" : "Thêm hoạt động")</summary>
+                <form method="post" asp-page-handler="SaveActivity" class="stack">
+                    <input type="hidden" name="Id" value="@Model.SelectedPlan.Id" />
+                    @if (Model.ActivityId is Guid activityId)
+                    {
+                        <input type="hidden" name="ActivityId" value="@activityId" />
+                    }
+                    <div><label for="activityAndTime">Hoạt động và thời gian thực hiện (KH)</label><textarea id="activityAndTime" name="ActivityAndTime" rows="2" maxlength="500" required>@Model.ActivityAndTime</textarea></div>
+                    <div><label for="audience">Đối tượng tham gia</label><textarea id="audience" name="Audience" rows="2" maxlength="500">@Model.Audience</textarea></div>
+                    <div><label for="expectedResult">Kết quả mong muốn (KH)</label><textarea id="expectedResult" name="ExpectedResult" rows="2">@Model.ExpectedResult</textarea></div>
+                    <div><label for="resources">Nguồn lực (KH)</label><textarea id="resources" name="Resources" rows="2">@Model.Resources</textarea></div>
+                    <hr />
+                    <div><label for="activityName">Nội dung hoạt động (ND HĐ)</label><input id="activityName" name="ActivityName" value="@Model.ActivityName" maxlength="500" /></div>
+                    <div class="row-actions">
+                        <div><label for="timeRange">Thời gian hoạt động</label><input id="timeRange" name="TimeRange" value="@Model.TimeRange" maxlength="240" /></div>
+                        <div><label for="location">Địa điểm hoạt động</label><input id="location" name="Location" value="@Model.Location" maxlength="300" /></div>
+                    </div>
+                    <div><label for="objective">Mục tiêu / mục đích</label><textarea id="objective" name="Objective" rows="3">@Model.Objective</textarea></div>
+                    <div><label for="schedule">Hoạt động / thời gian biểu</label><textarea id="schedule" name="Schedule" rows="4">@Model.Schedule</textarea></div>
+                    <div><label for="responsiblePartner">Người phụ trách / đối tác</label><textarea id="responsiblePartner" name="ResponsiblePartner" rows="2" maxlength="500">@Model.ResponsiblePartner</textarea></div>
+                    <div><label for="detailedResources">Nguồn lực: cơ sở vật chất, thiết bị, tài chính (ND HĐ)</label><textarea id="detailedResources" name="DetailedResources" rows="3">@Model.DetailedResources</textarea></div>
+                    <div><label for="detailedExpectedResult">Kết quả mong đợi (ND HĐ)</label><textarea id="detailedExpectedResult" name="DetailedExpectedResult" rows="3">@Model.DetailedExpectedResult</textarea></div>
+                    <div><label for="risksAndMitigation">Rủi ro và biện pháp giải quyết</label><textarea id="risksAndMitigation" name="RisksAndMitigation" rows="3">@Model.RisksAndMitigation</textarea></div>
+                    <div class="row-actions">
+                        <button type="submit">Lưu hoạt động</button>
+                        @if (Model.ActivityId.HasValue)
+                        {
+                            <a class="button button-quiet" href="/admin/ke-hoach-hoat-dong?id=@Model.SelectedPlan.Id">Hủy sửa</a>
+                        }
+                    </div>
+                </form>
+            </details>
+        </section>
+    }
+</section>

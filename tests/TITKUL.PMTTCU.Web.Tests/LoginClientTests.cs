@@ -5,7 +5,7 @@ namespace TITKUL.PMTTCU.Web.Tests;
 public sealed class LoginClientTests
 {
     [Fact]
-    public async Task LoginAsync_returns_null_when_backend_host_is_unknown()
+    public async Task LoginAsync_returns_empty_result_when_backend_host_is_unknown()
     {
         using var http = new HttpClient(new FailingHandler())
         {
@@ -13,9 +13,11 @@ public sealed class LoginClientTests
         };
         var api = new BackendApiClient(http);
 
-        var token = await api.LoginAsync("admin", "Pmttcu-test-1");
+        var result = await api.LoginAsync("admin", "Pmttcu-test-1");
 
-        Assert.Null(token);
+        Assert.NotNull(result);
+        Assert.Null(result.Token);
+        Assert.Null(result.ErrorCode);
     }
 
     private sealed class FailingHandler : HttpMessageHandler

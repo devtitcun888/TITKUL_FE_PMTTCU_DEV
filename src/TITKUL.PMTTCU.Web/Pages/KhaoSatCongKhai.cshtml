@@ -4,48 +4,67 @@
     ViewData["Title"] = Model.Item?.Title ?? "Khảo sát";
 }
 <section class="card stack">
+    <p><a href="/khao-sat">← Về danh sách khảo sát</a></p>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage) && Model.Item is null)
     {
-        <h1>Khảo sát</h1>
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <h1>@(Model.ResourceNotFound ? "Không tìm thấy khảo sát" : "Chưa tải được khảo sát")</h1>
+        <p class="@(Model.ResourceNotFound ? "empty" : "alert")" role="@(Model.ResourceNotFound ? "status" : "alert")">@Model.ErrorMessage</p>
     }
     @if (Model.Item is not null)
     {
         <h1>@Model.Item.Title</h1>
         @if (!string.IsNullOrWhiteSpace(Model.Item.Summary)) { <p>@Model.Item.Summary</p> }
+        @if (Model.Item.LimitOnePerPhone) { <p class="status-note">Mỗi số điện thoại chỉ được gửi một phản hồi cho khảo sát này.</p> }
         @if (!string.IsNullOrEmpty(Model.ErrorMessage)) { <p class="alert" role="alert">@Model.ErrorMessage</p> }
-        <form method="post" class="stack">
+        @if (Model.Item.Questions.Count > 5)
+        {
+            <nav class="survey-question-nav" aria-label="Đi nhanh đến câu hỏi">
+                <strong>Nội dung phiếu</strong>
+                <ol>
+                    @for (var index = 0; index < Model.Item.Questions.Count; index++)
+                    {
+                        <li><a href="#survey-question-@Model.Item.Questions[index].Id">Câu @(index + 1)</a></li>
+                    }
+                </ol>
+            </nav>
+        }
+        <p class="muted">Phiếu ghi nhận các câu trả lời và chỉ hỏi số điện thoại khi đợt khảo sát yêu cầu. <a href="/Privacy">Xem thông tin về dữ liệu và quyền riêng tư</a>.</p>
+        <form method="post" class="stack" data-survey-branch>
             <div class="hp" aria-hidden="true"><label for="website">Website</label><input id="website" name="Website" tabindex="-1" autocomplete="off" /></div>
-            <input type="hidden" name="IdempotencyKey" value="@Guid.NewGuid().ToString("N")" />
+                <input type="hidden" name="IdempotencyKey" value="@Model.IdempotencyKey" />
             @if (Model.Item.RequirePhone)
             {
-                <div><label for="phone">Số điện thoại</label><input id="phone" name="Phone" required maxlength="20" /></div>
+                <div><label for="phone">Số điện thoại</label><input id="phone" name="Phone" value="@Model.Phone" required maxlength="20" /></div>
             }
             @foreach (var question in Model.Item.Questions)
             {
-                <fieldset class="stack">
+                <fieldset id="survey-question-@question.Id" class="stack survey-question" data-question-order="@question.Order">
                     <legend>@question.Text @(question.Required ? "*" : "")</legend>
                     @if (question.Type == "SINGLE")
                     {
-                        foreach (var option in Model.Item.Options.Where(item => item.QuestionId == question.Id))
+                        var options = Model.Item.Options.Where(item => item.QuestionId == question.Id).ToArray();
+                        for (var optionIndex = 0; optionIndex < options.Length; optionIndex++)
                         {
-                            <label class="choice"><input type="radio" name="q-@question.Id" value="@option.Id" /> @option.Text</label>
+                            var option = options[optionIndex];
+                            <label class="choice"><input type="radio" name="q-@question.Id" value="@option.Id" data-jump-to-order="@option.JumpToOrder" required="@(question.Required && optionIndex == 0 ? "required" : null)" aria-required="@(question.Required ? "true" : null)" checked="@(Model.SubmittedAnswers.GetValueOrDefault(question.Id)?.SingleOptionId == option.Id.ToString() ? "checked" : null)" /> @option.Text</label>
                         }
                     }
                     else if (question.Type == "MULTIPLE")
                     {
-                        foreach (var option in Model.Item.Options.Where(item => item.QuestionId == question.Id))
+                        var options = Model.Item.Options.Where(item => item.QuestionId == question.Id).ToArray();
+                        for (var optionIndex = 0; optionIndex < options.Length; optionIndex++)
                         {
-                            <label class="choice"><input type="checkbox" name="q-@question.Id" value="@option.Id" /> @option.Text</label>
+                            var option = options[optionIndex];
+                            <label class="choice"><input type="checkbox" name="q-@question.Id" value="@option.Id" required="@(question.Required && optionIndex == 0 ? "required" : null)" aria-required="@(question.Required ? "true" : null)" checked="@(Model.SubmittedAnswers.GetValueOrDefault(question.Id)?.OptionIds.Contains(option.Id.ToString()) == true ? "checked" : null)" /> @option.Text</label>
                         }
                     }
                     else if (question.Type == "TEXT")
                     {
-                        <textarea name="t-@question.Id" rows="3" maxlength="2000"></textarea>
+                        <textarea name="t-@question.Id" aria-label="@question.Text" aria-required="@(question.Required ? "true" : null)" required="@(question.Required ? "required" : null)" rows="3" maxlength="2000">@Model.SubmittedAnswers.GetValueOrDefault(question.Id)?.Text</textarea>
                     }
                     else
                     {
-                        <input name="s-@question.Id" type="number" min="@question.ScaleMin" max="@question.ScaleMax" />
+                        <input name="s-@question.Id" aria-label="@question.Text" aria-required="@(question.Required ? "true" : null)" required="@(question.Required ? "required" : null)" type="number" min="@question.ScaleMin" max="@question.ScaleMax" value="@Model.SubmittedAnswers.GetValueOrDefault(question.Id)?.Scale" />
                     }
                 </fieldset>
             }
@@ -53,3 +72,7 @@
         </form>
     }
 </section>
+@if (Model.Item is not null)
+{
+    <script src="~/js/survey-branch.js" asp-append-version="true" defer></script>
+}

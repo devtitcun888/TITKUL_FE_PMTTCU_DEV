@@ -1,23 +1,36 @@
 @page "/thu-vien"
 @model TITKUL.PMTTCU.Web.Pages.ThuVienModel
 <section class="card stack">
+    <form class="public-filter" method="get" action="/thu-vien" role="search">
+        <input type="hidden" name="loai" value="@Model.Kind" />
+        <label for="gallery-query">Tìm trong thư viện</label>
+        <div><input id="gallery-query" name="q" type="search" value="@Model.Query" maxlength="80" placeholder="Tên hoặc mô tả album" /><button class="button" type="submit">Tìm</button></div>
+    </form>
     <h1>@(Model.Kind == "VIDEO_LINK" ? "Video" : "Hình ảnh")</h1>
     <p>
         <a href="/thu-vien?loai=IMAGE">Hình ảnh</a>
         ·
         <a href="/thu-vien?loai=VIDEO_LINK">Video</a>
     </p>
-    @if (Model.Items.Count == 0)
+    @if (Model.ErrorMessage is not null)
     {
-        <p class="empty">Chưa có album công khai.</p>
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    else if (Model.Items.Count == 0)
+    {
+        <p class="empty" role="status">@(string.IsNullOrWhiteSpace(Model.Query) ? "Chưa có album công khai." : "Không tìm thấy album phù hợp.")</p>
     }
     else
     {
         <ul class="stack">
             @foreach (var item in Model.Items)
             {
-                <li><a href="/thu-vien/@item.Slug"><strong>@item.Title</strong></a></li>
+                <li>
+                    <a href="/thu-vien/@Uri.EscapeDataString(item.Slug)"><strong>@item.Title</strong></a>
+                    @if (!string.IsNullOrWhiteSpace(item.Summary)) { <p>@item.Summary</p> }
+                </li>
             }
         </ul>
     }
+    @await Html.PartialAsync("_PublicPager", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))
 </section>

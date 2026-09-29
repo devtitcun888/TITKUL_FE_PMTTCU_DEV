@@ -5,14 +5,20 @@
 }
 
 <section class="card stack">
-    <h1>Lớp đang mở đăng ký</h1>
+    <h1>Lớp đang tuyển sinh</h1>
+    <p class="muted">Xem thời gian học và tình trạng chỗ trống trước khi gửi thông tin đăng ký.</p>
+    <form class="public-filter" method="get" action="/lop-hoc" role="search">
+        <label for="class-query">Tìm lớp học</label>
+        <div><input id="class-query" name="q" type="search" value="@Model.Query" maxlength="80" placeholder="Tên lớp, chương trình hoặc mã lớp" /><button class="button" type="submit">Tìm</button></div>
+    </form>
+    @if (!string.IsNullOrWhiteSpace(Model.Query)) { <p class="muted">Kết quả cho: <strong>@Model.Query</strong></p> }
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
         <p class="alert" role="alert">@Model.ErrorMessage</p>
     }
-    @if (Model.Items.Count == 0)
+    else if (Model.Items.Count == 0)
     {
-        <p class="empty">Hiện chưa có lớp mở đăng ký.</p>
+        <p class="empty" role="status">Hiện chưa có lớp mở đăng ký phù hợp.</p>
     }
     else
     {
@@ -20,11 +26,32 @@
             @foreach (var item in Model.Items)
             {
                 <li class="card stack">
-                    <h2>@item.Name</h2>
-                    <p>@item.ProgramName · @item.StartDate.ToString("dd/MM") – @item.EndDate.ToString("dd/MM/yyyy") · còn @item.Remaining chỗ</p>
+                    <h2><a href="/lop-hoc/@Uri.EscapeDataString(item.Code)">@item.Name</a></h2>
+                    <p>@item.ProgramName · @item.StartDate.ToString("dd/MM/yyyy") – @item.EndDate.ToString("dd/MM/yyyy")</p>
+                    @if (item.CanRegister)
+                    {
+                        <p class="status-note">
+                            Đang nhận đăng ký · còn @item.Remaining chỗ
+                            @if (item.RegistrationClosesAt is DateTimeOffset closesAt)
+                            {
+                                <span> · Hạn đăng ký @closesAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</span>
+                            }
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="status-note">@(item.ClosedReason == "EDU_FULL" ? "Lớp đã đủ chỗ." : item.ClosedReason == "EDU_WINDOW" ? "Ngoài thời gian đăng ký." : "Lớp hiện chưa nhận đăng ký.")</p>
+                    }
                     <p class="row-actions">
-                        <a class="button" href="/lop-hoc/@item.Code">Chi tiết</a>
-                        <a class="button" href="/dang-ky/@item.Code">Đăng ký</a>
+                        <a class="button" href="/lop-hoc/@Uri.EscapeDataString(item.Code)">Chi tiết</a>
+                        @if (item.CanRegister)
+                        {
+                            <a class="button" href="/dang-ky/@Uri.EscapeDataString(item.Code)">Đăng ký</a>
+                        }
+                        else
+                        {
+                        <a class="button button-quiet" href="/lop-hoc/@Uri.EscapeDataString(item.Code)">Xem thông tin lớp</a>
+                        }
                     </p>
                 </li>
             }

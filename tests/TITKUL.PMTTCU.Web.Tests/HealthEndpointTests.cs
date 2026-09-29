@@ -41,7 +41,7 @@ public sealed class HealthEndpointTests : IClassFixture<WebApplicationFactory<Pr
     }
 
     [Fact]
-    public async Task Home_page_returns_foundation_content()
+    public async Task Home_page_renders_current_portal_sections()
     {
         using var client = _factory.CreateClient();
 
@@ -50,13 +50,14 @@ public sealed class HealthEndpointTests : IClassFixture<WebApplicationFactory<Pr
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var html = await response.Content.ReadAsStringAsync();
         var text = System.Net.WebUtility.HtmlDecode(html);
-        Assert.Contains("Trung tâm cung ứng dịch vụ sự nghiệp công xã Tân Trụ", text, StringComparison.Ordinal);
-        Assert.Contains("Cổng thông tin", text, StringComparison.Ordinal);
-        Assert.Contains("Tin mới", text, StringComparison.Ordinal);
-        Assert.Contains("Chưa có tin bài", text, StringComparison.Ordinal);
-        Assert.Contains("Sự kiện sắp tới", text, StringComparison.Ordinal);
+        Assert.Contains("THÔNG TIN CHÍNH THỨC", text, StringComparison.Ordinal);
+        Assert.Contains("Thông tin nổi bật", text, StringComparison.Ordinal);
+        Assert.Contains("Thông báo", text, StringComparison.Ordinal);
+        Assert.Contains("Văn bản", text, StringComparison.Ordinal);
+        Assert.Contains("Lớp học đang mở", text, StringComparison.Ordinal);
+        Assert.Contains("Tin mới nhất", text, StringComparison.Ordinal);
+        Assert.Contains("Hoạt động sắp tới", text, StringComparison.Ordinal);
         Assert.Contains("Học liệu số", text, StringComparison.Ordinal);
-        Assert.Contains("Chưa có học liệu chung.", text, StringComparison.Ordinal);
         Assert.Contains("Đi tới nội dung", text, StringComparison.Ordinal);
     }
 
@@ -70,7 +71,7 @@ public sealed class HealthEndpointTests : IClassFixture<WebApplicationFactory<Pr
         Assert.True(string.IsNullOrEmpty(configuration["Database:Password"]));
         Assert.True(string.IsNullOrEmpty(configuration["ConnectionStrings:Default"]));
         Assert.Equal("http://localhost:5068", configuration["Backend:BaseUrl"]);
-        Assert.Equal(1_048_576, configuration.GetValue<long>("Http:MaxRequestBodyBytes"));
+        Assert.Equal(26_214_400, configuration.GetValue<long>("Http:MaxRequestBodyBytes"));
     }
 
     private sealed record HealthBody(string Status, IReadOnlyList<HealthCheckBody> Checks);

@@ -1,0 +1,81 @@
+@page "/cau-lac-bo/{code}"
+@model TITKUL.PMTTCU.Web.Pages.CauLacBoChiTietModel
+@{
+    var club = Model.Item?.Club;
+    ViewData["Title"] = club?.Name ?? "Chi tiết câu lạc bộ";
+    ViewData["Description"] = club?.Description ?? "Địa điểm, lịch sinh hoạt và lớp liên quan của câu lạc bộ học tập cộng đồng.";
+    if (!string.IsNullOrWhiteSpace(Model.Code))
+    {
+        ViewData["CanonicalPath"] = "/cau-lac-bo/" + Uri.EscapeDataString(Model.Code);
+    }
+}
+<section class="card stack">
+    <p><a href="/cau-lac-bo">← Danh sách câu lạc bộ</a></p>
+    @if (Model.ClubNotFound)
+    {
+        <h1>Không tìm thấy câu lạc bộ</h1>
+        <p class="empty" role="status">Mã câu lạc bộ không tồn tại hoặc đã ngừng công khai.</p>
+    }
+    else if (!string.IsNullOrWhiteSpace(Model.Error))
+    {
+        <h1>Chưa tải được câu lạc bộ</h1>
+        <p class="alert" role="alert">@Model.Error</p>
+    }
+    else if (Model.Item is { } item)
+    {
+        <h1>@item.Club.Name</h1>
+        @if (!string.IsNullOrWhiteSpace(item.Club.Description)) { <p>@item.Club.Description</p> }
+        @if (!string.IsNullOrWhiteSpace(item.Club.Location)) { <p><strong>Địa điểm:</strong> @item.Club.Location</p> }
+        @if (!string.IsNullOrWhiteSpace(item.Club.RegularSchedule)) { <p><strong>Lịch định kỳ:</strong> @item.Club.RegularSchedule</p> }
+
+        <section class="card stack" aria-labelledby="club-sessions-title">
+            <h2 id="club-sessions-title">Buổi sinh hoạt sắp tới</h2>
+            @if (item.UpcomingSessions.Count == 0)
+            {
+                <p class="empty">Chưa có lịch sinh hoạt sắp tới được công bố.</p>
+            }
+            else
+            {
+                <ul class="stack">
+                    @foreach (var session in item.UpcomingSessions)
+                    {
+                        <li>
+                            <strong>@session.Title</strong>
+                            · <time datetime="@session.StartAt.ToString("O")">@session.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</time>–@session.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")
+                            @if (!string.IsNullOrWhiteSpace(session.Location)) { <span> · @session.Location</span> }
+                            @if (!string.IsNullOrWhiteSpace(session.FacilitatorName)) { <span> · Phụ trách: @session.FacilitatorName</span> }
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+        <section class="card stack" aria-labelledby="club-classes-title">
+            <h2 id="club-classes-title">Lớp liên quan</h2>
+            @if (item.Classes.Count == 0)
+            {
+                <p class="empty">Chưa có lớp công khai liên quan đến câu lạc bộ.</p>
+            }
+            else
+            {
+                <ul class="stack">
+                    @foreach (var classItem in item.Classes)
+                    {
+                        var status = classItem.Status switch
+                        {
+                            "MO_DANG_KY" => "Đang mở theo trạng thái lớp",
+                            "DANG_HOC" => "Đang học",
+                            _ => classItem.Status
+                        };
+                        <li>
+                            <a href="/lop-hoc/@Uri.EscapeDataString(classItem.Code)"><strong>@classItem.Name</strong></a>
+                            · @classItem.StartDate.ToString("dd/MM/yyyy")–@classItem.EndDate.ToString("dd/MM/yyyy")
+                            · @status
+                        </li>
+                    }
+                </ul>
+                <p class="muted">Tình trạng tuyển sinh và số chỗ hiện tại được xác nhận tại trang chi tiết lớp.</p>
+            }
+        </section>
+    }
+</section>

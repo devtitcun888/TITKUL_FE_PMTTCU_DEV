@@ -1,12 +1,36 @@
 @page "/admin/bao-cao"
+@using System.Text.Json
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.BaoCaoModel
 @{
     ViewData["Title"] = "Chuyên cần";
+    ViewData["UseAdminCharts"] = true;
+    var currentYear = Model.CurrentYear;
 }
 <section class="card stack">
     <h1>Chuyên cần theo lớp</h1>
     <p><a href="/admin/tong-quan?From=@Model.From&amp;To=@Model.To">Về tổng quan</a></p>
+    @if (Model.CanExport)
+    {
+        <p><a class="button" href="/admin/bao-cao?handler=Pdf&amp;Period=@Model.Period&amp;From=@Model.From&amp;To=@Model.To">Xuất PDF kỳ báo cáo</a></p>
+    }
     <form method="get" class="filter-grid">
+        <div>
+            <label for="period">Kỳ báo cáo</label>
+            <select id="period" name="Period">
+                <option value="">Tùy chỉnh ngày</option>
+                <option value="current-quarter" selected="@(Model.Period == "current-quarter" ? "selected" : null)">Quý hiện tại</option>
+                <option value="current-year" selected="@(Model.Period == "current-year" ? "selected" : null)">Năm hiện tại</option>
+                @for (var year = currentYear; year >= currentYear - 4; year--)
+                {
+                    @for (var quarter = 1; quarter <= 4; quarter++)
+                    {
+                        var value = $"Q:{year}-Q{quarter}";
+                        <option value="@value" selected="@(Model.Period == value ? "selected" : null)">Quý @quarter/@year</option>
+                    }
+                    <option value="Y:@year" selected="@(Model.Period == $"Y:{year}" ? "selected" : null)">Năm @year</option>
+                }
+            </select>
+        </div>
         <div><label for="from">Từ ngày</label><input id="from" name="From" type="date" value="@Model.From" /></div>
         <div><label for="to">Đến ngày</label><input id="to" name="To" type="date" value="@Model.To" /></div>
         <div><button type="submit">Áp dụng</button></div>
@@ -29,18 +53,13 @@
         }
         else
         {
+            <div class="admin-chart-wrap"><canvas data-chart="@JsonSerializer.Serialize(new { labels = Model.Item.Attendance.Select(row => row.ClassName), values = Model.Item.Attendance.Select(row => (double)row.Percent) })" data-chart-label="Tỷ lệ chuyên cần (%)" role="img" aria-label="Biểu đồ tỷ lệ chuyên cần theo lớp">Biểu đồ chuyên cần theo lớp</canvas></div>
+            <div class="table-scroll"><table class="report-table"><caption>Số liệu chuyên cần theo lớp</caption><thead><tr><th scope="col">Lớp</th><th scope="col">Buổi đã học</th><th scope="col">Sĩ số</th><th scope="col">Có mặt</th><th scope="col">Tỷ lệ</th></tr></thead><tbody>
             @foreach (var row in Model.Item.Attendance)
             {
-                <article class="stack">
-                    <h2>@row.ClassName</h2>
-                    <p>Buổi đã học: @row.Occurred. Sĩ số: @row.Roster. Có mặt: @row.Present.</p>
-                    <p>Tỷ lệ: @row.Percent.ToString("0.##")%</p>
-                    @if (row.Percent > 0)
-                    {
-                        <div class="bar" style="width:@((int)row.Percent)%"></div>
-                    }
-                </article>
+                <tr><th scope="row">@row.ClassName</th><td>@row.Occurred</td><td>@row.Roster</td><td>@row.Present</td><td>@row.Percent.ToString("0.##")%</td></tr>
             }
+            </tbody></table></div>
         }
     }
 </section>

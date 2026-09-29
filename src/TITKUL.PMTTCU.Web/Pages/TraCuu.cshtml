@@ -2,6 +2,7 @@
 @model TITKUL.PMTTCU.Web.Pages.TraCuuModel
 @{
     ViewData["Title"] = "Tra cứu chứng nhận";
+    ViewData["Robots"] = "noindex, nofollow, noarchive";
 }
 
 <section class="card stack">
@@ -25,7 +26,7 @@
         <p>Trạng thái: @(Model.Item.Status == "ISSUED" ? "Còn hiệu lực" : "Đã thu hồi")</p>
         @if (Model.Item.Status == "ISSUED")
         {
-            <p><a class="button" href="/tra-cuu/@Model.Item.LookupCode?handler=Pdf">Tải PDF</a></p>
+            <p><a class="button" href="/tra-cuu/@Uri.EscapeDataString(Model.Item.LookupCode)?handler=Pdf">Tải PDF</a></p>
         }
         else
         {

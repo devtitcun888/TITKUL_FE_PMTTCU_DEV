@@ -1,0 +1,88 @@
+@page "/tim-kiem"
+@model TITKUL.PMTTCU.Web.Pages.TimKiemModel
+@{
+    ViewData["Title"] = "Tìm kiếm";
+}
+
+<section class="card stack search-page">
+    <header class="section-heading">
+        <div>
+            <p class="eyebrow">CỔNG THÔNG TIN</p>
+            <h1>Tìm kiếm toàn trang</h1>
+            @if (!string.IsNullOrWhiteSpace(Model.Query))
+            {
+                <p class="muted">Từ khóa: <strong>@Model.Query</strong></p>
+            }
+        </div>
+    </header>
+
+    <form class="public-filter" method="get" action="/tim-kiem" role="search">
+        <label for="site-query">Từ khóa cần tìm</label>
+        <div>
+            <input id="site-query" name="q" type="search" minlength="2" maxlength="80" value="@Model.Query" placeholder="Tên, nội dung, mã lớp hoặc văn bản" required />
+            <button class="button" type="submit">Tìm kiếm</button>
+        </div>
+    </form>
+
+    @if (Model.ErrorMessage is not null)
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    else if (string.IsNullOrWhiteSpace(Model.Query))
+    {
+        <p class="empty">Nhập ít nhất 2 ký tự để tìm trong tin tức, thông báo, sự kiện, văn bản, biểu mẫu, thư viện, lớp học và khảo sát đang mở.</p>
+    }
+    else if (Model.Total == 0)
+    {
+        <p class="empty" role="status">Không tìm thấy nội dung phù hợp với “@Model.Query”.</p>
+    }
+    else
+    {
+        <p class="muted" role="status">Tìm thấy @Model.Total kết quả trong @Model.Sections.Count nhóm nội dung.</p>
+        <details class="search-preferences" data-search-preferences>
+            <summary>Ưu tiên nhóm nội dung quan tâm</summary>
+            <div class="search-preferences-body">
+                <p class="muted">Nhóm đã chọn được đưa lên trước; các nhóm khác vẫn hiển thị. Lựa chọn chỉ lưu trên thiết bị này.</p>
+                <div class="search-preferences-options">
+                    @foreach (var option in TimKiemModel.PreferenceOptions)
+                    {
+                        <label><input type="checkbox" value="@option.Key" data-search-preference /> @option.Title</label>
+                    }
+                </div>
+                <button class="button button-quiet" type="button" data-search-preferences-reset>Xóa ưu tiên</button>
+            </div>
+        </details>
+        @for (var index = 0; index < Model.Sections.Count; index++)
+        {
+            var group = Model.Sections[index];
+            <section class="search-result-group" data-search-category="@group.ListUrl" aria-labelledby="search-group-@index">
+                <header class="search-result-heading">
+                    <h2 id="search-group-@index">@group.Title</h2>
+                    <span>@group.Total kết quả</span>
+                </header>
+                <ul class="content-list">
+                    @foreach (var item in group.Items)
+                    {
+                        <li>
+                            <a href="@item.Url">@item.Title</a>
+                            @if (!string.IsNullOrWhiteSpace(item.Summary))
+                            {
+                                <p>@item.Summary</p>
+                            }
+                            @if (item.PublishedAt is DateTimeOffset publishedAt)
+                            {
+                                <time datetime="@publishedAt.ToString("O")">@publishedAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</time>
+                            }
+                        </li>
+                    }
+                </ul>
+                @if (group.Total > group.Items.Count)
+                {
+                    <a class="button button-quiet" href="@group.MoreUrl(Model.Query)">Xem thêm @group.Title.ToLowerInvariant()</a>
+                }
+            </section>
+        }
+    }
+</section>
+
+<script src="~/js/public-search-preferences.js" asp-append-version="true" defer></script>

@@ -13,7 +13,10 @@ public class CmsThongBaoChiTietModel : PageModel
     public Guid? NoticeId { get; private set; }
     public string? ErrorMessage { get; private set; }
     public string? Status { get; private set; }
+    public DateTimeOffset? PublishedAt { get; private set; }
     public bool CanEdit { get; private set; }
+    public bool Preview { get; private set; }
+    public string? PreviewHtml { get; private set; }
 
     [BindProperty] public string Title { get; set; } = "";
     [BindProperty] public string? Slug { get; set; }
@@ -21,16 +24,18 @@ public class CmsThongBaoChiTietModel : PageModel
     [BindProperty] public string Level { get; set; } = "NORMAL";
     [BindProperty] public string? VisibleFrom { get; set; }
     [BindProperty] public string? VisibleTo { get; set; }
+    [BindProperty] public string? ScheduleAt { get; set; }
 
-    public async Task<IActionResult> OnGetAsync(Guid? id)
+    public async Task<IActionResult> OnGetAsync(Guid? id, bool preview = false)
     {
         if (!HasView()) return Redirect("/admin/khong-quyen");
+        Preview = preview && id.HasValue;
         return await LoadAsync(id);
     }
 
     public async Task<IActionResult> OnPostSaveAsync(Guid? id)
     {
-        if (!Has("cms.create") && !Has("cms.update")) return Redirect("/admin/khong-quyen");
+        if (id.HasValue ? !Has("cms.update") : !Has("cms.create")) return Redirect("/admin/khong-quyen");
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
         var payload = new { title = Title, slug = Slug, html = Html, level = Level, visibleFrom = ToOffset(VisibleFrom), visibleTo = ToOffset(VisibleTo) };
@@ -40,7 +45,7 @@ public class CmsThongBaoChiTietModel : PageModel
         if (response is null || !response.IsSuccessStatusCode)
         {
             ErrorMessage = "Không lưu được thông báo. Kiểm tra tiêu đề, nội dung và cửa sổ hiển thị.";
-            return await LoadAsync(id);
+            return await LoadAsync(id, preserveForm: true);
         }
 
         var saved = await response.Content.ReadFromJsonAsync<ItemEnvelope<Saved>>();
@@ -57,6 +62,21 @@ public class CmsThongBaoChiTietModel : PageModel
         return await LoadAsync(id);
     }
 
+    public async Task<IActionResult> OnPostScheduleAsync(Guid id)
+    {
+        if (!Has("cms.publish")) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        if (!DateTimeOffset.TryParse(ScheduleAt + "+07:00", out var publishAt) || publishAt <= DateTimeOffset.UtcNow)
+        {
+            ErrorMessage = "Chọn thời điểm xuất bản trong tương lai theo giờ Việt Nam.";
+            return await LoadAsync(id, preserveForm: true);
+        }
+        var response = await _api.SendJsonAsync(HttpMethod.Post, "/api/v1/admin/notices/" + id + "/schedule", token, new { publishAt });
+        if (response is null || !response.IsSuccessStatusCode) ErrorMessage = "Không đặt được lịch xuất bản thông báo.";
+        return await LoadAsync(id);
+    }
+
     public async Task<IActionResult> OnPostArchiveAsync(Guid id)
     {
         if (!Has("cms.publish")) return Redirect("/admin/khong-quyen");
@@ -66,24 +86,29 @@ public class CmsThongBaoChiTietModel : PageModel
         return await LoadAsync(id);
     }
 
-    private async Task<IActionResult> LoadAsync(Guid? id)
+    private async Task<IActionResult> LoadAsync(Guid? id, bool preserveForm = false)
     {
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
-        CanEdit = Has("cms.create") || Has("cms.update");
+        CanEdit = id.HasValue ? Has("cms.update") : Has("cms.create");
         if (id is Guid existing)
         {
             NoticeId = existing;
             var body = await _api.GetJsonAsync<ItemEnvelope<NoticeDetail>>("/api/v1/admin/notices/" + existing, token);
             if (body?.Item is { } item)
             {
-                Title = item.Title;
-                Slug = item.Slug;
-                Html = item.Html;
-                Level = item.Level;
-                VisibleFrom = LocalInput(item.VisibleFrom);
-                VisibleTo = LocalInput(item.VisibleTo);
+                if (!preserveForm)
+                {
+                    Title = item.Title;
+                    Slug = item.Slug;
+                    Html = item.Html;
+                    Level = item.Level;
+                    VisibleFrom = LocalInput(item.VisibleFrom);
+                    VisibleTo = LocalInput(item.VisibleTo);
+                }
+                PreviewHtml = body.PreviewHtml;
                 Status = item.Status;
+                PublishedAt = item.PublishedAt;
             }
             else ErrorMessage ??= "Không tìm thấy thông báo.";
         }
@@ -91,7 +116,7 @@ public class CmsThongBaoChiTietModel : PageModel
         return Page();
     }
 
-    private bool HasView() => Has("cms.view") || Has("cms.create");
+    private bool HasView() => Has("cms.view") || Has("cms.create") || Has("cms.update");
     private bool Has(string permission) => (HttpContext.Items["StaffProfile"] as StaffProfile)?.Permissions?.Contains(permission) == true;
     private string? Token() => Request.Cookies[AdminGateMiddleware.CookieName];
     private static DateTimeOffset? ToOffset(string? value) =>
@@ -99,7 +124,7 @@ public class CmsThongBaoChiTietModel : PageModel
     private static string LocalInput(DateTimeOffset? value) =>
         value is null ? "" : value.Value.ToOffset(TimeSpan.FromHours(7)).ToString("yyyy-MM-ddTHH:mm");
 
-    public sealed record NoticeDetail(Guid Id, string Title, string Slug, string Html, string Level, string Status, DateTimeOffset? VisibleFrom, DateTimeOffset? VisibleTo);
+    public sealed record NoticeDetail(Guid Id, string Title, string Slug, string Html, string Level, string Status, DateTimeOffset? VisibleFrom, DateTimeOffset? VisibleTo, DateTimeOffset? PublishedAt);
     public sealed record Saved(Guid Id);
-    private sealed record ItemEnvelope<T>(T? Item);
+    private sealed record ItemEnvelope<T>(T? Item, string? PreviewHtml);
 }

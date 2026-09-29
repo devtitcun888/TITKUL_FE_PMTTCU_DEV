@@ -13,13 +13,17 @@ public class CmsAlbumModel : PageModel
     public IReadOnlyList<AlbumItem> Items { get; private set; } = [];
     public string? ErrorMessage { get; private set; }
     public bool CanEdit { get; private set; }
+    public int CurrentPage { get; private set; } = 1;
+    public int PageSize { get; private set; } = 20;
+    public int Total { get; private set; }
+    public string? FilterKind { get; private set; }
     [BindProperty] public string Title { get; set; } = "";
     [BindProperty] public string Kind { get; set; } = "IMAGE";
 
-    public async Task<IActionResult> OnGetAsync()
+    public async Task<IActionResult> OnGetAsync(string? kind, int page = 1)
     {
         if (!HasView()) return Redirect("/admin/khong-quyen");
-        return await LoadAsync();
+        return await LoadAsync(page, kind);
     }
 
     public async Task<IActionResult> OnPostAsync()
@@ -38,13 +42,20 @@ public class CmsAlbumModel : PageModel
         return Redirect("/admin/cms/album/" + saved!.Item!.Id);
     }
 
-    private async Task<IActionResult> LoadAsync()
+    private async Task<IActionResult> LoadAsync(int page = 1, string? kind = null)
     {
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
         CanEdit = Has("cms.create");
-        var list = await _api.GetJsonAsync<ListEnvelope<AlbumItem>>("/api/v1/admin/albums?pageSize=50", token);
+        FilterKind = kind is "IMAGE" or "VIDEO_LINK" or "HOC_LIEU" ? kind : null;
+        CurrentPage = Math.Max(1, page);
+        var path = $"/api/v1/admin/albums?page={CurrentPage}&pageSize={PageSize}";
+        if (FilterKind is not null) path += "&kind=" + Uri.EscapeDataString(FilterKind);
+        var list = await _api.GetJsonAsync<ListEnvelope<AlbumItem>>(path, token);
         Items = list?.Items ?? [];
+        CurrentPage = list?.Page ?? CurrentPage;
+        PageSize = list?.PageSize ?? PageSize;
+        Total = list?.Total ?? Items.Count;
         return Page();
     }
 
@@ -53,6 +64,6 @@ public class CmsAlbumModel : PageModel
     private string? Token() => Request.Cookies[AdminGateMiddleware.CookieName];
 
     public sealed record AlbumItem(Guid Id, string Title, string Slug, string Kind, string Status);
-    private sealed record ListEnvelope<T>(IReadOnlyList<T>? Items);
+    private sealed record ListEnvelope<T>(IReadOnlyList<T>? Items, int? Page, int? PageSize, int? Total);
     private sealed record ItemEnvelope<T>(T? Item);
 }

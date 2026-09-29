@@ -1,0 +1,30 @@
+@page "/theo-doi-phan-anh/{ma}"
+@model TheoDoiPhanAnhModel
+@{
+    ViewData["Title"] = "Theo dõi phản ánh";
+    ViewData["Description"] = "Trao đổi với Trung tâm về phản ánh đã gửi.";
+    ViewData["Robots"] = "noindex, nofollow, noarchive";
+}
+<section class="card stack">
+    <h1>Theo dõi phản ánh</h1>
+    @if (!string.IsNullOrWhiteSpace(Model.Error)) { <p class="alert" role="alert">@Model.Error</p> }
+    @if (Model.Thread is not null)
+    {
+        <h2>@Model.Thread.Title</h2>
+        <p>Trạng thái: @Model.Thread.Status</p>
+        <ol class="contact-thread">
+        @foreach (var message in Model.Thread.Messages)
+        {
+            <li>
+            <p><strong>@(message.Sender == "STAFF" ? "Trung tâm" : "Bạn")</strong> · @message.CreatedAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</p>
+                <p>@message.Body</p>
+            </li>
+        }
+        </ol>
+        <form method="post" class="stack">
+            <div><label for="body">Gửi thêm thông tin</label><textarea id="body" asp-for="Body" rows="4" minlength="3" maxlength="4000" required></textarea></div>
+            <button type="submit">Gửi phản hồi</button>
+        </form>
+    }
+    <p>Giữ riêng mã theo dõi. Ai có mã đều có thể xem nội dung trao đổi.</p>
+</section>

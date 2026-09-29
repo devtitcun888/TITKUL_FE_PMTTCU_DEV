@@ -5,31 +5,34 @@
     {
         ViewData["Title"] = "Sự kiện";
     }
+    var hasWideTable = PortalRichContent.ContainsTable(Model.Item?.Html);
 }
 
 <section class="card stack">
-    <p><a href="/su-kien">Về danh sách sự kiện</a></p>
+    <p><a href="/su-kien">Về lịch hoạt động</a></p>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <h1>@(Model.ResourceNotFound ? "Không tìm thấy sự kiện" : "Chưa tải được sự kiện")</h1>
+        <p class="@(Model.ResourceNotFound ? "empty" : "alert")" role="@(Model.ResourceNotFound ? "status" : "alert")">@Model.ErrorMessage</p>
     }
     @if (Model.Item is not null)
     {
         <article class="stack">
             <h1>@Model.Item.Title</h1>
-            <p>@Model.Item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")–@Model.Item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")</p>
+            <p class="eyebrow">SỰ KIỆN CỦA TRUNG TÂM</p>
+            <p>Thời gian: <time datetime="@Model.Item.StartAt.ToString("O")">@Model.Item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</time>–<time datetime="@Model.Item.EndAt.ToString("O")">@Model.Item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")</time></p>
             @if (!string.IsNullOrWhiteSpace(Model.Item.Location))
             {
-                <p>@Model.Item.Location</p>
+                <p>Địa điểm: @Model.Item.Location</p>
             }
+            @if (!string.IsNullOrWhiteSpace(Model.Item.Summary)) { <p class="article-summary">@Model.Item.Summary</p> }
             @if (!string.IsNullOrWhiteSpace(Model.Item.Html))
             {
-                @Html.Raw(Model.Item.Html)
+                @if (hasWideTable) { <p id="cms-table-scroll-hint" class="portal-table-hint">Nếu bảng rộng, vuốt ngang để xem đủ cột. Dùng phím Tab để chọn bảng, sau đó dùng phím mũi tên.</p> }
+                <div class="portal-rich-content">@Html.Raw(PortalRichContent.WithScrollableTables(Model.Item.Html))</div>
             }
-            else if (!string.IsNullOrWhiteSpace(Model.Item.Summary))
-            {
-                <p>@Model.Item.Summary</p>
-            }
+            <p class="status-note">Đây là sự kiện trên lịch công khai. Thông tin đăng ký (nếu có) do Ban tổ chức nêu trong nội dung sự kiện.</p>
+            <p><a class="button button-quiet" href="/lien-he">Liên hệ Trung tâm</a></p>
         </article>
     }
 </section>

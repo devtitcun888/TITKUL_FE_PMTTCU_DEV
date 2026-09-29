@@ -6,6 +6,10 @@
 }
 <section class="card stack">
     <h1>Phản ánh</h1>
+    <form class="public-filter" method="get" action="/admin/lien-he">
+        <label for="contact-status">Lọc theo trạng thái</label>
+        <div><select id="contact-status" name="status"><option value="">Tất cả</option><option value="NEW" selected="@(Model.Status == "NEW")">Mới</option><option value="PROCESSING" selected="@(Model.Status == "PROCESSING")">Đang xử lý</option><option value="CLOSED" selected="@(Model.Status == "CLOSED")">Đã đóng</option><option value="SPAM" selected="@(Model.Status == "SPAM")">Spam</option></select><button class="button" type="submit">Lọc</button></div>
+    </form>
     @if (Model.Items.Count == 0)
     {
         <p class="empty">Chưa có phản ánh.</p>
@@ -21,7 +25,7 @@
                 {
                     <tr>
                         <td>@item.Name<br />@item.Phone</td>
-                        <td><strong>@item.Title</strong><p>@item.Body</p></td>
+                        <td><a asp-page="/LienHeChiTiet" asp-route-id="@item.Id"><strong>@item.Title</strong></a><p>@item.Body</p></td>
                         <td>@EducationUi.Status(item.Status)</td>
                         <td>
                             @if (Model.CanEdit)
@@ -43,3 +47,4 @@
         </div>
     }
 </section>
+@await Html.PartialAsync("/Pages/Shared/_PublicPager.cshtml", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))

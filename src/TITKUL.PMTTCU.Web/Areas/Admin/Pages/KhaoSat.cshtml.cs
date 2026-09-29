@@ -13,15 +13,23 @@ public class KhaoSatModel : PageModel
     public IReadOnlyList<SurveyItem> Items { get; private set; } = [];
     public string? ErrorMessage { get; private set; }
     public bool CanManage { get; private set; }
+    public bool CanViewResults { get; private set; }
+    public int CurrentPage { get; private set; } = 1;
+    public int PageSize { get; private set; } = 20;
+    public int Total { get; private set; }
+    public string? Query { get; private set; }
+    public string? Status { get; private set; }
     [BindProperty] public string Title { get; set; } = "";
     [BindProperty] public string StartAt { get; set; } = "";
     [BindProperty] public string EndAt { get; set; } = "";
     [BindProperty] public string? Thanks { get; set; }
+    [BindProperty] public bool RequirePhone { get; set; }
+    [BindProperty] public bool LimitOnePerPhone { get; set; }
 
-    public async Task<IActionResult> OnGetAsync()
+    public async Task<IActionResult> OnGetAsync(string? q, string? status, int page = 1)
     {
         if (!HasView()) return Redirect("/admin/khong-quyen");
-        return await LoadAsync();
+        return await LoadAsync(page, q, status);
     }
 
     public async Task<IActionResult> OnPostAsync()
@@ -34,7 +42,9 @@ public class KhaoSatModel : PageModel
             title = Title,
             startAt = ToOffset(StartAt),
             endAt = ToOffset(EndAt),
-            thanks = Thanks
+            thanks = Thanks,
+            requirePhone = RequirePhone || LimitOnePerPhone,
+            limitOnePerPhone = LimitOnePerPhone
         });
         if (response is null || !response.IsSuccessStatusCode)
         {
@@ -46,13 +56,23 @@ public class KhaoSatModel : PageModel
         return Redirect("/admin/khao-sat/" + saved!.Item!.Id + "/thiet-ke");
     }
 
-    private async Task<IActionResult> LoadAsync()
+    private async Task<IActionResult> LoadAsync(int page = 1, string? q = null, string? status = null)
     {
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
         CanManage = Has("survey.manage");
-        var list = await _api.GetJsonAsync<ListEnvelope<SurveyItem>>("/api/v1/admin/surveys?pageSize=50", token);
+        CanViewResults = Has("survey.result.view");
+        Query = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
+        Status = string.IsNullOrWhiteSpace(status) ? null : status.Trim();
+        CurrentPage = Math.Max(1, page);
+        var path = $"/api/v1/admin/surveys?page={CurrentPage}&pageSize={PageSize}";
+        if (Query is not null) path += "&q=" + Uri.EscapeDataString(Query);
+        if (Status is not null) path += "&status=" + Uri.EscapeDataString(Status);
+        var list = await _api.GetJsonAsync<ListEnvelope<SurveyItem>>(path, token);
         Items = list?.Items ?? [];
+        CurrentPage = list?.Page ?? CurrentPage;
+        PageSize = list?.PageSize ?? PageSize;
+        Total = list?.Total ?? Items.Count;
         return Page();
     }
 
@@ -62,6 +82,6 @@ public class KhaoSatModel : PageModel
     private static DateTimeOffset? ToOffset(string value) => DateTimeOffset.TryParse(value + "+07:00", out var parsed) ? parsed : null;
 
     public sealed record SurveyItem(Guid Id, string Code, string Title, string Status);
-    private sealed record ListEnvelope<T>(IReadOnlyList<T>? Items);
+    private sealed record ListEnvelope<T>(IReadOnlyList<T>? Items, int? Page, int? PageSize, int? Total);
     private sealed record ItemEnvelope<T>(T? Item);
 }

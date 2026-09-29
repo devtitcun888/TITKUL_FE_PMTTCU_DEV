@@ -9,20 +9,33 @@ public class VanBanModel : PageModel
     private readonly BackendApiClient _api;
     public VanBanModel(BackendApiClient api) => _api = api;
     public IReadOnlyList<DocumentItem> Items { get; private set; } = [];
+    public int CurrentPage { get; private set; } = 1;
+    public int PageSize { get; private set; } = 20;
+    public int Total { get; private set; }
+    public string? Query { get; private set; }
+    public string? Field { get; private set; }
+    public string? ErrorMessage { get; private set; }
 
-    public async Task OnGetAsync(string? q, string? field)
+    public async Task OnGetAsync(string? q, string? field, int page = 1)
     {
-        var list = await _api.GetPublicJsonAsync<ListEnvelope<DocumentItem>>("/api/v1/public/documents?pageSize=20&q=" + Uri.EscapeDataString(q ?? "") + "&field=" + Uri.EscapeDataString(field ?? ""));
+        page = Math.Max(1, page);
+        Query = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
+        Field = string.IsNullOrWhiteSpace(field) ? null : field.Trim();
+        var list = await _api.GetPublicJsonAsync<ListEnvelope<DocumentItem>>($"/api/v1/public/documents?page={page}&pageSize=20&q={Uri.EscapeDataString(Query ?? "")}&field={Uri.EscapeDataString(Field ?? "")}");
+        if (list is null) ErrorMessage = "Chưa thể tải danh sách văn bản. Vui lòng thử lại sau.";
         Items = list?.Items ?? [];
+        CurrentPage = list?.Page ?? page;
+        PageSize = list?.PageSize ?? 20;
+        Total = list?.Total ?? Items.Count;
     }
 
     public async Task<IActionResult> OnGetTaiAsync(Guid id)
     {
-        var file = await _api.GetFileAsync("/api/v1/public/files/documents/" + id);
-        if (file.Bytes is null) return NotFound();
-        return File(file.Bytes, file.ContentType ?? "application/octet-stream", file.FileName ?? "van-ban");
+        var file = await _api.GetFileResultAsync("/api/v1/public/files/documents/" + id);
+        if (!file.IsSuccess) return file.IsNotFound ? NotFound() : StatusCode(503);
+        return File(file.Bytes!, file.ContentType ?? "application/octet-stream", file.FileName ?? "van-ban");
     }
 
-    public sealed record DocumentItem(Guid Id, string? Symbol, string Title, string? Field, string FileName);
-    private sealed record ListEnvelope<T>(IReadOnlyList<T>? Items);
+    public sealed record DocumentItem(Guid Id, string? Symbol, string Title, string? Issuer, DateOnly? IssuedOn, string? Field, string FileName, DateOnly? EffectiveFrom = null, DateOnly? ExpiresOn = null);
+    private sealed record ListEnvelope<T>(IReadOnlyList<T>? Items, int? Page, int? PageSize, int? Total);
 }

@@ -1,0 +1,95 @@
+@page "/khoa-hoc-nghe/{group?}"
+@model TITKUL.PMTTCU.Web.Pages.KhoaHocNgheModel
+@{
+    ViewData["Title"] = Model.SelectedCategory?.Name ?? "Các khóa học nghề";
+    ViewData["Description"] = Model.SelectedCategory?.Description ?? "Bài viết, video hướng dẫn và thông tin học nghề tại Trung tâm.";
+}
+
+<section class="card stack public-learning-page">
+    <header class="public-learning-intro">
+        <p class="public-learning-eyebrow">HỌC NGHỀ, THỰC HÀNH, ỨNG DỤNG</p>
+        <h1>@(Model.SelectedCategory?.Name ?? "Các khóa học nghề")</h1>
+        <p>@(Model.SelectedCategory?.Description ?? "Khám phá nội dung học nghề theo từng lĩnh vực. Thông tin lớp và đăng ký được cập nhật theo đợt tuyển sinh thực tế.")</p>
+    </header>
+    <nav class="public-learning-category-nav" aria-label="Nhóm nội dung nghề">
+        <a href="/khoa-hoc-nghe" aria-current="@(Model.SelectedCategory is null ? "page" : null)">Tất cả nhóm nghề</a>
+        @foreach (var category in Model.Categories)
+        {
+            <a href="@KhoaHocNgheModel.GroupPath(category)" aria-current="@(Model.SelectedCategory?.Id == category.Id ? "page" : null)">@category.Name</a>
+        }
+    </nav>
+    @if (Model.IsGroupPage)
+    {
+        <form class="public-filter" method="get" role="search">
+            <label for="vocational-query">Tìm nội dung trong nhóm này</label>
+            <div><input id="vocational-query" name="q" type="search" value="@Model.Query" maxlength="80" placeholder="Nhập tiêu đề hoặc từ khóa" /><button class="button" type="submit">Tìm kiếm</button></div>
+            @if (!string.IsNullOrWhiteSpace(Model.Query)) { <a href="@KhoaHocNgheModel.GroupPath(Model.SelectedCategory!)">Xóa tìm kiếm</a> }
+        </form>
+    }
+    @if (Model.ErrorMessage is not null)
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    else if (Model.IsGroupPage)
+    {
+        if (Model.Items.Count == 0)
+        {
+            <p class="empty" role="status">@(string.IsNullOrWhiteSpace(Model.Query) ? "Nhóm nghề này chưa có nội dung công khai." : "Không tìm thấy nội dung phù hợp.")</p>
+        }
+        else
+        {
+            <div class="public-learning-grid">
+                @foreach (var item in Model.Items)
+                {
+                    var imageUrl = item.ThumbnailUrl ?? item.CoverUrl;
+                    <article class="public-learning-card">
+                        <a class="public-learning-card-image" href="/tin-tuc/@Uri.EscapeDataString(item.Slug)">
+                            @if (!string.IsNullOrWhiteSpace(imageUrl)) { <img src="@imageUrl" alt="" loading="lazy" decoding="async" /> }
+                            else { <span aria-hidden="true">✦</span> }
+                        </a>
+                        <div class="public-learning-card-copy">
+                            <span class="public-learning-category">@item.CategoryName</span>
+                            <h2><a href="/tin-tuc/@Uri.EscapeDataString(item.Slug)">@item.Title</a></h2>
+                            @if (!string.IsNullOrWhiteSpace(item.Summary)) { <p>@item.Summary</p> }
+                            @if (item.PublishedAt is DateTimeOffset publishedAt) { <time datetime="@publishedAt.ToString("O")">@publishedAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</time> }
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+        @await Html.PartialAsync("_PublicPager", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))
+    }
+    else if (Model.Feeds.Count == 0)
+    {
+        <p class="empty" role="status">Các nhóm nội dung nghề đang được Trung tâm cập nhật.</p>
+    }
+    else
+    {
+        @foreach (var feed in Model.Feeds)
+        {
+            <section class="public-learning-feed" aria-labelledby="@($"feed-{feed.Category.Slug}")">
+                <div class="public-learning-feed-heading">
+                    <h2 id="@($"feed-{feed.Category.Slug}")">@feed.Category.Name</h2>
+                    <a href="@KhoaHocNgheModel.GroupPath(feed.Category)">Xem nhóm này <span aria-hidden="true">→</span></a>
+                </div>
+                <div class="public-learning-grid">
+                    @foreach (var item in feed.Items)
+                    {
+                        var imageUrl = item.ThumbnailUrl ?? item.CoverUrl;
+                        <article class="public-learning-card">
+                            <a class="public-learning-card-image" href="/tin-tuc/@Uri.EscapeDataString(item.Slug)">
+                                @if (!string.IsNullOrWhiteSpace(imageUrl)) { <img src="@imageUrl" alt="" loading="lazy" decoding="async" /> }
+                                else { <span aria-hidden="true">✦</span> }
+                            </a>
+                            <div class="public-learning-card-copy">
+                                <h3><a href="/tin-tuc/@Uri.EscapeDataString(item.Slug)">@item.Title</a></h3>
+                                @if (!string.IsNullOrWhiteSpace(item.Summary)) { <p>@item.Summary</p> }
+                                @if (item.PublishedAt is DateTimeOffset publishedAt) { <time datetime="@publishedAt.ToString("O")">@publishedAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</time> }
+                            </div>
+                        </article>
+                    }
+                </div>
+            </section>
+        }
+    }
+</section>

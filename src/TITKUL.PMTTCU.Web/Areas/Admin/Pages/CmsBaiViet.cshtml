@@ -11,6 +11,10 @@
     {
         <p><a class="button" href="/admin/cms/bai-viet/sua">Viết bài mới</a></p>
     }
+    <form class="public-filter" method="get" action="/admin/cms/bai-viet" role="search">
+        <label for="admin-post-query">Tìm bài viết</label>
+        <div><input id="admin-post-query" name="q" type="search" value="@Model.Query" placeholder="Tiêu đề hoặc từ khóa" /><button class="button" type="submit">Tìm</button></div>
+    </form>
     @if (Model.Items.Count == 0)
     {
         <p class="empty">Chưa có bài viết.</p>
@@ -43,3 +47,4 @@
         </div>
     }
 </section>
+@await Html.PartialAsync("/Pages/Shared/_PublicPager.cshtml", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))

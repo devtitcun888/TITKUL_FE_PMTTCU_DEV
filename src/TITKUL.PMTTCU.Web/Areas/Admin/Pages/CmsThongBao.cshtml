@@ -7,6 +7,10 @@
 
 <section class="card stack">
     <h1>Thông báo</h1>
+    <form class="public-filter" method="get" action="/admin/cms/thong-bao" role="search">
+        <label for="admin-notice-query">Tìm thông báo</label>
+        <div><input id="admin-notice-query" name="q" type="search" value="@Model.Query" placeholder="Tiêu đề hoặc từ khóa" /><button class="button" type="submit">Tìm</button></div>
+    </form>
     @if (Model.CanEdit)
     {
         <p><a class="button" href="/admin/cms/thong-bao/sua">Tạo thông báo</a></p>
@@ -41,3 +45,4 @@
         </div>
     }
 </section>
+@await Html.PartialAsync("/Pages/Shared/_PublicPager.cshtml", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))

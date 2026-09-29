@@ -13,19 +13,31 @@ public class DangKyCamOnModel : PageModel
 
     public async Task OnGetAsync(string ma, string? code)
     {
+        PublicPrivatePageHeaders.Apply(Response);
         RegistrationCode = code;
-        var cls = await _api.GetPublicJsonAsync<ItemEnvelope<PublicClass>>($"/api/v1/public/classes/{ma}");
-        ClassName = cls?.Item?.Name;
+        var classPath = $"/api/v1/public/classes/{Uri.EscapeDataString(ma)}";
         if (string.IsNullOrWhiteSpace(code))
         {
             ErrorMessage = "Thiếu mã đăng ký.";
+            Response.StatusCode = StatusCodes.Status400BadRequest;
             return;
         }
 
-        var found = await _api.GetPublicJsonAsync<ItemEnvelope<Result>>($"/api/v1/public/classes/{ma}/registrations/{code}");
-        if (found?.Item is null)
+        var classTask = _api.GetPublicJsonResultAsync<ItemEnvelope<PublicClass>>(classPath);
+        var registrationTask = _api.GetPublicJsonResultAsync<ItemEnvelope<Result>>($"{classPath}/registrations/{Uri.EscapeDataString(code)}");
+        await Task.WhenAll(classTask, registrationTask);
+        var cls = await classTask;
+        var found = await registrationTask;
+        ClassName = cls.Value?.Item?.Name;
+        if (found.Value?.Item is null)
         {
-            ErrorMessage = "Không tìm thấy đăng ký này.";
+            var notFound = found.IsNotFound || found.IsAvailable;
+            ErrorMessage = notFound
+                ? "Không tìm thấy đăng ký này."
+                : "Chưa thể xác nhận đăng ký lúc này. Vui lòng thử lại sau.";
+            Response.StatusCode = notFound
+                ? StatusCodes.Status404NotFound
+                : StatusCodes.Status503ServiceUnavailable;
         }
     }
 

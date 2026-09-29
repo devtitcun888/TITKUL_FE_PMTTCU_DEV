@@ -1,61 +1,193 @@
+@using TITKUL.PMTTCU.Web.ApiClients
+@inject IConfiguration Configuration
+@inject PublicSiteConfigProvider SiteConfig
+@inject PublicUrgentNoticeProvider UrgentNoticeProvider
+@{
+    var publicSettings = await SiteConfig.GetAsync();
+    var portalNavigation = await UrgentNoticeProvider.GetAsync();
+    var urgentNotice = portalNavigation.Urgent;
+    string ReadSetting(string key, string fallback) =>
+        publicSettings.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value) ? value : fallback;
+    var organizationName = ReadSetting("org.name", "Trung tâm dịch vụ sự nghiệp công xã Tân Trụ");
+    var address = ReadSetting("org.address", "Xã Tân Trụ");
+    var hotline = ReadSetting("org.hotline", "");
+    var email = ReadSetting("org.email", "");
+    var workingHours = ReadSetting("org.hours", "");
+    var mapsSetting = ReadSetting("maps.url", "");
+    var mapsUrl = Uri.TryCreate(mapsSetting, UriKind.Absolute, out var parsedMapsUrl) && parsedMapsUrl!.Scheme == Uri.UriSchemeHttps
+        ? parsedMapsUrl.AbsoluteUri : null;
+    var telephoneHref = new string(hotline.Where(character => char.IsDigit(character) || character == '+').ToArray());
+    var publicBaseUrl = Uri.TryCreate(Configuration["Public:PortalBaseUrl"], UriKind.Absolute, out var configuredPublicUrl)
+        && configuredPublicUrl!.Scheme is "https" or "http" ? configuredPublicUrl.GetLeftPart(UriPartial.Authority) : null;
+    var canonicalPath = ViewData["CanonicalPath"] as string;
+    var canonicalUrl = publicBaseUrl is not null && canonicalPath is not null
+        && canonicalPath.StartsWith("/", StringComparison.Ordinal) && !canonicalPath.StartsWith("//", StringComparison.Ordinal)
+        && !canonicalPath.Contains('?') && !canonicalPath.Contains('#') ? publicBaseUrl + canonicalPath : null;
+}
 <!DOCTYPE html>
-<html lang="vi" data-theme="light">
+<html lang="vi" data-theme="light" class="public-site">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - PMTTCU Tân Trụ</title>
+    @if (ViewData["Robots"] is string robots && !string.IsNullOrWhiteSpace(robots))
+    {
+        <meta name="robots" content="@robots" />
+    }
     @if (ViewData["Description"] is string description && description.Length > 0)
     {
         <meta name="description" content="@description" />
+        <meta property="og:description" content="@description" />
+    }
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:type" content="@(ViewData["OpenGraphType"] ?? "website")" />
+    <meta property="og:title" content="@(ViewData["Title"] ?? "Trung tâm học tập cộng đồng")" />
+    @if (canonicalUrl is not null)
+    {
+        <link rel="canonical" href="@canonicalUrl" />
+        <meta property="og:url" content="@canonicalUrl" />
+    }
+    <meta name="twitter:card" content="@(ViewData["Image"] is string ? "summary_large_image" : "summary")" />
+    @if (publicBaseUrl is not null && ViewData["Image"] is string image && image.StartsWith("/cms-image/", StringComparison.Ordinal))
+    {
+        <meta property="og:image" content="@(publicBaseUrl + image)" />
     }
     <link rel="stylesheet" href="~/css/pmttcu.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/public-activity.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/public-learning.css" asp-append-version="true" />
+    @if (ViewData["BodyClass"] as string == "home-page")
+    {
+        <link rel="stylesheet" href="~/css/home-portal.css" asp-append-version="true" />
+    }
+    <link rel="stylesheet" href="~/lib/ckeditor5/48.5.2/ckeditor5-content.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/public-typography.css" asp-append-version="true" />
 </head>
 <body class="@(ViewData["BodyClass"] ?? string.Empty)">
     <a class="skip-link" href="#noi-dung">Đi tới nội dung</a>
-    <header class="portal-header">
-        <div class="utility-bar">
-            <div class="wrap utility-inner">
-                <span>Trung tâm cung ứng dịch vụ sự nghiệp công xã Tân Trụ</span>
-                <div class="utility-links"><a href="tel:0942429989">☎ 0942 42 9989</a><a href="mailto:kinhdoanh@titkul.com">✉ Liên hệ hỗ trợ</a><a href="/admin">♙ Cổng quản trị cán bộ</a></div>
+    <header id="dau-trang" class="portal-header" tabindex="-1">
+        <div class="gov-topline">
+            <div class="wrap gov-topline-inner">
+                <strong>THÔNG TIN CHÍNH THỨC</strong>
+                <div class="utility-links">
+                    @if (!string.IsNullOrWhiteSpace(telephoneHref)) { <a href="tel:@telephoneHref">☎ @hotline</a> }
+                    @if (!string.IsNullOrWhiteSpace(email)) { <a href="mailto:@email">✉ @email</a> }
+                    <a href="/admin/dang-nhap">♙ Đăng nhập cán bộ</a>
+                </div>
             </div>
         </div>
-        <div class="wrap main-nav-row">
-            <a class="brand" asp-area="" asp-page="/Index" aria-label="Trang chủ PMTTCU Tân Trụ"><span class="brand-mark" aria-hidden="true">✦</span><span><strong>Trung tâm dịch vụ<br />sự nghiệp công</strong><small>xã Tân Trụ</small></span></a>
-            <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="main-navigation">Menu <span aria-hidden="true">☰</span></button>
-            <nav id="main-navigation" aria-label="Chính">
-                <ul class="nav-list">
-                    <li><a asp-area="" asp-page="/Index">Trang chủ</a></li>
-                    <li><a href="/gioi-thieu">Giới thiệu</a></li>
-                    <li><a href="/lop-hoc">Lớp học</a></li>
-                    <li><a href="/su-kien">Lịch hoạt động</a></li>
-                    <li><a href="/tin-tuc">Tin tức</a></li>
-                    <li><a href="/van-ban">Văn bản</a></li>
-                    <li><a href="/hoc-lieu">Học liệu số</a></li>
-                    <li><a href="/lien-he">Liên hệ</a></li>
-                </ul>
-            </nav>
-            <a class="header-cta" href="/lop-hoc">Đăng ký lớp học <span aria-hidden="true">→</span></a>
+        <div class="gov-masthead">
+            <div class="wrap gov-masthead-inner">
+                <a class="brand gov-brand" asp-area="" asp-page="/Index" aria-label="Trang chủ @organizationName">
+                    <span class="portal-emblem" aria-hidden="true">
+                        <svg viewBox="0 0 48 48" role="img"><path d="M8 12.5c6.4 0 11.8 1.8 16 5.4 4.2-3.6 9.6-5.4 16-5.4v23c-6.4 0-11.8 1.4-16 4.2-4.2-2.8-9.6-4.2-16-4.2v-23Z"/><path d="M24 18v21.5M13 19.5c4 .3 7.1 1.3 9.3 3M35 19.5c-4 .3-7.1 1.3-9.3 3"/></svg>
+                    </span>
+                    <span><small>CỔNG THÔNG TIN HỌC TẬP CỘNG ĐỒNG</small><strong>@organizationName</strong><em>HỌC TẬP SUỐT ĐỜI · PHỤC VỤ NGƯỜI DÂN</em></span>
+                </a>
+                <div class="gov-slogan"><span>Cổng thông tin và dịch vụ học tập</span><strong>Tri thức gần dân · Học tập suốt đời</strong></div>
+            </div>
         </div>
     </header>
-    <main id="noi-dung" class="page">
+    <div class="portal-sticky-band">
+        <div class="gov-nav">
+            <div class="wrap main-nav-row">
+                <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="main-navigation">Danh mục <span aria-hidden="true">☰</span></button>
+                <nav id="main-navigation" aria-label="Chính">
+                    <ul class="nav-list">
+                        <li><a asp-area="" asp-page="/Index" aria-label="Trang chủ">⌂</a></li>
+                        <li><a href="/lop-hoc">Đăng ký học</a></li>
+                        <li><a href="/su-kien">Lịch hoạt động</a></li>
+                        <li><a href="/cau-lac-bo">Câu lạc bộ</a></li>
+                        <li>
+                            <details class="public-nav-menu">
+                                <summary>Khảo sát</summary>
+                                <div class="nav-submenu">
+                                    <a href="/khao-sat">Tất cả khảo sát</a>
+                                    @foreach (var survey in portalNavigation.Surveys)
+                                    {
+                                        <a href="/khao-sat/@survey.Code">@survey.Title</a>
+                                    }
+                                </div>
+                            </details>
+                        </li>
+                        <li>
+                            <details class="public-nav-menu">
+                                <summary>Tin &amp; thông báo</summary>
+                                <div class="nav-submenu">
+                                    <a href="/tin-tuc">Tin tức</a>
+                                    <a href="/thong-bao">Thông báo</a>
+                                </div>
+                            </details>
+                        </li>
+                        <li>
+                            <details class="public-nav-menu">
+                                <summary>Học liệu</summary>
+                                <div class="nav-submenu">
+                                    <a href="/binh-dan-hoc-vu-so">Bình dân học vụ số</a>
+                                    <a href="/khoa-hoc-nghe">Các khóa học nghề</a>
+                                    <a href="/hoc-lieu">Học liệu số</a>
+                                    <a href="/thu-vien">Thư viện</a>
+                                    <a href="/van-ban">Văn bản</a>
+                                    <a href="/bieu-mau">Biểu mẫu</a>
+                                </div>
+                            </details>
+                        </li>
+                        <li><a href="/tra-cuu">Tra cứu</a></li>
+                        <li>
+                            <details class="public-nav-menu">
+                                <summary>Về Trung tâm</summary>
+                                <div class="nav-submenu">
+                                    <a href="/gioi-thieu">Giới thiệu</a>
+                                    <a href="/co-cau">Cơ cấu tổ chức</a>
+                                    <a href="/van-hoa-the-thao">Văn hóa – Thể thao</a>
+                                </div>
+                            </details>
+                        </li>
+                        <li><a href="/lien-he">Liên hệ</a></li>
+                    </ul>
+                </nav>
+                <a class="header-cta" href="/lop-hoc">Đăng ký học <span aria-hidden="true">→</span></a>
+            </div>
+        </div>
+        <div class="portal-statusbar">
+            <div class="wrap portal-statusbar-inner">
+                <time id="portal-clock">@DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(7)).ToString("dddd, dd/MM/yyyy HH:mm:ss", System.Globalization.CultureInfo.GetCultureInfo("vi-VN"))</time>
+                <p><span class="status-dot" aria-hidden="true"></span><strong>Thông tin học tập, lớp học và hoạt động cộng đồng</strong></p>
+                <form class="portal-search" action="/tim-kiem" method="get" role="search">
+                    <label class="sr-only" for="portal-search-input">Tìm kiếm toàn trang</label>
+                    <input id="portal-search-input" name="q" type="search" minlength="2" maxlength="80" placeholder="Tìm kiếm toàn trang" />
+                    <button type="submit" aria-label="Tìm kiếm">⌕</button>
+                </form>
+            </div>
+        </div>
+        @if (urgentNotice is not null)
+        {
+            <div class="portal-sticky-alert">
+                <div class="wrap">
+                    <aside class="portal-alert" aria-label="Thông báo khẩn">
+                        <span class="portal-alert-label">Thông báo khẩn</span>
+                        <a href="/thong-bao/@Uri.EscapeDataString(urgentNotice.Slug)">@urgentNotice.Title</a>
+                        <span aria-hidden="true">→</span>
+                    </aside>
+                </div>
+            </div>
+        }
+    </div>
+    <main id="noi-dung" class="page" tabindex="-1">
         <div class="wrap">
             @RenderBody()
         </div>
     </main>
     <footer class="portal-footer">
         <div class="wrap footer-grid">
-            <div><a class="footer-brand" asp-area="" asp-page="/Index"><span class="brand-mark" aria-hidden="true">✦</span><span><strong>Trung tâm dịch vụ sự nghiệp công</strong><small>xã Tân Trụ</small></span></a><p>Cổng thông tin và quản lý học tập cộng đồng vì một địa phương học tập suốt đời.</p></div>
-            <div><h2>Liên kết nhanh</h2><a href="/lop-hoc">Lớp học</a><a href="/tin-tuc">Tin tức - Thông báo</a><a href="/hoc-lieu">Kho học liệu số</a></div>
-            <div><h2>Liên hệ</h2><span>572/14B Âu Cơ, P. Bảy Hiền, TP.HCM</span><a href="tel:0942429989">0942 42 9989</a><a href="mailto:kinhdoanh@titkul.com">kinhdoanh@titkul.com</a></div>
+            <div><a class="footer-brand" asp-area="" asp-page="/Index"><span class="brand-mark" aria-hidden="true">✦</span><span><strong>@organizationName</strong><small>Cổng học tập cộng đồng</small></span></a><p>Cổng thông tin và quản lý học tập cộng đồng vì một địa phương học tập suốt đời.</p></div>
+            <div><h2>Liên kết nhanh</h2><a href="/tin-tuc">Tin tức – Thông báo</a><a href="/lop-hoc">Lớp học</a><a href="/van-ban">Văn bản, biểu mẫu</a><a href="/hoc-lieu">Học liệu số</a></div>
+            <div><h2>Dịch vụ</h2><a href="/lop-hoc">Đăng ký lớp học</a><a href="/tra-cuu">Tra cứu chứng nhận</a><a href="/thu-vien">Kho ảnh hoạt động</a><a href="/van-hoa-the-thao">Văn hóa – Thể thao</a></div>
+            <div><h2>Liên hệ</h2><span>@address</span>@if (!string.IsNullOrWhiteSpace(telephoneHref)) { <a href="tel:@telephoneHref">@hotline</a> }@if (!string.IsNullOrWhiteSpace(email)) { <a href="mailto:@email">@email</a> }@if (!string.IsNullOrWhiteSpace(workingHours)) { <span>Giờ làm việc: @workingHours</span> }@if (mapsUrl is not null) { <a href="@mapsUrl" target="_blank" rel="noopener noreferrer">Mở bản đồ ↗</a> }</div>
         </div>
-        <div class="wrap footer-bottom"><span>© 2026 Trung tâm dịch vụ sự nghiệp công xã Tân Trụ</span><a asp-area="" asp-page="/Privacy">Thông tin bảo mật</a></div>
+        <div class="wrap footer-bottom"><span>© 2026 @organizationName</span><a asp-area="" asp-page="/Privacy">Thông tin bảo mật</a></div>
     </footer>
-    <script>
-        document.querySelector('.nav-toggle')?.addEventListener('click', function () {
-            const expanded = this.getAttribute('aria-expanded') === 'true';
-            this.setAttribute('aria-expanded', String(!expanded));
-            document.querySelector('#main-navigation')?.classList.toggle('is-open', !expanded);
-        });
-    </script>
+    <a class="back-to-top" href="#dau-trang" aria-label="Về đầu trang" hidden>↑</a>
+    <script src="~/js/public-visit-stats.js" asp-append-version="true" defer></script>
+    <script src="~/js/public-portal.js" asp-append-version="true" defer></script>
 </body>
 </html>

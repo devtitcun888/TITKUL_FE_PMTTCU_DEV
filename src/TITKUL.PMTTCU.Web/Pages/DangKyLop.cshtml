@@ -2,20 +2,26 @@
 @model DangKyLopModel
 @{
     ViewData["Title"] = "Đăng ký lớp";
+    ViewData["Robots"] = "noindex, nofollow, noarchive";
 }
 
 <section class="card stack">
     <h1>Đăng ký lớp</h1>
+    <p><a href="/lop-hoc">← Về danh sách lớp</a></p>
     @if (Model.Class is not null)
     {
         <p><strong>@Model.Class.Name</strong> · @Model.Class.ProgramName · còn @Model.Class.Remaining chỗ</p>
-        <p><a href="/lop-hoc/@Model.Class.Code">Xem chi tiết lớp</a></p>
+            <p><a href="/lop-hoc/@Uri.EscapeDataString(Model.Class.Code)">Xem chi tiết lớp</a></p>
     }
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
         <p class="alert" role="alert">@Model.ErrorMessage</p>
     }
-    @if (Model.Class is { CanRegister: true })
+    @if (Model.SubmissionAcceptedWithoutCode)
+    {
+        <p class="status-note" role="status">@Model.SubmissionMessage</p>
+    }
+    @if (Model.Class is { CanRegister: true } && !Model.SubmissionAcceptedWithoutCode)
     {
         <form method="post" class="stack">
             <input type="hidden" name="IdempotencyKey" value="@Model.IdempotencyKey" />
@@ -31,6 +37,17 @@
                 <label for="phone">Số điện thoại</label>
                 <input id="phone" name="Phone" value="@Model.Phone" required inputmode="tel" autocomplete="tel" />
             </div>
+            <fieldset class="stack">
+                <legend>Nhắc lịch buổi học (không bắt buộc)</legend>
+                <p>Chỉ gửi nhắc trước 24 giờ và 1 giờ cho kênh bạn chọn.</p>
+                <label><input type="checkbox" name="ReminderSms" value="true" checked="@(Model.ReminderSms ? "checked" : null)" /> SMS đến số điện thoại trên</label>
+                <label><input type="checkbox" name="ReminderZalo" value="true" checked="@(Model.ReminderZalo ? "checked" : null)" /> Zalo đến số điện thoại trên</label>
+                <div>
+                    <label for="reminderEmail">Email nhắc lịch</label>
+                    <input id="reminderEmail" name="ReminderEmail" type="email" value="@Model.ReminderEmail" maxlength="254" autocomplete="email" />
+                </div>
+                <label><input type="checkbox" name="ReminderEmailOptIn" value="true" checked="@(Model.ReminderEmailOptIn ? "checked" : null)" /> Nhận nhắc qua email</label>
+            </fieldset>
             <div>
                 <label for="citizenId">CCCD/CMND</label>
                 <input id="citizenId" name="CitizenId" value="@Model.CitizenId" required inputmode="numeric" maxlength="12" />
@@ -47,32 +64,45 @@
                     <option value="KHAC" selected="@(Model.Gender == "KHAC" ? "selected" : null)">Khác</option>
                 </select>
             </div>
-            <div>
-                <label for="hamletId">Thôn/ấp</label>
-                <select id="hamletId" name="HamletId" required>
-                    <option value="">Chọn thôn/ấp</option>
-                    @foreach (var hamlet in Model.Hamlets)
-                    {
-                        <option value="@hamlet.Id" selected="@(Model.HamletId == hamlet.Id ? "selected" : null)">@hamlet.Name</option>
-                    }
-                </select>
-            </div>
+            @if (Model.Hamlets.Count > 0)
+            {
+                <div>
+                    <label for="hamletId">Thôn/ấp có trong danh mục</label>
+                    <select id="hamletId" name="HamletId">
+                        <option value="">Không có trong danh mục</option>
+                        @foreach (var hamlet in Model.Hamlets)
+                        {
+                            <option value="@hamlet.Id" selected="@(Model.HamletId == hamlet.Id ? "selected" : null)">@hamlet.Name</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label for="hamletName">Hoặc ghi tên thôn/ấp nếu chưa có trong danh mục</label>
+                    <input id="hamletName" name="HamletName" value="@Model.HamletName" maxlength="120" autocomplete="address-level3" />
+                    <small>Chọn một trong hai cách. Tên tự nhập được giữ nguyên để Trung tâm đối chiếu khi có danh mục địa chỉ ở giai đoạn sau.</small>
+                </div>
+            }
+            else
+            {
+                <div>
+                    <label for="hamletName">@(Model.HamletCatalogUnavailable ? "Thôn/ấp (danh mục tạm thời chưa tải được)" : "Thôn/ấp")</label>
+                    <input id="hamletName" name="HamletName" value="@Model.HamletName" required maxlength="120" autocomplete="address-level3" />
+                    <small>@(Model.HamletCatalogUnavailable ? "Bạn có thể nhập tên thôn/ấp để tiếp tục; hệ thống lưu nguyên văn và không tự tạo mã địa bàn." : "Danh mục mã thôn/ấp chưa được cấu hình. Nhập tên gọi hiện có; hệ thống lưu nguyên văn và không tự tạo mã địa bàn.")</small>
+                </div>
+            }
             <div>
                 <label for="note">Ghi chú</label>
                 <input id="note" name="Note" value="@Model.Note" maxlength="1000" />
             </div>
             <div>
                 <label>
-                    <input type="checkbox" name="Consent" value="true" checked="@(Model.Consent ? "checked" : null)" />
+                    <input type="checkbox" name="Consent" value="true" required checked="@(Model.Consent ? "checked" : null)" />
                     Tôi đồng ý Trung tâm sử dụng dữ liệu này để quản lý lớp học.
                 </label>
+                <small><a href="/Privacy">Xem thông tin về dữ liệu và quyền riêng tư</a>.</small>
             </div>
             <button type="submit">Đăng ký lớp</button>
         </form>
-        @if (Model.Hamlets.Count == 0)
-        {
-            <p class="status-note">Chưa có danh mục thôn/ấp. Liên hệ Trung tâm trước khi gửi form.</p>
-        }
     }
     else if (Model.Class is { CanRegister: false })
     {

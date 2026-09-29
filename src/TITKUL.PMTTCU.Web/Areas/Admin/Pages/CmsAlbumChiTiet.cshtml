@@ -30,7 +30,7 @@
                 {
                     <div><label for="alt">Mô tả ảnh</label><input id="alt" name="Alt" required maxlength="250" /></div>
                 }
-                <div><label for="upload">@(Model.Item.Kind == "IMAGE" ? "Ảnh JPEG/PNG" : "PDF, Word hoặc Excel")</label><input id="upload" name="Upload" type="file" required /></div>
+                <div><label for="upload">@(Model.Item.Kind == "IMAGE" ? "Ảnh JPEG/PNG (tối đa 5 MiB)" : "PDF, Word hoặc Excel (tối đa 20 MiB)")</label><input id="upload" name="Upload" type="file" data-file-preview="@(Model.Item.Kind == "IMAGE" ? "5242880" : "20971520")" accept="@(Model.Item.Kind == "IMAGE" ? ".jpg,.jpeg,.png,image/jpeg,image/png" : ".pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")" required /><small data-file-preview-status aria-live="polite"></small></div>
                 <button type="submit">Thêm tệp</button>
             </form>
         }

@@ -2,15 +2,21 @@
 @model TITKUL.PMTTCU.Web.Pages.VanHoaModel
 @{
     ViewData["Title"] = "Văn hóa - Thể thao";
+    var hasWideTable = PortalRichContent.ContainsTable(Model.Html);
 }
 <section class="card stack">
     <h1>Văn hóa - Thể thao, dịch vụ sự nghiệp công</h1>
-    @if (string.IsNullOrWhiteSpace(Model.Html))
+    @if (Model.Unavailable)
+    {
+        <p class="alert" role="alert">Chưa thể tải nội dung. Vui lòng thử lại sau.</p>
+    }
+    else if (string.IsNullOrWhiteSpace(Model.Html))
     {
         <p class="empty">Chưa có nội dung chuyên trang.</p>
     }
     else
     {
-        @Html.Raw(Model.Html)
+        @if (hasWideTable) { <p id="cms-table-scroll-hint" class="portal-table-hint">Nếu bảng rộng, vuốt ngang để xem đủ cột. Dùng phím Tab để chọn bảng, sau đó dùng phím mũi tên.</p> }
+        <div class="portal-rich-content">@Html.Raw(PortalRichContent.WithScrollableTables(Model.Html))</div>
     }
 </section>

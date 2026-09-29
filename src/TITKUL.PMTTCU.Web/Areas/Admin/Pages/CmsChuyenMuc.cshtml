@@ -24,6 +24,9 @@
                         <th scope="col">Tên</th>
                         <th scope="col">Đường dẫn</th>
                         <th scope="col">Loại</th>
+                        <th scope="col">Thứ tự</th>
+                        <th scope="col">Trạng thái</th>
+                        @if (Model.CanUpdate) { <th scope="col">Thao tác</th> }
                     </tr>
                 </thead>
                 <tbody>
@@ -33,22 +36,36 @@
                         <td>@item.Name</td>
                         <td>@item.Slug</td>
                         <td>@item.Kind</td>
+                        <td>@item.Sort</td>
+                        <td>@(item.Active ? "Đang dùng" : "Đã ẩn")</td>
+                        @if (Model.CanUpdate)
+                        {
+                            <td class="row-actions">
+                                <a class="button-quiet" href="/admin/cms/chuyen-muc?edit=@item.Id">Sửa</a>
+                                <form method="post" asp-page-handler="Delete" onsubmit="return confirm('Xóa chuyên mục này? Nếu còn bài viết, hệ thống sẽ từ chối xóa.');">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="button-quiet">Xóa</button>
+                                </form>
+                            </td>
+                        }
                     </tr>
                 }
                 </tbody>
             </table>
         </div>
     }
-    @if (Model.CanEdit)
+    @if ((Model.CanCreate && Model.EditingCategory is null) || (Model.CanUpdate && Model.EditingCategory is not null))
     {
-        <form method="post" class="stack">
+        <form method="post" asp-page-handler="@(Model.EditingCategory is null ? "Create" : "Update")" class="stack">
+            @if (Model.EditingCategory is not null) { <input type="hidden" name="id" value="@Model.EditingCategory.Id" /> }
+            <h2>@(Model.EditingCategory is null ? "Thêm chuyên mục" : "Sửa chuyên mục")</h2>
             <div>
                 <label for="name">Tên chuyên mục</label>
-                <input id="name" name="Name" value="@Model.Name" required maxlength="160" />
+                <input id="name" name="Name" value="@Model.Name" required maxlength="160" data-slug-source />
             </div>
             <div>
-                <label for="slug">Đường dẫn (để trống sẽ tạo từ tên)</label>
-                <input id="slug" name="Slug" value="@Model.Slug" maxlength="180" />
+                <label for="slug">Đường dẫn (tự gợi ý từ tên, có thể chỉnh)</label>
+                <input id="slug" name="Slug" value="@Model.Slug" maxlength="180" data-slug-target />
             </div>
             <div>
                 <label for="kind">Loại</label>
@@ -57,7 +74,17 @@
                     <option value="VHTT_DVSN" selected="@(Model.Kind == "VHTT_DVSN" ? "selected" : null)">VHTT-DVSN</option>
                 </select>
             </div>
-            <button type="submit">Thêm chuyên mục</button>
+            <div>
+                <label for="description">Mô tả</label>
+                <textarea id="description" name="Description" rows="2" maxlength="500">@Model.Description</textarea>
+            </div>
+            <div>
+                <label for="sort">Thứ tự hiển thị</label>
+                <input id="sort" name="Sort" type="number" value="@Model.Sort" min="0" max="100000" />
+            </div>
+            <label for="active"><input id="active" name="Active" type="checkbox" value="true" checked="@(Model.Active ? "checked" : null)" /> Đang hoạt động</label>
+            @if (Model.EditingCategory is not null) { <a class="button-quiet" href="/admin/cms/chuyen-muc">Hủy sửa</a> }
+            <button type="submit">@(Model.EditingCategory is null ? "Thêm chuyên mục" : "Lưu thay đổi")</button>
         </form>
     }
 </section>

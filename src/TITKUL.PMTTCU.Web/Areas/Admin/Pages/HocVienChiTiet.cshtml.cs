@@ -29,7 +29,7 @@ public class HocVienChiTietModel : PageModel
     private bool Has(string permission) => (HttpContext.Items["StaffProfile"] as StaffProfile)?.Permissions?.Contains(permission) == true;
     private string? Token() => Request.Cookies[AdminGateMiddleware.CookieName];
 
-    public sealed record LearnerDetail(Guid Id, string FullName, string Phone, string CccdMasked, DateOnly BirthDate, int Age, string Gender, string HamletName, string? Note, string Status);
+    public sealed record LearnerDetail(Guid Id, string FullName, string Phone, string CccdMasked, DateOnly BirthDate, int Age, string Gender, string HamletName, string? Note, string Status, bool HasPhoto = false);
     public sealed record LearnerClass(Guid EnrollmentId, string RegistrationCode, Guid ClassId, string ClassCode, string ClassName, string EnrollmentStatus, string ClassStatus, DateTimeOffset RegisteredAt);
     private sealed record DetailEnvelope(LearnerDetail? Item, IReadOnlyList<LearnerClass>? Classes);
 }

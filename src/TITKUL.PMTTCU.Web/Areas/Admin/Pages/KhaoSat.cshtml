@@ -6,6 +6,10 @@
 }
 <section class="card stack">
     <h1>Khảo sát</h1>
+    @if (Model.CanViewResults)
+    {
+        <p><a class="button button-quiet" href="/admin/khao-sat/so-sanh">So sánh kết quả nhiều khảo sát</a></p>
+    }
     @if (!string.IsNullOrEmpty(Model.ErrorMessage)) { <p class="alert" role="alert">@Model.ErrorMessage</p> }
     @if (Model.CanManage)
     {
@@ -14,9 +18,24 @@
             <div><label for="startAt">Bắt đầu</label><input id="startAt" name="StartAt" type="datetime-local" required /></div>
             <div><label for="endAt">Kết thúc</label><input id="endAt" name="EndAt" type="datetime-local" required /></div>
             <div><label for="thanks">Lời cảm ơn</label><input id="thanks" name="Thanks" maxlength="1000" /></div>
+            <div><label for="requirePhone"><input id="requirePhone" name="RequirePhone" type="checkbox" value="true" /> Yêu cầu người tham gia nhập số điện thoại</label></div>
+            <div><label for="limitOnePerPhone"><input id="limitOnePerPhone" name="LimitOnePerPhone" type="checkbox" value="true" /> Mỗi số điện thoại chỉ gửi một lần (tự yêu cầu số điện thoại)</label></div>
             <button type="submit">Tạo nháp</button>
         </form>
     }
+    <form class="public-filter" method="get" action="/admin/khao-sat" role="search">
+        <label for="survey-query">Tìm và lọc khảo sát</label>
+        <div>
+            <input id="survey-query" name="q" type="search" value="@Model.Query" placeholder="Tên hoặc mã khảo sát" />
+            <select name="status" aria-label="Trạng thái khảo sát">
+                <option value="">Tất cả trạng thái</option>
+                <option value="DRAFT" selected="@(Model.Status == "DRAFT")">Bản nháp</option>
+                <option value="OPEN" selected="@(Model.Status == "OPEN")">Đang mở</option>
+                <option value="CLOSED" selected="@(Model.Status == "CLOSED")">Đã đóng</option>
+            </select>
+            <button class="button" type="submit">Lọc</button>
+        </div>
+    </form>
     @if (Model.Items.Count == 0)
     {
         <p class="empty">Chưa có đợt khảo sát.</p>
@@ -31,3 +50,4 @@
         </ul>
     }
 </section>
+@await Html.PartialAsync("/Pages/Shared/_PublicPager.cshtml", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))

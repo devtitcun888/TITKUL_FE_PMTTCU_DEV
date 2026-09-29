@@ -16,6 +16,10 @@
         <label for="password">Mật khẩu</label>
         <input id="password" name="Password" type="password" autocomplete="current-password" />
     </div>
+    <div>
+        <label for="otpCode">Mã xác thực hai bước (nếu đã bật)</label>
+        <input id="otpCode" name="OtpCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" />
+    </div>
     <button type="submit">Đăng nhập</button>
 </form>
 @if (!string.IsNullOrEmpty(Model.ErrorMessage))

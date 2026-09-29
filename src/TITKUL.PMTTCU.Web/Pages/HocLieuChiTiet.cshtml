@@ -7,11 +7,13 @@
     <p><a href="/hoc-lieu">Về học liệu chung</a></p>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <h1>@(Model.ResourceNotFound ? "Không tìm thấy học liệu" : "Chưa tải được học liệu")</h1>
+        <p class="@(Model.ResourceNotFound ? "empty" : "alert")" role="@(Model.ResourceNotFound ? "status" : "alert")">@Model.ErrorMessage</p>
     }
     @if (Model.Item is not null)
     {
         <h1>@Model.Item.Title</h1>
+        @if (!string.IsNullOrWhiteSpace(Model.Item.Summary)) { <p class="article-summary">@Model.Item.Summary</p> }
         @if (Model.Media.Count == 0)
         {
             <p class="empty">Album chưa có tệp.</p>
@@ -23,7 +25,10 @@
                 {
                     @if (file.FileId is Guid id)
                     {
-                        <li><a class="button" href="/hoc-lieu/@Model.Item.Slug?handler=Tai&amp;id=@id">Tải @(file.Title ?? "tệp")</a></li>
+                        <li>
+                            <a class="button" href="/hoc-lieu/@Uri.EscapeDataString(Model.Item.Slug)?handler=Tai&amp;id=@id">Tải @(file.Title ?? "tệp")</a>
+                            <small>@HocLieuChiTietModel.FileType(file.MimeType)@if (file.Size is long size) { <span> · @HocLieuChiTietModel.FileSize(size)</span> }</small>
+                        </li>
                     }
                 }
             </ul>

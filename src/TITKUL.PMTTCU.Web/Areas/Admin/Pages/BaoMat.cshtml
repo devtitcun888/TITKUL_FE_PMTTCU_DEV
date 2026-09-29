@@ -1,0 +1,35 @@
+@page "/admin/bao-mat"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.BaoMatModel
+@{
+    ViewData["Title"] = "Bảo mật tài khoản";
+}
+
+<section class="card stack">
+    <h1>Bảo mật tài khoản</h1>
+    @if (!string.IsNullOrWhiteSpace(Model.Message)) { <p class="status-note" role="status">@Model.Message</p> }
+    @if (!string.IsNullOrWhiteSpace(Model.Error)) { <p class="alert" role="alert">@Model.Error</p> }
+    <p>Trạng thái xác thực hai bước: <strong>@(Model.MfaEnabled ? "Đang bật" : "Đang tắt")</strong></p>
+    @if (Model.MfaEnabled)
+    {
+        <form method="post" asp-page-handler="Disable" class="stack">
+            <div><label for="password">Mật khẩu hiện tại</label><input id="password" name="Password" type="password" autocomplete="current-password" required /></div>
+            <div><label for="code">Mã Authenticator 6 số</label><input id="code" name="Code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required /></div>
+            <button type="submit">Tắt xác thực hai bước</button>
+        </form>
+    }
+    else if (string.IsNullOrEmpty(Model.Secret))
+    {
+        <p>Dùng Google Authenticator, Microsoft Authenticator hoặc ứng dụng TOTP tương thích.</p>
+        <form method="post" asp-page-handler="Setup"><button type="submit">Tạo khóa thiết lập</button></form>
+    }
+    else
+    {
+        <p>Nhập URI vào ứng dụng Authenticator:</p>
+        <p><code>@Model.ProvisioningUri</code></p>
+        <p>Khóa dự phòng để nhập thủ công: <code>@Model.Secret</code></p>
+        <form method="post" asp-page-handler="Enable" class="stack">
+            <div><label for="code">Mã Authenticator 6 số để xác nhận</label><input id="code" name="Code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required /></div>
+            <button type="submit">Xác nhận và bật</button>
+        </form>
+    }
+</section>

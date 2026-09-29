@@ -7,21 +7,39 @@
     <p><a href="/thu-vien">Về thư viện</a></p>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <h1>@(Model.ResourceNotFound ? "Không tìm thấy album" : "Chưa tải được thư viện")</h1>
+        <p class="@(Model.ResourceNotFound ? "empty" : "alert")" role="@(Model.ResourceNotFound ? "status" : "alert")">@Model.ErrorMessage</p>
     }
     @if (Model.Item is not null)
     {
         <h1>@Model.Item.Title</h1>
+        @if (!string.IsNullOrWhiteSpace(Model.Item.Summary)) { <p class="article-summary">@Model.Item.Summary</p> }
         <ul class="stack">
             @foreach (var item in Model.Media)
             {
                 @if (item.Kind == "VIDEO_LINK" && !string.IsNullOrWhiteSpace(item.ExternalUrl))
                 {
-                    <li><a href="@item.ExternalUrl">@(item.Title ?? "Video")</a></li>
+                    var embedUrl = VideoEmbedUrl.From(item.ExternalUrl);
+                    <li>
+                        @if (embedUrl is not null)
+                        {
+                            <div class="portal-video-frame"><iframe title="@(item.Title ?? "Video giáo dục")" src="@embedUrl" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" sandbox="allow-scripts allow-same-origin allow-presentation" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>
+                            <p>@(item.Title ?? "Video")</p>
+                        }
+                        else
+                        {
+                            <a href="@item.ExternalUrl" target="_blank" rel="noopener noreferrer">@(item.Title ?? "Mở video")</a>
+                        }
+                    </li>
                 }
                 else if (item.FileId is Guid id)
                 {
-                    <li><img src="/thu-vien/@Model.Item.Slug?handler=Anh&amp;id=@id" alt="@item.AltText" /></li>
+                    <li>
+                        <figure>
+                            <img class="portal-media-image" src="/thu-vien/@Uri.EscapeDataString(Model.Item.Slug)?handler=Anh&amp;id=@id" alt="@(string.IsNullOrWhiteSpace(item.AltText) ? (string.IsNullOrWhiteSpace(item.Title) ? "Hình ảnh hoạt động" : item.Title) : item.AltText)" loading="lazy" decoding="async" />
+                            @if (!string.IsNullOrWhiteSpace(item.Title)) { <figcaption>@item.Title</figcaption> }
+                        </figure>
+                    </li>
                 }
             }
         </ul>

@@ -8,11 +8,14 @@ public class GioiThieuModel : PageModel
     private readonly BackendApiClient _api;
     public GioiThieuModel(BackendApiClient api) => _api = api;
     public string Html { get; private set; } = "";
+    public bool Unavailable { get; private set; }
 
     public async Task OnGetAsync()
     {
-        var config = await _api.GetPublicJsonAsync<ConfigEnvelope>("/api/v1/public/site-config");
-        Html = Value(config, "page.gioi-thieu");
+        var result = await _api.GetPublicJsonResultAsync<ConfigEnvelope>("/api/v1/public/site-config");
+        Unavailable = !result.IsAvailable || result.Value is null;
+        if (Unavailable) Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+        Html = Value(result.Value, "page.gioi-thieu");
     }
 
     protected static string Value(ConfigEnvelope? config, string key) =>

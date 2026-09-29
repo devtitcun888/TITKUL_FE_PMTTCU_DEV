@@ -1,33 +1,72 @@
 @page "/su-kien"
 @model TITKUL.PMTTCU.Web.Pages.SuKienModel
 @{
-    ViewData["Title"] = "Sự kiện";
+    ViewData["Title"] = "Lịch hoạt động";
+    var localTime = TimeSpan.FromHours(7);
 }
 
 <section class="card stack">
-    <h1>Sự kiện</h1>
-    @if (Model.Items.Count == 0)
+    <header class="section-heading public-activity-heading">
+        <p class="eyebrow">LỚP HỌC VÀ HOẠT ĐỘNG CỘNG ĐỒNG</p>
+        <h1>Lịch hoạt động</h1>
+        <p class="muted">Sự kiện của Trung tâm và các buổi học đã công khai được hiển thị cùng nhau. Lịch lấy dữ liệu theo ngày và địa điểm do đơn vị nhập.</p>
+    </header>
+
+    <form class="public-filter activity-filter" method="get" action="/su-kien" role="search">
+        <div class="activity-filter-grid">
+            <div><label for="activity-from">Từ ngày</label><input id="activity-from" name="from" type="date" value="@Model.From.ToString("yyyy-MM-dd")" required /></div>
+            <div><label for="activity-to">Đến ngày</label><input id="activity-to" name="to" type="date" value="@Model.To.ToString("yyyy-MM-dd")" required /></div>
+            <div><label for="activity-area">Địa bàn hoặc địa điểm</label><input id="activity-area" name="area" type="search" value="@Model.Area" maxlength="100" placeholder="Ví dụ: tên ấp, địa điểm lớp" /></div>
+            <button class="button" type="submit">Lọc lịch</button>
+        </div>
+        <p class="muted">Giai đoạn này tìm theo tên địa bàn/địa điểm dạng văn bản; mã địa chỉ chính thức sẽ kết nối ở phase 2.</p>
+        @if (!string.IsNullOrWhiteSpace(Model.Area) || Model.From != DateOnly.FromDateTime(DateTimeOffset.UtcNow.ToOffset(localTime).DateTime) || Model.To != Model.From.AddDays(89))
+        {
+            <a href="/su-kien">Xóa bộ lọc</a>
+        }
+    </form>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
     {
-        <p class="empty">Chưa có sự kiện công khai.</p>
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    else if (Model.Items.Count == 0)
+    {
+        <p class="empty" role="status">Không có sự kiện hoặc buổi học phù hợp trong khoảng thời gian đã chọn.</p>
     }
     else
     {
-        <ul class="stack">
+        <p class="muted" role="status">Hiển thị @Model.Items.Count trong @Model.Total hoạt động phù hợp.</p>
+        <ol class="public-activity-list">
             @foreach (var item in Model.Items)
             {
-                <li>
-                    <a href="/su-kien/@item.Slug"><strong>@item.Title</strong></a>
-                    <p>@item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")–@item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm")</p>
-                    @if (!string.IsNullOrWhiteSpace(item.Location))
-                    {
-                        <p>@item.Location</p>
-                    }
-                    @if (!string.IsNullOrWhiteSpace(item.Summary))
-                    {
-                        <p>@item.Summary</p>
-                    }
+                var isClass = item.Kind == "CLASS_SESSION" && !string.IsNullOrWhiteSpace(item.ClassCode);
+                <li class="public-activity-item">
+                    <div class="public-activity-date">
+                        <time datetime="@item.StartAt.ToString("O")">
+                            <strong>@item.StartAt.ToOffset(localTime).ToString("dd")</strong>
+                            <span>@item.StartAt.ToOffset(localTime).ToString("MMM yyyy")</span>
+                        </time>
+                    </div>
+                    <div class="stack public-activity-content">
+                        <span class="eyebrow">@(isClass ? "BUỔI HỌC · " + item.Summary : "SỰ KIỆN")</span>
+                        <h2><a href="@SuKienModel.ActivityHref(item)">@item.Title</a></h2>
+                        <p><time datetime="@item.StartAt.ToString("O")">@item.StartAt.ToOffset(localTime).ToString("dd/MM/yyyy HH:mm")</time>–<time datetime="@item.EndAt.ToString("O")">@item.EndAt.ToOffset(localTime).ToString("HH:mm")</time></p>
+                        <p>Địa điểm: @(string.IsNullOrWhiteSpace(item.Location) ? "Chưa cập nhật" : item.Location)</p>
+                        @if (isClass)
+                        {
+                            <p class="status-note">@SuKienModel.RegistrationMessage(item)@if (item.RegistrationClosesAt is DateTimeOffset closesAt) { <span> · Hạn đăng ký @closesAt.ToOffset(localTime).ToString("dd/MM/yyyy HH:mm")</span> }</p>
+                        }
+                    </div>
+                    <div class="public-activity-action">
+                        @if (isClass && item.CanRegister == true)
+                        {
+                            <a class="button" href="/dang-ky/@Uri.EscapeDataString(item.ClassCode!)">Đăng ký lớp</a>
+                        }
+                        <a class="button button-quiet" href="@SuKienModel.ActivityHref(item)">Chi tiết</a>
+                    </div>
                 </li>
             }
-        </ul>
+        </ol>
     }
 </section>

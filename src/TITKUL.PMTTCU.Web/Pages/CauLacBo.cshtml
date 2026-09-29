@@ -1,0 +1,25 @@
+@page "/cau-lac-bo"
+@model TITKUL.PMTTCU.Web.Pages.CauLacBoModel
+@{
+    ViewData["Title"] = "Câu lạc bộ học tập";
+    ViewData["Description"] = "Thông tin câu lạc bộ học tập cộng đồng, địa điểm và lịch sinh hoạt sắp tới.";
+}
+<section class="card stack">
+    <h1>Câu lạc bộ học tập cộng đồng</h1>
+    <p>Các nhóm sinh hoạt, học tập và chia sẻ kỹ năng tại cộng đồng.</p>
+    @if (!string.IsNullOrWhiteSpace(Model.Error)) { <p class="alert" role="alert">@Model.Error</p> }
+    @if (Model.Items.Count == 0 && Model.Error is null) { <p class="empty">Hiện chưa có câu lạc bộ đang hoạt động.</p> }
+    <div class="stack">
+    @foreach (var item in Model.Items)
+    {
+        <article class="card stack">
+            <h2><a href="/cau-lac-bo/@Uri.EscapeDataString(item.Club.Code)">@item.Club.Name</a></h2>
+            @if (!string.IsNullOrWhiteSpace(item.Club.Description)) { <p>@item.Club.Description</p> }
+            @if (!string.IsNullOrWhiteSpace(item.Club.Location)) { <p><strong>Địa điểm:</strong> @item.Club.Location</p> }
+            @if (!string.IsNullOrWhiteSpace(item.Club.RegularSchedule)) { <p><strong>Lịch định kỳ:</strong> @item.Club.RegularSchedule</p> }
+            <p class="muted">@item.UpcomingSessions.Count buổi sinh hoạt sắp tới · @item.Classes.Count lớp liên quan</p>
+            <p><a class="button" href="/cau-lac-bo/@Uri.EscapeDataString(item.Club.Code)">Xem lịch sinh hoạt và lớp liên quan →</a></p>
+        </article>
+    }
+    </div>
+</section>

@@ -1,0 +1,108 @@
+@page "/admin/khao-sat/so-sanh"
+@using System.Text.Json
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.KhaoSatSoSanhModel
+@{
+    ViewData["Title"] = "So sánh khảo sát";
+    ViewData["UseAdminCharts"] = true;
+}
+<section class="card stack">
+    <p><a href="/admin/khao-sat">Về danh sách khảo sát</a></p>
+    <h1>So sánh kết quả khảo sát</h1>
+    <p class="muted">Chọn từ 2 đến 10 đợt. Hệ thống chỉ đối chiếu câu lựa chọn và thang điểm có cùng nội dung; câu trả lời tự luận không được đưa vào báo cáo.</p>
+
+    <form method="get" action="/admin/khao-sat/so-sanh" class="public-filter">
+        <label for="survey-query">Lọc danh sách khảo sát</label>
+        <div>
+            <input id="survey-query" name="q" type="search" value="@Model.Query" placeholder="Tên hoặc mã khảo sát" />
+            <button class="button button-quiet" type="submit">Lọc</button>
+        </div>
+    </form>
+    <form method="get" action="/admin/khao-sat/so-sanh" class="stack">
+        <input type="hidden" name="page" value="@Model.CurrentPage" />
+        @if (!string.IsNullOrWhiteSpace(Model.Query))
+        {
+            <input type="hidden" name="q" value="@Model.Query" />
+        }
+        @foreach (var selectedId in Model.SelectedIds.Where(id => !Model.Surveys.Any(survey => survey.Id == id)))
+        {
+            <input type="hidden" name="ids" value="@selectedId" />
+        }
+        <p class="muted">Đang xem trang @Model.CurrentPage/@Model.TotalPages · @Model.Total khảo sát · Đã chọn @Model.SelectedIds.Count</p>
+        @if (Model.Surveys.Count == 0)
+        {
+            <p class="empty">Không tìm thấy khảo sát phù hợp.</p>
+        }
+        else
+        {
+            <fieldset class="stack">
+                <legend>Khảo sát cần so sánh</legend>
+                @foreach (var survey in Model.Surveys)
+                {
+                    <label class="row-actions">
+                        <input type="checkbox" name="ids" value="@survey.Id" checked="@Model.SelectedIds.Contains(survey.Id)" />
+                        <span>@survey.Title · @survey.Code · @survey.Status</span>
+                    </label>
+                }
+            </fieldset>
+            <div class="row-actions" aria-label="Phân trang khảo sát">
+                @if (Model.CurrentPage > 1)
+                {
+                    <button class="button button-quiet" type="submit" name="navigatePage" value="@(Model.CurrentPage - 1)" formnovalidate>Trang trước</button>
+                }
+                @if (Model.CurrentPage < Model.TotalPages)
+                {
+                    <button class="button button-quiet" type="submit" name="navigatePage" value="@(Model.CurrentPage + 1)" formnovalidate>Trang sau</button>
+                }
+                <button class="button" type="submit" name="compare" value="true">So sánh đã chọn</button>
+            </div>
+            <small>Chuyển trang vẫn giữ các khảo sát đã chọn. Mỗi trang hiển thị tối đa @Model.PageSize đợt.</small>
+        }
+    </form>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.ErrorMessage</p>
+    }
+    @if (Model.Result is not null)
+    {
+        <section class="stack" aria-live="polite">
+            <h2>Đợt đã chọn</h2>
+            <div class="table-scroll">
+                <table class="report-table">
+                    <thead><tr><th scope="col">Khảo sát</th><th scope="col">Mã</th><th scope="col">Số phiếu</th></tr></thead>
+                    <tbody>
+                    @foreach (var survey in Model.Result.Surveys)
+                    {
+                        <tr><th scope="row">@survey.Title</th><td>@survey.Code</td><td>@survey.Responses</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            @if (Model.Result.Questions.Count == 0)
+            {
+                <p class="empty">Không có câu hỏi lựa chọn hoặc thang điểm trùng nội dung ở ít nhất hai khảo sát.</p>
+            }
+            @foreach (var question in Model.Result.Questions)
+            {
+                <article class="stack">
+                    <h2>@question.Text</h2>
+                    <p class="muted">@(question.Type == "SCALE" ? "Thang điểm" : question.Type == "MULTIPLE" ? "Chọn nhiều" : "Chọn một") · trùng ở @question.MatchedSurveys khảo sát</p>
+                    <div class="admin-chart-wrap"><canvas data-chart="@JsonSerializer.Serialize(new { labels = question.Rows.Select(row => row.Label), datasets = Model.Result.Surveys.Select((survey, index) => new { label = survey.Title, values = question.Rows.Select(row => index < row.Counts.Count ? row.Counts[index] : 0) }) })" role="img" aria-label="So sánh câu hỏi @question.Text giữa các khảo sát">Biểu đồ so sánh số lượt chọn</canvas></div>
+                    <div class="table-scroll">
+                        <table class="report-table">
+                            <caption>Số lượt chọn cho: @question.Text</caption>
+                            <thead><tr><th scope="col">Lựa chọn/mức điểm</th>@foreach (var survey in Model.Result.Surveys) { <th scope="col">@survey.Title</th> }</tr></thead>
+                            <tbody>
+                            @foreach (var row in question.Rows)
+                            {
+                                <tr><th scope="row">@row.Label</th>@foreach (var count in row.Counts) { <td>@count</td> }</tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                    <small>Số lượt chọn được so sánh trực tiếp; số phiếu mỗi đợt hiển thị ở trên. Câu chọn nhiều có thể có tổng lượt chọn lớn hơn số phiếu.</small>
+                </article>
+            }
+        </section>
+    }
+</section>

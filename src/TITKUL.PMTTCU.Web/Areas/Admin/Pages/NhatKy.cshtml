@@ -7,6 +7,11 @@
 <section class="card stack">
     <h1>Nhật ký</h1>
     <p>Nhật ký không chứa mật khẩu, mã phiên hay chuỗi kết nối.</p>
+    <form class="public-filter" method="get" action="/admin/nhat-ky" role="search">
+        <label for="audit-action">Lọc theo thao tác</label>
+        <div><input id="audit-action" name="action" type="search" value="@Model.ActionFilter" placeholder="Ví dụ: CMS_PUBLISH" /><button class="button" type="submit">Lọc</button></div>
+        <a class="button button-quiet" href="/admin/nhat-ky?handler=Xuat&amp;action=@Uri.EscapeDataString(Model.ActionFilter ?? "")">Xuất CSV (tối đa 5.000 dòng gần nhất)</a>
+    </form>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
         <p class="alert" role="alert">@Model.ErrorMessage</p>
@@ -19,12 +24,13 @@
     {
         <div class="table-scroll">
             <table>
-                <caption>20 bản ghi gần nhất</caption>
+                <caption>Nhật ký quản trị — @Model.Total bản ghi</caption>
                 <thead>
                     <tr>
                         <th scope="col">Thời điểm</th>
                         <th scope="col">Tài khoản</th>
                         <th scope="col">Việc</th>
+                        <th scope="col">Đối tượng</th>
                         <th scope="col">Mã theo dõi</th>
                     </tr>
                 </thead>
@@ -32,9 +38,10 @@
                 @foreach (var row in Model.Rows)
                 {
                     <tr>
-                        <td>@row.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@row.OccurredAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</td>
                         <td>@row.Username</td>
                         <td>@row.Action</td>
+                        <td>@(row.EntityType is null ? "—" : row.EntityType)@(row.EntityId is Guid entityId ? $" · {entityId:D}" : "")</td>
                         <td>@row.TraceId</td>
                     </tr>
                 }
@@ -43,3 +50,4 @@
         </div>
     }
 </section>
+@await Html.PartialAsync("/Pages/Shared/_PublicPager.cshtml", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))

@@ -10,13 +10,27 @@ public class SuKienChiTietModel : PageModel
     public SuKienChiTietModel(BackendApiClient api) => _api = api;
     public EventItem? Item { get; private set; }
     public string? ErrorMessage { get; private set; }
+    public bool ResourceNotFound { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(string slug)
     {
-        var body = await _api.GetPublicJsonAsync<ItemEnvelope>($"/api/v1/public/events/{slug}");
+        var result = await _api.GetPublicJsonResultAsync<ItemEnvelope>($"/api/v1/public/events/{Uri.EscapeDataString(slug)}");
+        var body = result.Value;
         Item = body?.Item;
-        if (Item is null) ErrorMessage = "Không tìm thấy sự kiện.";
-        else ViewData["Title"] = Item.Title;
+        if (Item is null)
+        {
+            var notFound = result.IsNotFound || result.IsAvailable;
+            ResourceNotFound = notFound;
+            ErrorMessage = notFound ? "Không tìm thấy sự kiện." : "Chưa thể tải sự kiện. Vui lòng thử lại sau.";
+            Response.StatusCode = notFound ? StatusCodes.Status404NotFound : StatusCodes.Status503ServiceUnavailable;
+        }
+        else
+        {
+            ViewData["Title"] = Item.Title;
+            ViewData["Description"] = Item.Summary;
+            ViewData["OpenGraphType"] = "article";
+            ViewData["CanonicalPath"] = "/su-kien/" + Uri.EscapeDataString(Item.Slug);
+        }
         return Page();
     }
 

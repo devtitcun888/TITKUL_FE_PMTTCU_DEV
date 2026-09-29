@@ -1,0 +1,76 @@
+@page "/admin/cau-lac-bo"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CauLacBoModel
+@{
+    ViewData["Title"] = "Câu lạc bộ";
+}
+
+<section class="card stack admin-education-page education-legacy-page">
+    <h1>Quản lý câu lạc bộ</h1>
+    <p>Quản lý thông tin, địa điểm, lịch sinh hoạt và trạng thái hoạt động.</p>
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage)) { <p class="status-note" role="status">@Model.SuccessMessage</p> }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage)) { <p class="alert" role="alert">@Model.ErrorMessage</p> }
+
+    @if (Model.CanManage)
+    {
+        <details>
+            <summary>Tạo câu lạc bộ</summary>
+            <form method="post" asp-page-handler="Create" class="stack">
+                <p class="status-note">Mã câu lạc bộ sẽ do hệ thống tự cấp sau khi tạo.</p>
+                <div><label for="name">Tên câu lạc bộ</label><input id="name" name="Name" required maxlength="250" /></div>
+                <div><label for="description">Mô tả</label><textarea id="description" name="Description" rows="3"></textarea></div>
+                <div><label for="location">Địa điểm</label><input id="location" name="Location" maxlength="300" /></div>
+                <div><label for="regularSchedule">Lịch sinh hoạt định kỳ</label><input id="regularSchedule" name="RegularSchedule" maxlength="300" placeholder="Ví dụ: Sáng thứ Bảy tuần thứ hai hàng tháng" /></div>
+                <div><label for="status">Trạng thái</label><select id="status" name="Status"><option value="ACTIVE">Đang hoạt động</option><option value="INACTIVE">Tạm ngưng</option></select></div>
+                <button type="submit">Tạo câu lạc bộ</button>
+            </form>
+        </details>
+    }
+
+    <form method="get" action="/admin/cau-lac-bo" class="public-filter" role="search">
+        <label for="club-query">Tìm câu lạc bộ</label>
+        <div>
+            <input id="club-query" type="search" name="q" value="@Model.Query" placeholder="Mã, tên hoặc địa điểm" />
+            <select name="status" aria-label="Lọc trạng thái">
+                <option value="">Tất cả trạng thái</option>
+                <option value="ACTIVE" selected="@(Model.StatusFilter == "ACTIVE")">Đang hoạt động</option>
+                <option value="INACTIVE" selected="@(Model.StatusFilter == "INACTIVE")">Tạm ngưng</option>
+            </select>
+            <button type="submit">Lọc</button>
+        </div>
+    </form>
+
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Chưa có câu lạc bộ phù hợp.</p>
+    }
+    else
+    {
+        <div class="stack">
+            @foreach (var club in Model.Items)
+            {
+                <details class="card">
+                    <summary>@club.Name · @club.Code · @(club.Status == "ACTIVE" ? "Đang hoạt động" : "Tạm ngưng")</summary>
+                    <dl class="definition-list">
+                        <dt>Địa điểm</dt><dd>@(club.Location ?? "Chưa cập nhật")</dd>
+                        <dt>Lịch sinh hoạt</dt><dd>@(club.RegularSchedule ?? "Chưa cập nhật")</dd>
+                        <dt>Mô tả</dt><dd>@(club.Description ?? "Chưa có mô tả")</dd>
+                    </dl>
+                    <p><a class="button" href="/admin/cau-lac-bo/@club.Id">Lịch sinh hoạt và người phụ trách</a></p>
+                    @if (Model.CanManage)
+                    {
+                        <form method="post" asp-page-handler="Update" class="stack">
+                            <input type="hidden" name="id" value="@club.Id" />
+                            <div><strong>Mã câu lạc bộ:</strong> <code>@club.Code</code> · Mã được giữ cố định.</div>
+                            <div><label for="name-@club.Id">Tên</label><input id="name-@club.Id" name="name" value="@club.Name" required maxlength="250" /></div>
+                            <div><label for="description-@club.Id">Mô tả</label><textarea id="description-@club.Id" name="description" rows="3">@club.Description</textarea></div>
+                            <div><label for="location-@club.Id">Địa điểm</label><input id="location-@club.Id" name="location" value="@club.Location" maxlength="300" /></div>
+                            <div><label for="schedule-@club.Id">Lịch định kỳ</label><input id="schedule-@club.Id" name="regularSchedule" value="@club.RegularSchedule" maxlength="300" /></div>
+                            <div><label for="status-@club.Id">Trạng thái</label><select id="status-@club.Id" name="status"><option value="ACTIVE" selected="@(club.Status == "ACTIVE")">Đang hoạt động</option><option value="INACTIVE" selected="@(club.Status == "INACTIVE")">Tạm ngưng</option></select></div>
+                            <button type="submit">Lưu thay đổi</button>
+                        </form>
+                    }
+                </details>
+            }
+        </div>
+    }
+</section>

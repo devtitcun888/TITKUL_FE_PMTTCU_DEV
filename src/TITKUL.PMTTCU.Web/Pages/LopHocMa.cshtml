@@ -9,24 +9,43 @@
     <p><a href="/lop-hoc">Các lớp đang mở</a></p>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <h1>@(Model.ResourceNotFound ? "Không tìm thấy lớp học" : "Chưa tải được thông tin lớp")</h1>
+        <p class="@(Model.ResourceNotFound ? "empty" : "alert")" role="@(Model.ResourceNotFound ? "status" : "alert")">@Model.ErrorMessage</p>
+    }
+    @if (!string.IsNullOrEmpty(Model.SupplementalErrorMessage))
+    {
+        <p class="alert" role="alert">@Model.SupplementalErrorMessage</p>
     }
     @if (Model.Item is not null)
     {
         <h1>@Model.Item.Name</h1>
         <p>@Model.Item.ProgramName</p>
-        <p>@Model.Item.StartDate.ToString("dd/MM/yyyy") – @Model.Item.EndDate.ToString("dd/MM/yyyy") · sĩ số @Model.Item.Capacity · còn @Model.Item.Remaining chỗ</p>
+        <p>Thời gian lớp: @Model.Item.StartDate.ToString("dd/MM/yyyy") – @Model.Item.EndDate.ToString("dd/MM/yyyy") · sĩ số @Model.Item.Capacity</p>
+        @if (Model.Item.CanRegister)
+        {
+            <p class="status-note">
+                Đang nhận đăng ký · còn @Model.Item.Remaining chỗ
+                @if (Model.Item.RegistrationClosesAt is DateTimeOffset closesAt)
+                {
+                    <span> · Hạn đăng ký @closesAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</span>
+                }
+            </p>
+        }
+        else
+        {
+            <p class="alert" role="status">Lớp chưa nhận đăng ký. @(Model.Item.ClosedReason == "EDU_FULL" ? "Đã đủ chỗ." : Model.Item.ClosedReason == "EDU_WINDOW" ? "Ngoài thời gian đăng ký." : "Lớp đã đóng hoặc chưa mở đăng ký.")</p>
+        }
         @if (!string.IsNullOrWhiteSpace(Model.Item.Description))
         {
             <p>@Model.Item.Description</p>
         }
         @if (Model.Item.CanRegister)
         {
-            <p><a class="button" href="/dang-ky/@Model.Item.Code">Đăng ký lớp</a></p>
+            <p><a class="button" href="/dang-ky/@Uri.EscapeDataString(Model.Item.Code)">Đăng ký lớp</a></p>
         }
         else
         {
-            <p class="alert" role="status">Lớp chưa nhận đăng ký. @(Model.Item.ClosedReason == "EDU_FULL" ? "Đã đủ chỗ." : "Ngoài thời hạn hoặc chưa mở.")</p>
+            <p><a class="button button-quiet" href="/lien-he">Liên hệ Trung tâm để hỏi về đợt học tiếp theo</a></p>
         }
         @if (Model.Join is { CanJoin: true, Url: not null })
         {
@@ -41,15 +60,23 @@
         @if (Model.Item.Sessions is { Count: > 0 })
         {
             <h2>Lịch học</h2>
+            @if (Model.HasUpcomingSessions)
+            {
+                <p><a class="button button-quiet" href="/lop-hoc/@Uri.EscapeDataString(Model.Item.Code)?handler=Calendar">Tải lịch học (.ics)</a> <small>Có thiết lập nhắc trước 30 phút; tùy ứng dụng lịch hỗ trợ.</small></p>
+            }
             <ul>
                 @foreach (var session in Model.Item.Sessions)
                 {
-                    <li>@session.Title · @session.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM HH:mm")–@session.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm") · @EducationUi.Status(session.Mode)</li>
+                    <li><strong>@session.Title</strong> · @session.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")–@session.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm") · @EducationUi.Status(session.Mode) · @(session.Location ?? "Chưa cập nhật địa điểm")</li>
                 }
             </ul>
         }
         <h2>Học liệu</h2>
-        @if (Model.Materials.Count == 0)
+        @if (Model.MaterialsUnavailable)
+        {
+            <p class="alert" role="alert">Chưa thể tải danh sách học liệu của lớp.</p>
+        }
+        else if (Model.Materials.Count == 0)
         {
             <p class="empty">Chưa có học liệu công khai.</p>
         }
@@ -64,7 +91,7 @@
                         {
                             <p>@material.Description</p>
                         }
-                        <p><a class="button" href="/lop-hoc/@Model.Item.Code?handler=HocLieu&amp;id=@material.Id">Tải @material.FileName</a></p>
+                        <p><a class="button" href="/lop-hoc/@Uri.EscapeDataString(Model.Item.Code)?handler=HocLieu&amp;id=@material.Id">Tải @material.FileName</a></p>
                     </article>
                 }
             </div>

@@ -1,123 +1,192 @@
 @page "/admin/tong-quan"
+@using System.Globalization
+@using System.Text.Json
 @using TITKUL.PMTTCU.Web.Areas.Admin
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.TongQuanModel
 @{
     ViewData["Title"] = "Tổng quan";
+    ViewData["UseAdminCharts"] = true;
+    var item = Model.Item;
+    var totalClasses = item?.ClassStatus.Sum(row => row.Count) ?? 0;
+    var activeClasses = item?.ClassStatus.Where(row => row.Status is "MO_DANG_KY" or "DANG_HOC").Sum(row => row.Count) ?? 0;
+    var activeClassPercent = totalClasses == 0 ? 0m : Math.Round(activeClasses * 100m / totalClasses, 2);
+    var busiestHamlet = item?.Hamlets.OrderByDescending(row => row.Count).FirstOrDefault();
+    var busiestHamletShare = item is null || item.Learners == 0 || busiestHamlet is null
+        ? 0
+        : (int)Math.Clamp(Math.Round(busiestHamlet.Count * 100d / item.Learners), 0, 100);
+    var statusColors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["DU_KIEN"] = "#155e75",
+        ["MO_DANG_KY"] = "#0f9f8f",
+        ["DANG_HOC"] = "#2878e8",
+        ["DONG"] = "#d88716",
+        ["HUY"] = "#7c4de8"
+    };
+    var statusClasses = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["DU_KIEN"] = "status-planned",
+        ["MO_DANG_KY"] = "status-registration",
+        ["DANG_HOC"] = "status-learning",
+        ["DONG"] = "status-closed",
+        ["HUY"] = "status-cancelled"
+    };
 }
-<section class="card stack">
-    <h1>Tổng quan</h1>
-    <form method="get" class="filter-grid">
-        <div><label for="from">Từ ngày</label><input id="from" name="From" type="date" value="@Model.From" /></div>
-        <div><label for="to">Đến ngày</label><input id="to" name="To" type="date" value="@Model.To" /></div>
-        <div><button type="submit">Áp dụng</button></div>
-    </form>
+
+<main class="admin-dashboard">
+    <header class="dashboard-heading">
+        <div>
+            <p class="dashboard-eyebrow">QUẢN TRỊ PMTTCU</p>
+            <h1>Tổng quan</h1>
+            <p class="dashboard-subtitle">Theo dõi tình hình đào tạo và hoạt động của hệ thống</p>
+        </div>
+        <form method="get" class="dashboard-date-filter" aria-label="Lọc dữ liệu theo thời gian">
+            <div><label for="from">Từ ngày</label><input id="from" name="From" type="date" value="@Model.From" /></div>
+            <div><label for="to">Đến ngày</label><input id="to" name="To" type="date" value="@Model.To" /></div>
+            <button type="submit">Áp dụng</button>
+        </form>
+    </header>
+
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
         <p class="alert" role="alert">@Model.ErrorMessage</p>
     }
-    @if (Model.Item is not null)
+
+    @if (item is not null)
     {
-        <div class="kpi-grid">
-            <article class="card kpi"><span>Lớp</span><strong>@Model.Item.Classes</strong></article>
-            <article class="card kpi"><span>Học viên</span><strong>@Model.Item.Learners</strong></article>
-            <article class="card kpi"><span>Thôn/ấp</span><strong>@Model.Item.Hamlets.Count</strong></article>
-            <article class="card kpi"><span>Chuyên cần</span><strong>@Model.Item.AttendancePercent.ToString("0.##")%</strong></article>
-        </div>
-        <p class="row-actions">
-            <a href="/admin/bao-cao?From=@Model.From&amp;To=@Model.To">Bảng chuyên cần</a>
+        <section class="dashboard-kpis" aria-label="Chỉ số tổng quan">
+            <article class="dashboard-kpi dashboard-kpi-blue">
+                <span class="dashboard-kpi-icon" aria-hidden="true">▦</span>
+                <div><span class="dashboard-kpi-label">Lớp</span><strong>@item.Classes</strong><span class="dashboard-kpi-note">Tổng số lớp đang quản lý</span></div>
+            </article>
+            <article class="dashboard-kpi dashboard-kpi-teal">
+                <span class="dashboard-kpi-icon" aria-hidden="true">♙</span>
+                <div><span class="dashboard-kpi-label">Học viên</span><strong>@item.Learners</strong><span class="dashboard-kpi-note">Học viên trong kỳ đã chọn</span></div>
+            </article>
+            <article class="dashboard-kpi dashboard-kpi-violet">
+                <span class="dashboard-kpi-icon" aria-hidden="true">⌂</span>
+                <div><span class="dashboard-kpi-label">Thôn/ấp</span><strong>@item.Hamlets.Count</strong><span class="dashboard-kpi-note">Địa bàn có học viên</span></div>
+            </article>
+            <article class="dashboard-kpi dashboard-kpi-amber">
+                <span class="dashboard-kpi-icon" aria-hidden="true">▥</span>
+                <div><span class="dashboard-kpi-label">Chuyên cần</span><strong>@item.AttendancePercent.ToString("0.##")%</strong><span class="dashboard-kpi-note">Tỷ lệ tham gia theo kỳ</span></div>
+            </article>
+        </section>
+
+        <nav class="dashboard-shortcuts" aria-label="Báo cáo nhanh">
+            <span>Báo cáo:</span>
+            <a href="/admin/bao-cao?From=@Model.From&amp;To=@Model.To">Theo dõi chuyên cần</a>
             @if (Model.CanExport)
             {
                 <a href="/admin/bao-cao/thang?From=@Model.From&amp;To=@Model.To">Đối soát tháng</a>
             }
-        </p>
-        <section class="stack">
-            <h2>Lớp theo trạng thái</h2>
-            <table class="report-table">
-                <caption>Số lớp theo trạng thái</caption>
-                <thead><tr><th>Trạng thái</th><th>Số lớp</th></tr></thead>
-                <tbody>
-                @foreach (var row in Model.Item.ClassStatus)
+        </nav>
+
+        <div class="dashboard-analysis-grid">
+            <section class="dashboard-panel dashboard-status-panel" aria-labelledby="status-chart-title">
+                <div class="dashboard-panel-heading">
+                    <span class="dashboard-panel-icon" aria-hidden="true">◔</span>
+                    <div><h2 id="status-chart-title">Lớp theo trạng thái</h2><p>Tỷ lệ các lớp theo trạng thái hiện tại</p></div>
+                </div>
+                @if (totalClasses == 0)
                 {
-                    var max = Math.Max(1, Model.Item.ClassStatus.Max(item => item.Count));
-                    <tr>
-                        <td>@EducationUi.Status(row.Status)</td>
-                        <td>@row.Count</td>
-                    </tr>
-                    @if (row.Count > 0)
-                    {
-                        <tr><td colspan="2"><div class="bar" style="width:@(row.Count * 100 / max)%"></div></td></tr>
-                    }
+                    <p class="empty">Chưa có lớp trong kỳ được chọn.</p>
+                }
+                else
+                {
+                    <div class="dashboard-status-content">
+                        <div class="dashboard-donut-wrap">
+                            <canvas data-chart-kind="doughnut" data-chart-hide-legend="true" data-chart="@JsonSerializer.Serialize(new { labels = item.ClassStatus.Select(row => EducationUi.Status(row.Status)), values = item.ClassStatus.Select(row => row.Count), colors = item.ClassStatus.Select(row => statusColors.GetValueOrDefault(row.Status, "#64748b")) })" role="img" aria-label="Biểu đồ số lớp theo trạng thái">Biểu đồ số lớp theo trạng thái</canvas>
+                            <div class="dashboard-donut-center" aria-hidden="true"><span>Tổng</span><strong>@totalClasses</strong><span>lớp</span></div>
+                        </div>
+                        <ul class="dashboard-status-legend">
+                            @foreach (var row in item.ClassStatus)
+                            {
+                                var percent = totalClasses == 0 ? 0 : row.Count * 100d / totalClasses;
+                                var colorClass = statusClasses.GetValueOrDefault(row.Status, "status-other");
+                                <li><span class="dashboard-legend-dot @colorClass"></span><span>@EducationUi.Status(row.Status)</span><strong>@row.Count <small>(@percent.ToString("0.##")%)</small></strong></li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </section>
+
+            <section class="dashboard-panel" aria-labelledby="activity-title">
+                <div class="dashboard-panel-heading">
+                    <span class="dashboard-panel-icon" aria-hidden="true">▮</span>
+                    <div><h2 id="activity-title">Tóm tắt hoạt động</h2><p>Các chỉ số nổi bật trong kỳ được chọn</p></div>
+                </div>
+                <div class="dashboard-progress-list">
+                        <div class="dashboard-progress-item dashboard-progress-blue">
+                        <div class="dashboard-progress-icon" aria-hidden="true">▦</div>
+                        <div class="dashboard-progress-main"><div><span>Tỷ lệ lớp đang hoạt động</span><strong>@activeClassPercent.ToString("0.##")%</strong></div><div class="dashboard-progress-track"><progress value="@activeClassPercent.ToString(CultureInfo.InvariantCulture)" max="100" aria-label="Tỷ lệ lớp đang hoạt động"></progress></div><small>@activeClasses / @totalClasses lớp (mở đăng ký hoặc đang học)</small></div>
+                    </div>
+                    <div class="dashboard-progress-item dashboard-progress-teal">
+                        <div class="dashboard-progress-icon" aria-hidden="true">♙</div>
+                        <div class="dashboard-progress-main"><div><span>Tỷ lệ chuyên cần</span><strong>@item.AttendancePercent.ToString("0.##")%</strong></div><div class="dashboard-progress-track"><progress class="progress-teal" value="@Math.Clamp(item.AttendancePercent, 0, 100)" max="100" aria-label="Tỷ lệ chuyên cần"></progress></div><small>Trên tổng lượt tham gia được ghi nhận</small></div>
+                    </div>
+                    <div class="dashboard-progress-item dashboard-progress-violet">
+                        <div class="dashboard-progress-icon" aria-hidden="true">⌂</div>
+                        <div class="dashboard-progress-main"><div><span>Địa bàn có nhiều học viên nhất</span><strong>@busiestHamletShare%</strong></div><div class="dashboard-progress-track"><progress class="progress-violet" value="@busiestHamletShare" max="100" aria-label="Tỷ trọng học viên tại địa bàn đông nhất"></progress></div><small>@(busiestHamlet?.Name ?? "Chưa có dữ liệu") · @(busiestHamlet?.Count ?? 0) học viên</small></div>
+                    </div>
+                </div>
+                @if (item.Attendance.Count > 0)
+                {
+                    <div class="dashboard-attendance-summary">
+                        <h3>Chuyên cần theo lớp</h3>
+                        @foreach (var row in item.Attendance.OrderByDescending(row => row.Percent).Take(3))
+                        {
+                            <div class="dashboard-attendance-row"><span title="@row.ClassName">@row.ClassName</span><strong>@row.Percent.ToString("0.##")%</strong><small>@row.Present / @(row.Roster * row.Occurred) lượt</small></div>
+                        }
+                        <a href="/admin/bao-cao?From=@Model.From&amp;To=@Model.To">Xem báo cáo chuyên cần <span aria-hidden="true">›</span></a>
+                    </div>
+                }
+            </section>
+        </div>
+
+        @if (Model.ContentStats is not null)
+        {
+            <section class="dashboard-panel dashboard-content-panel" aria-labelledby="content-services-title">
+                <div class="dashboard-panel-heading">
+                    <span class="dashboard-panel-icon" aria-hidden="true">▤</span>
+                    <div><h2 id="content-services-title">Nội dung &amp; dịch vụ công</h2><p>Tổng số hồ sơ đang quản lý, gồm bản nháp và nội dung đã xuất bản</p></div>
+                </div>
+                <div class="dashboard-content-grid">
+                    <a class="dashboard-content-card" href="/admin/cms/bai-viet"><span class="dashboard-content-icon content-blue" aria-hidden="true">▤</span><span class="dashboard-content-copy"><span>Bài viết</span><strong>@(Model.ContentStats.Posts?.ToString("N0") ?? "—")</strong></span><span class="dashboard-content-arrow" aria-hidden="true">›</span></a>
+                    <a class="dashboard-content-card" href="/admin/cms/thong-bao"><span class="dashboard-content-icon content-red" aria-hidden="true">!</span><span class="dashboard-content-copy"><span>Thông báo</span><strong>@(Model.ContentStats.Notices?.ToString("N0") ?? "—")</strong></span><span class="dashboard-content-arrow" aria-hidden="true">›</span></a>
+                    <a class="dashboard-content-card" href="/admin/cms/su-kien"><span class="dashboard-content-icon content-violet" aria-hidden="true">◷</span><span class="dashboard-content-copy"><span>Sự kiện</span><strong>@(Model.ContentStats.Events?.ToString("N0") ?? "—")</strong></span><span class="dashboard-content-arrow" aria-hidden="true">›</span></a>
+                    <a class="dashboard-content-card" href="/admin/cms/van-ban"><span class="dashboard-content-icon content-teal" aria-hidden="true">▧</span><span class="dashboard-content-copy"><span>Văn bản</span><strong>@(Model.ContentStats.Documents?.ToString("N0") ?? "—")</strong></span><span class="dashboard-content-arrow" aria-hidden="true">›</span></a>
+                    <a class="dashboard-content-card" href="/admin/cms/bieu-mau"><span class="dashboard-content-icon content-amber" aria-hidden="true">▦</span><span class="dashboard-content-copy"><span>Biểu mẫu</span><strong>@(Model.ContentStats.Forms?.ToString("N0") ?? "—")</strong></span><span class="dashboard-content-arrow" aria-hidden="true">›</span></a>
+                    <a class="dashboard-content-card" href="/admin/cms/album"><span class="dashboard-content-icon content-indigo" aria-hidden="true">▣</span><span class="dashboard-content-copy"><span>Thư viện &amp; học liệu</span><strong>@(Model.ContentStats.Albums?.ToString("N0") ?? "—")</strong></span><span class="dashboard-content-arrow" aria-hidden="true">›</span></a>
+                    <a class="dashboard-content-card dashboard-content-action" href="/admin/lien-he?status=NEW"><span class="dashboard-content-icon content-orange" aria-hidden="true">✉</span><span class="dashboard-content-copy"><span>Phản ánh mới</span><strong>@(Model.ContentStats.NewContacts?.ToString("N0") ?? "—")</strong></span><span class="dashboard-content-arrow" aria-hidden="true">›</span></a>
+                </div>
+            </section>
+        }
+
+        <section class="dashboard-panel dashboard-table-panel" aria-labelledby="status-table-title">
+            <div class="dashboard-panel-heading">
+                <span class="dashboard-panel-icon" aria-hidden="true">▤</span>
+                <div><h2 id="status-table-title">Số lớp theo trạng thái</h2><p>Thống kê chi tiết số lượng lớp theo trạng thái</p></div>
+            </div>
+            <div class="table-scroll"><table class="dashboard-table">
+                <thead><tr><th>Trạng thái</th><th>Số lớp</th><th>Tỷ lệ</th><th>Hành động</th></tr></thead>
+                <tbody>
+                @foreach (var row in item.ClassStatus)
+                {
+                    var percent = totalClasses == 0 ? 0 : row.Count * 100d / totalClasses;
+                    var colorClass = statusClasses.GetValueOrDefault(row.Status, "status-other");
+                    <tr><td><span class="dashboard-legend-dot @colorClass"></span>@EducationUi.Status(row.Status)</td><td>@row.Count</td><td>@percent.ToString("0.##")%</td><td><a href="/admin/lop-hoc?status=@row.Status">Xem chi tiết <span aria-hidden="true">›</span></a></td></tr>
                 }
                 </tbody>
-            </table>
+            </table></div>
         </section>
-        <section class="stack">
-            <h2>Học viên theo thôn/ấp</h2>
-            @if (Model.Item.Hamlets.Count == 0)
-            {
-                <p class="empty">Chưa có học viên trong kỳ.</p>
-            }
-            else
-            {
-                var max = Math.Max(1, Model.Item.Hamlets.Max(item => item.Count));
-                <table class="report-table">
-                    <caption>Học viên không trùng theo thôn/ấp</caption>
-                    <thead><tr><th>Thôn/ấp</th><th>Học viên</th></tr></thead>
-                    <tbody>
-                    @foreach (var row in Model.Item.Hamlets)
-                    {
-                        <tr><td>@row.Name</td><td>@row.Count</td></tr>
-                        @if (row.Count > 0)
-                        {
-                            <tr><td colspan="2"><div class="bar" style="width:@(row.Count * 100 / max)%"></div></td></tr>
-                        }
-                    }
-                    </tbody>
-                </table>
-            }
-        </section>
-        <section class="stack">
-            <h2>Học viên theo tuổi</h2>
-            <table class="report-table">
-                <caption>Học viên không trùng theo nhóm tuổi</caption>
-                <thead><tr><th>Nhóm tuổi</th><th>Học viên</th></tr></thead>
-                <tbody>
-                @foreach (var row in Model.Item.Ages)
-                {
-                    var max = Math.Max(1, Model.Item.Ages.Max(item => item.Count));
-                    <tr><td>@EducationUi.AgeBand(row.Band)</td><td>@row.Count</td></tr>
-                    @if (row.Count > 0)
-                    {
-                        <tr><td colspan="2"><div class="bar" style="width:@(row.Count * 100 / max)%"></div></td></tr>
-                    }
-                }
-                </tbody>
-            </table>
-        </section>
-        <section class="stack">
-            <h2>Học viên theo đối tượng</h2>
-            @if (Model.Item.Audiences.Count == 0)
-            {
-                <p class="empty">Chưa có đối tượng gắn với lớp trong kỳ.</p>
-            }
-            else
-            {
-                var max = Math.Max(1, Model.Item.Audiences.Max(item => item.Count));
-                <table class="report-table">
-                    <caption>Học viên không trùng theo đối tượng của chương trình</caption>
-                    <thead><tr><th>Đối tượng</th><th>Học viên</th></tr></thead>
-                    <tbody>
-                    @foreach (var row in Model.Item.Audiences)
-                    {
-                        <tr><td>@row.Name</td><td>@row.Count</td></tr>
-                        @if (row.Count > 0)
-                        {
-                            <tr><td colspan="2"><div class="bar" style="width:@(row.Count * 100 / max)%"></div></td></tr>
-                        }
-                    }
-                    </tbody>
-                </table>
-            }
-        </section>
+
+        <details class="dashboard-panel dashboard-breakdowns">
+            <summary>Phân tích người học theo địa bàn, độ tuổi và đối tượng</summary>
+            <div class="dashboard-breakdown-grid">
+                <section><h2>Học viên theo thôn/ấp</h2><div class="admin-chart-wrap"><canvas data-chart="@JsonSerializer.Serialize(new { labels = item.Hamlets.Select(row => row.Name), values = item.Hamlets.Select(row => row.Count) })" role="img" aria-label="Biểu đồ học viên theo thôn ấp">Biểu đồ học viên theo thôn ấp</canvas></div></section>
+                <section><h2>Học viên theo tuổi</h2><div class="admin-chart-wrap"><canvas data-chart="@JsonSerializer.Serialize(new { labels = item.Ages.Select(row => EducationUi.AgeBand(row.Band)), values = item.Ages.Select(row => row.Count) })" role="img" aria-label="Biểu đồ học viên theo nhóm tuổi">Biểu đồ học viên theo tuổi</canvas></div></section>
+                <section><h2>Học viên theo đối tượng</h2><div class="admin-chart-wrap"><canvas data-chart="@JsonSerializer.Serialize(new { labels = item.Audiences.Select(row => row.Name), values = item.Audiences.Select(row => row.Count) })" role="img" aria-label="Biểu đồ học viên theo đối tượng">Biểu đồ học viên theo đối tượng</canvas></div></section>
+            </div>
+        </details>
     }
-</section>
+</main>

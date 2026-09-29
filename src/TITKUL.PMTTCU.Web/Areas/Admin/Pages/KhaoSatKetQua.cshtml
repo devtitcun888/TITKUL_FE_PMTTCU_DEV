@@ -1,7 +1,9 @@
 @page "/admin/khao-sat/{id:guid}/ket-qua"
+@using System.Text.Json
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.KhaoSatKetQuaModel
 @{
     ViewData["Title"] = "Kết quả khảo sát";
+    ViewData["UseAdminCharts"] = true;
 }
 <section class="card stack">
     <p><a href="/admin/khao-sat/@Model.SurveyId/thiet-ke">Về thiết kế</a></p>
@@ -19,17 +21,27 @@
         <p>Số phiếu: @Model.Item.Responses</p>
         @foreach (var question in Model.Item.Questions)
         {
-            var max = Math.Max(1, question.Options.Select(item => item.Count).DefaultIfEmpty(0).Max());
             <section class="stack">
                 <h2>@question.Text</h2>
-                @foreach (var option in question.Options)
+                @if (question.Options.Count > 0)
                 {
-                    <p>@option.Text · @option.Count</p>
-                    <div class="bar" style="width:@(option.Count * 100 / max)%"></div>
+                    <div class="admin-chart-wrap"><canvas data-chart-kind="doughnut" data-chart="@JsonSerializer.Serialize(new { labels = question.Options.Select(option => option.Text), values = question.Options.Select(option => option.Count) })" role="img" aria-label="Biểu đồ tỷ trọng lựa chọn cho câu hỏi @question.Text">Biểu đồ lựa chọn khảo sát</canvas></div>
+                    <div class="table-scroll"><table class="report-table"><caption>Kết quả lựa chọn: @question.Text</caption><thead><tr><th scope="col">Lựa chọn</th><th scope="col">Số phiếu</th></tr></thead><tbody>
+                    @foreach (var option in question.Options)
+                    {
+                        <tr><th scope="row">@option.Text</th><td>@option.Count</td></tr>
+                    }
+                    </tbody></table></div>
                 }
-                @foreach (var scale in question.Scales)
+                @if (question.Scales.Count > 0)
                 {
-                    <p>Mức @scale.Value · @scale.Count</p>
+                    <div class="admin-chart-wrap"><canvas data-chart="@JsonSerializer.Serialize(new { labels = question.Scales.Select(scale => scale.Value.ToString()), values = question.Scales.Select(scale => scale.Count) })" role="img" aria-label="Biểu đồ thang điểm cho câu hỏi @question.Text">Biểu đồ thang điểm khảo sát</canvas></div>
+                    <div class="table-scroll"><table class="report-table"><caption>Kết quả thang điểm: @question.Text</caption><thead><tr><th scope="col">Mức điểm</th><th scope="col">Số phiếu</th></tr></thead><tbody>
+                    @foreach (var scale in question.Scales)
+                    {
+                        <tr><th scope="row">@scale.Value</th><td>@scale.Count</td></tr>
+                    }
+                    </tbody></table></div>
                 }
                 @foreach (var text in question.Texts)
                 {

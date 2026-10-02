@@ -1,0 +1,17 @@
+﻿version: "3.9"
+
+services:
+  fe-pmttcu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: titkul/fe-pmttcu:latest
+    container_name: fe-pmttcu
+    restart: unless-stopped
+    ports:
+      - "9211:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ApiClient__BaseUrl=${BE_API_URL}
+    volumes:
+      - /home/titkul/configs/pmttcu/web/appsettings.Production.json:/app/appsettings.Production.json:ro

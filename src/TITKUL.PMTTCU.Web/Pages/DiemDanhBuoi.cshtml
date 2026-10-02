@@ -5,8 +5,11 @@
     ViewData["Robots"] = "noindex, nofollow, noarchive";
 }
 
-<section class="card stack">
-    <h1>Điểm danh buổi học</h1>
+<section class="card stack public-detail-page">
+    <header class="public-detail-heading">
+        <p class="public-detail-eyebrow">Buổi học</p>
+        <h1>Điểm danh buổi học</h1>
+    </header>
     @if (Model.Session is not null)
     {
         <p><strong>@Model.Session.ClassName</strong></p>

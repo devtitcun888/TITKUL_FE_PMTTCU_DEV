@@ -1,46 +1,85 @@
 @page "/tin-tuc"
 @model TITKUL.PMTTCU.Web.Pages.TinTucModel
 @{
-    ViewData["Title"] = "Tin tức";
+    ViewData["Title"] = Model.SelectedCategory?.Name ?? "Tin tức";
+
+    string CategoryHref(string? slug)
+    {
+        var query = new List<string>();
+        if (!string.IsNullOrWhiteSpace(slug)) query.Add("categorySlug=" + Uri.EscapeDataString(slug));
+        if (!string.IsNullOrWhiteSpace(Model.Query)) query.Add("q=" + Uri.EscapeDataString(Model.Query));
+        return query.Count == 0 ? "/tin-tuc" : "/tin-tuc?" + string.Join("&", query);
+    }
 }
 
-<section class="card stack">
-    <h1>Tin tức</h1>
-    <form class="public-filter" method="get" action="/tin-tuc" role="search">
-        <label for="news-query">Tìm tin tức</label>
-        <div><input id="news-query" name="q" type="search" value="@Model.Query" placeholder="Nhập tiêu đề hoặc từ khóa" /><button class="button" type="submit">Tìm kiếm</button></div>
-        @if (!string.IsNullOrWhiteSpace(Model.Query)) { <a href="/tin-tuc">Xóa tìm kiếm</a> }
-    </form>
-    @if (!string.IsNullOrWhiteSpace(Model.Query))
-    {
-        <p>Kết quả tìm kiếm cho: <strong>@Model.Query</strong></p>
-    }
-    @if (Model.ErrorMessage is not null)
-    {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
-    }
-    else if (Model.Items.Count == 0)
-    {
-        <p class="empty" role="status">@(string.IsNullOrWhiteSpace(Model.Query) ? "Chưa có bài viết công khai." : "Không tìm thấy tin phù hợp.")</p>
-    }
-    else
-    {
-        <ul class="stack">
-            @foreach (var item in Model.Items)
+<div class="public-list-layout">
+    <section class="card stack public-list-main">
+        <h1>@(Model.SelectedCategory?.Name ?? "Tin tức")</h1>
+        @if (Model.SelectedCategory is not null && !string.IsNullOrWhiteSpace(Model.SelectedCategory.Description))
+        {
+            <p>@Model.SelectedCategory.Description</p>
+        }
+        <form class="public-filter" method="get" action="/tin-tuc" role="search">
+            <label for="news-query">Tìm tin tức</label>
+            <div>
+                <input id="news-query" name="q" type="search" value="@Model.Query" placeholder="Nhập tiêu đề hoặc từ khóa" />
+                @if (Model.CategorySlug is not null) { <input type="hidden" name="categorySlug" value="@Model.CategorySlug" /> }
+                <button class="button" type="submit">Tìm kiếm</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.Query) || Model.CategorySlug is not null) { <a href="/tin-tuc">Xóa bộ lọc</a> }
+        </form>
+        @if (!string.IsNullOrWhiteSpace(Model.Query))
+        {
+            <p>Kết quả tìm kiếm cho: <strong>@Model.Query</strong></p>
+        }
+        @if (Model.ErrorMessage is not null)
+        {
+            <p class="alert" role="alert">@Model.ErrorMessage</p>
+        }
+        else if (Model.Items.Count == 0)
+        {
+            <p class="empty" role="status">@(string.IsNullOrWhiteSpace(Model.Query) ? "Chưa có bài viết công khai." : "Không tìm thấy tin phù hợp.")</p>
+        }
+        else
+        {
+            <ul class="stack">
+                @foreach (var item in Model.Items)
+                {
+                    <li>
+                        <a href="/tin-tuc/@Uri.EscapeDataString(item.Slug)">
+                            @if (!string.IsNullOrWhiteSpace(item.ThumbnailUrl ?? item.CoverUrl)) { <img class="cms-cover-thumb" src="@(item.ThumbnailUrl ?? item.CoverUrl)" alt="" width="320" height="180" loading="lazy" decoding="async" /> }
+                            <strong>@item.Title</strong>
+                        </a>
+                        <p>@item.CategoryName @if (item.PublishedAt is DateTimeOffset at) { <span>· @at.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</span> }</p>
+                        @if (!string.IsNullOrWhiteSpace(item.Summary))
+                        {
+                            <p>@item.Summary</p>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+        @await Html.PartialAsync("_PublicPager", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))
+    </section>
+
+    <aside class="public-list-sidebar" aria-label="Danh mục và thống kê">
+        <section class="public-side-card" aria-labelledby="news-category-title">
+            <h2 class="public-side-heading" id="news-category-title"><span class="material-symbols-outlined" aria-hidden="true">category</span>Danh mục tin tức</h2>
+            @if (Model.CategoriesUnavailable)
             {
-                <li>
-                    <a href="/tin-tuc/@Uri.EscapeDataString(item.Slug)">
-                        @if (!string.IsNullOrWhiteSpace(item.ThumbnailUrl ?? item.CoverUrl)) { <img class="cms-cover-thumb" src="@(item.ThumbnailUrl ?? item.CoverUrl)" alt="" width="320" height="180" loading="lazy" decoding="async" /> }
-                        <strong>@item.Title</strong>
-                    </a>
-                    <p>@item.CategoryName @if (item.PublishedAt is DateTimeOffset at) { <span>· @at.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</span> }</p>
-                    @if (!string.IsNullOrWhiteSpace(item.Summary))
-                    {
-                        <p>@item.Summary</p>
-                    }
-                </li>
+                <p class="empty" role="status">Chưa tải được danh mục.</p>
             }
-        </ul>
-    }
-    @await Html.PartialAsync("_PublicPager", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))
-</section>
+            else
+            {
+                <ul class="public-category-list">
+                    <li><a href="@CategoryHref(null)" aria-current="@(Model.SelectedCategory is null ? "page" : null)">Tất cả tin tức <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span></a></li>
+                    @foreach (var category in Model.Categories)
+                    {
+                        <li><a href="@CategoryHref(category.Slug)" aria-current="@(Model.SelectedCategory?.Id == category.Id ? "page" : null)">@category.Name <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span></a></li>
+                    }
+                </ul>
+            }
+        </section>
+        @await Html.PartialAsync("_PublicVisitStats", Model.VisitStats)
+    </aside>
+</div>

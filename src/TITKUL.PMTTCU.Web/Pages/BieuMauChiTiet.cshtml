@@ -1,0 +1,35 @@
+@page "/bieu-mau/{id:guid}"
+@model TITKUL.PMTTCU.Web.Pages.BieuMauChiTietModel
+@{
+    ViewData["Title"] = Model.Item?.Title ?? "Chi tiết biểu mẫu";
+}
+@if (Model.Item is { } item)
+{
+    <article class="public-document-detail">
+        <a class="public-document-back" href="/bieu-mau"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span> Danh sách biểu mẫu</a>
+        <header class="public-document-heading">
+            <p class="public-document-eyebrow">Biểu mẫu @(string.IsNullOrWhiteSpace(item.Code) ? "" : "· " + item.Code)</p>
+            <h1>@item.Title</h1>
+            @if (!string.IsNullOrWhiteSpace(item.Summary)) { <p>@item.Summary</p> }
+            <div class="public-document-actions">
+                @if (Model.CanPreview) { <a class="button" href="@HostFile.Href(item.FileUrl, "/bieu-mau/" + item.Id + "?handler=Xem")" target="_blank" rel="noopener">Mở PDF trong tab mới</a> }
+                @if (Model.CanDownload) { <a class="button-quiet" href="@HostFile.Href(item.FileUrl, "/bieu-mau?handler=Tai&id=" + item.Id)">Tải @item.FileName</a> }
+            </div>
+        </header>
+        @if (item.EffectiveFrom is not null || item.ExpiresOn is not null)
+        {
+            <p class="status-note">Có hiệu lực: @(item.EffectiveFrom?.ToString("dd/MM/yyyy") ?? "chưa ghi") – @(item.ExpiresOn?.ToString("dd/MM/yyyy") ?? "không giới hạn")</p>
+        }
+        @if (Model.CanPreview)
+        {
+            <section class="public-document-viewer" aria-label="Nội dung PDF">
+                <div class="public-document-viewer-heading"><div><p class="public-document-eyebrow">Bản xem trực tiếp</p><h2>@item.FileName</h2></div><a href="@HostFile.Href(item.FileUrl, "/bieu-mau?handler=Tai&id=" + item.Id)">Tải PDF</a></div>
+                <iframe src="@HostFile.Href(item.FileUrl, "/bieu-mau/" + item.Id + "?handler=Xem")" title="PDF: @item.Title" loading="eager"></iframe>
+            </section>
+        }
+        else
+        {
+            <p class="status-note">@(Model.CanDownload ? "Tệp này chỉ cho phép tải xuống hoặc không hỗ trợ xem trực tiếp trên trình duyệt." : "Tệp hiện ngoài thời hạn hiệu lực nên không thể xem hoặc tải xuống.")</p>
+        }
+    </article>
+}

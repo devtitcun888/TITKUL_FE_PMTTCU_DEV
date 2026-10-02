@@ -3,27 +3,49 @@
 @{
     ViewData["Title"] = "Đối soát tháng";
 }
-<section class="card stack">
-    <h1>Đối soát báo cáo tháng</h1>
-    <p><a href="/admin/bao-cao?From=@Model.From&amp;To=@Model.To">Về chuyên cần</a></p>
-    <form method="get" class="filter-grid">
-        <div><label for="month">Tháng</label><input id="month" name="Month" type="month" value="@Model.Month" /></div>
-        <div><label for="from">Từ ngày</label><input id="from" name="From" type="date" value="@Model.From" /></div>
-        <div><label for="to">Đến ngày</label><input id="to" name="To" type="date" value="@Model.To" /></div>
-        <div><button type="submit">Áp dụng</button></div>
-    </form>
+
+<section class="crm-page">
+    <header class="crm-page-heading">
+        <div>
+            <p class="crm-eyebrow">Khảo sát &amp; báo cáo</p>
+            <h1>Đối soát báo cáo tháng</h1>
+            <p class="crm-page-description">Sheet Tong hop ghi ba số KPI. Sheet Chi tiet ghi từng lớp, không gộp ô.</p>
+        </div>
+        <div class="crm-heading-actions">
+            <a class="education-cancel-button" href="/admin/bao-cao?From=@Model.From&amp;To=@Model.To">Về chuyên cần</a>
+            @if (Model.Item is not null)
+            {
+                <a class="crm-primary-button" href="/admin/bao-cao/thang?handler=Xuat&amp;From=@Model.From&amp;To=@Model.To">Tải Excel</a>
+            }
+        </div>
+    </header>
+
+    <section class="crm-toolbar" aria-label="Kỳ đối soát">
+        <form method="get" class="crm-filter">
+            <label for="month">Tháng
+                <input id="month" name="Month" type="month" value="@Model.Month" />
+            </label>
+            <label for="from">Từ ngày
+                <input id="from" name="From" type="date" value="@Model.From" />
+            </label>
+            <label for="to">Đến ngày
+                <input id="to" name="To" type="date" value="@Model.To" />
+            </label>
+            <button class="crm-primary-button" type="submit">Áp dụng</button>
+        </form>
+    </section>
+
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <p class="crm-alert" role="alert">@Model.ErrorMessage</p>
     }
+
     @if (Model.Item is not null)
     {
-        <div class="kpi-grid">
-            <article class="card kpi"><span>Lớp</span><strong>@Model.Item.Classes</strong></article>
-            <article class="card kpi"><span>Học viên</span><strong>@Model.Item.Learners</strong></article>
-            <article class="card kpi"><span>Chuyên cần</span><strong>@Model.Item.AttendancePercent.ToString("0.##")%</strong></article>
-        </div>
-        <p>Sheet Tong hop ghi đúng ba số này. Sheet Chi tiet ghi từng lớp, không gộp ô.</p>
-        <p><a class="button" href="/admin/bao-cao/thang?handler=Xuat&amp;From=@Model.From&amp;To=@Model.To">Tải Excel</a></p>
+        <section class="crm-kpi-grid" aria-label="Tóm tắt tháng">
+            <article class="crm-kpi"><span>Lớp</span><strong>@Model.Item.Classes</strong></article>
+            <article class="crm-kpi"><span>Học viên</span><strong>@Model.Item.Learners</strong></article>
+            <article class="crm-kpi"><span>Chuyên cần</span><strong>@Model.Item.AttendancePercent.ToString("0.##")%</strong></article>
+        </section>
     }
 </section>

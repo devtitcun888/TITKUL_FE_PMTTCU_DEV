@@ -1,6 +1,28 @@
 (() => {
   if (!window.Chart) return;
 
+  const isDark = () => document.documentElement.getAttribute("data-crm-theme") === "dark";
+  const applyChartTheme = (chart) => {
+    const dark = isDark();
+    const tick = dark ? "#94a3b8" : "#64748b";
+    const grid = dark ? "#1e2a44" : "#eef2f7";
+    window.Chart.defaults.color = tick;
+    window.Chart.defaults.borderColor = grid;
+    if (!chart) return;
+    if (chart.options.plugins?.legend) {
+      chart.options.plugins.legend.labels = { ...(chart.options.plugins.legend.labels || {}), color: tick };
+    }
+    if (chart.options.scales?.x) {
+      chart.options.scales.x.ticks = { ...(chart.options.scales.x.ticks || {}), color: tick };
+      chart.options.scales.x.grid = { ...(chart.options.scales.x.grid || {}), color: grid };
+    }
+    if (chart.options.scales?.y) {
+      chart.options.scales.y.ticks = { ...(chart.options.scales.y.ticks || {}), color: tick };
+      chart.options.scales.y.grid = { ...(chart.options.scales.y.grid || {}), color: grid };
+    }
+  };
+  applyChartTheme();
+
   const palette = ["#155e75", "#0f766e", "#2563eb", "#d97706", "#9333ea", "#dc2626", "#4d7c0f", "#475569"];
 
   document.querySelectorAll("canvas[data-chart]").forEach((canvas) => {
@@ -29,7 +51,7 @@
             borderRadius: doughnut ? 0 : 4,
           }] : [];
       if (datasets.length === 0) return;
-      new window.Chart(canvas, {
+      const chart = new window.Chart(canvas, {
         type: doughnut ? "doughnut" : "bar",
         data: {
           labels: data.labels,
@@ -43,8 +65,18 @@
           scales: doughnut ? {} : { x: { beginAtZero: true, max: canvas.dataset.chartLabel?.includes("%") ? 100 : undefined } },
         },
       });
+      applyChartTheme(chart);
     } catch {
       canvas.insertAdjacentText("afterend", "Không thể hiển thị biểu đồ; số liệu chi tiết vẫn có trong bảng bên dưới.");
     }
+  });
+
+  document.addEventListener("crm-theme-change", () => {
+    document.querySelectorAll("canvas[data-chart]").forEach((canvas) => {
+      const chart = window.Chart.getChart(canvas);
+      if (!chart) return;
+      applyChartTheme(chart);
+      chart.update("none");
+    });
   });
 })();

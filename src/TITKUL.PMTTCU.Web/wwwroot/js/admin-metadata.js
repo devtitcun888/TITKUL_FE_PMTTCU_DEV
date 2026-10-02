@@ -21,13 +21,16 @@
     document.querySelectorAll('form').forEach(form => {
         const title = form.querySelector('[data-slug-source]');
         const slug = form.querySelector('[data-slug-target]');
-        const preview = form.querySelector('[data-slug-preview]');
+        const previews = form.querySelectorAll('[data-slug-preview]');
         let slugWasEdited = Boolean(slug?.value.trim());
 
         const renderSlug = () => {
             if (!title || !slug) return;
             if (!slugWasEdited) slug.value = slugify(title.value);
-            if (preview) preview.textContent = `${slug.dataset.slugPrefix ?? ''}${slug.value}`;
+            const full = `${slug.dataset.slugPrefix ?? ''}${slug.value}`;
+            previews.forEach(preview => {
+                preview.textContent = preview.hasAttribute('data-slug-preview-bare') ? (slug.value || '') : full;
+            });
         };
 
         if (title && slug) {
@@ -42,12 +45,18 @@
         const seoTitle = form.querySelector('[data-seo-title-target]');
         const seoDescription = form.querySelector('[data-seo-description-target]');
         const summary = form.querySelector('[data-seo-description-source]');
-        const seoTitleCount = form.querySelector('[data-seo-title-count]');
-        const seoDescriptionCount = form.querySelector('[data-seo-description-count]');
+        const seoTitleCounts = form.querySelectorAll('[data-seo-title-count]');
+        const seoDescriptionCounts = form.querySelectorAll('[data-seo-description-count]');
         let suggestedTitle = '';
         let suggestedDescription = '';
         let titleWasEdited = Boolean(seoTitle?.value.trim());
         let descriptionWasEdited = Boolean(seoDescription?.value.trim());
+
+        const writeCount = (nodes, length, max) => {
+            nodes.forEach(el => {
+                el.textContent = el.hasAttribute('data-seo-count-short') ? `${length}/${max}` : `${length}/${max} ký tự`;
+            });
+        };
 
         const updateSeo = () => {
             if (seoTitle) {
@@ -55,14 +64,14 @@
                     suggestedTitle = (title?.value ?? '').trim().slice(0, 70);
                     seoTitle.value = suggestedTitle;
                 }
-                if (seoTitleCount) seoTitleCount.textContent = `${seoTitle.value.length}/70 ký tự`;
+                writeCount(seoTitleCounts, seoTitle.value.length, 70);
             }
             if (seoDescription) {
                 if (!descriptionWasEdited) {
                     suggestedDescription = makeDescription(summary?.value || '');
                     seoDescription.value = suggestedDescription;
                 }
-                if (seoDescriptionCount) seoDescriptionCount.textContent = `${seoDescription.value.length}/170 ký tự`;
+                writeCount(seoDescriptionCounts, seoDescription.value.length, 170);
             }
         };
 
@@ -81,5 +90,21 @@
         title?.addEventListener('input', updateSeo);
         summary?.addEventListener('input', updateSeo);
         if (seoTitle || seoDescription) updateSeo();
+
+        const composePreviewTitle = form.querySelector('[data-compose-preview-title]');
+        const composeTitle = form.querySelector('[data-compose-title]');
+        composeTitle?.addEventListener('input', () => {
+            if (composePreviewTitle) composePreviewTitle.textContent = composeTitle.value.trim() || 'Tiêu đề bài viết';
+        });
+
+        const composeCategory = form.querySelector('[data-compose-category]');
+        const composeCategoryLabel = form.querySelector('[data-compose-category-label]');
+        const renderCategory = () => {
+            if (!composeCategory || !composeCategoryLabel) return;
+            const option = composeCategory.selectedOptions[0];
+            composeCategoryLabel.textContent = option?.textContent?.trim() || '—';
+        };
+        composeCategory?.addEventListener('change', renderCategory);
+        renderCategory();
     });
 })();

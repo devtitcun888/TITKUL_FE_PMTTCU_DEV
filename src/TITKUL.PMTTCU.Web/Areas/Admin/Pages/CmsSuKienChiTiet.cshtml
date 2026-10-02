@@ -1,10 +1,13 @@
-﻿@page "/admin/cms/su-kien/sua/{id:guid?}"
+@page "/admin/cms/su-kien/sua/{id:guid?}"
 @using TITKUL.PMTTCU.Web.Areas.Admin
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsSuKienChiTietModel
 @{
     ViewData["UseCmsEditor"] = true;
     ViewData["Title"] = Model.EventId is null ? "Sự kiện mới" : "Biên tập sự kiện";
     if (Model.Preview) Layout = "/Pages/Shared/_Layout.cshtml";
+    var published = Model.Status == "PUBLISHED";
+    var cancelled = Model.Status == "CANCELLED";
+    var statusClass = published ? "is-published" : cancelled ? "is-cancelled" : "is-draft";
 }
 
 @if (Model.Preview)
@@ -19,87 +22,137 @@
 }
 else
 {
-<section class="card stack">
-    <h1>@(Model.EventId is null ? "Sự kiện mới" : "Biên tập sự kiện")</h1>
-    <p><a href="/admin/cms/su-kien">Về danh sách</a></p>
-    @if (!string.IsNullOrEmpty(Model.Status))
-    {
-        <p>Trạng thái: @EducationUi.Status(Model.Status)</p>
-        @if (Model.PublishedAt > DateTimeOffset.UtcNow) { <p role="status">Đã lên lịch xuất bản: @Model.PublishedAt.Value.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm") (giờ Việt Nam).</p> }
-    }
-@if (Model.EventId is Guid previewId)
-    {
-        <p><a class="button" href="/admin/cms/su-kien/sua/@previewId?preview=true" target="_blank" rel="noopener">Xem trước như trang công khai</a></p>
-    }
+<section class="crm-page cms-admin-page cms-compose">
+    <header class="cms-compose-head">
+        <div>
+            <p class="cms-compose-eyebrow">Nội dung &amp; dịch vụ công</p>
+            <h1>@(Model.EventId is null ? "Sự kiện mới" : "Biên tập sự kiện")</h1>
+            <p class="cms-compose-sub">Thời gian, địa điểm và nội dung sự kiện công khai</p>
+        </div>
+        <a class="cms-compose-back" href="/admin/cms/su-kien">Về danh sách</a>
+    </header>
+
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
         <p class="alert" role="alert">@Model.ErrorMessage</p>
     }
+
     @if (Model.CanEdit)
     {
-        <form method="post" asp-page-handler="Save" class="stack">
-            <div>
-                <label for="title">Tiêu đề</label>
-                <input id="title" name="Title" value="@Model.Title" required maxlength="250" data-slug-source />
+        <form method="post" asp-page-handler="Save" class="cms-compose-grid" id="cmsComposeForm" data-cms-compose>
+            <div class="cms-compose-main">
+                <section class="cms-compose-card">
+                    <header class="cms-compose-card-head">
+                        <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">event</span></span>
+                        <h2>Thông tin sự kiện</h2>
+                    </header>
+                    <div class="cms-compose-fields cms-compose-fields-2">
+                        <div class="cms-compose-field cms-compose-span">
+                            <label for="title">Tiêu đề</label>
+                            <input id="title" name="Title" value="@Model.Title" required maxlength="250" data-slug-source data-compose-title />
+                        </div>
+                        <div class="cms-compose-field cms-compose-span">
+                            <label for="slug">Đường dẫn <span class="cms-compose-optional">(tự gợi ý từ tiêu đề, có thể chỉnh)</span></label>
+                            <input id="slug" name="Slug" value="@Model.Slug" maxlength="280" data-slug-target data-slug-prefix="/su-kien/" />
+                            <p class="cms-compose-hint">Xem trước: <b data-slug-preview>/su-kien/@Model.Slug</b></p>
+                        </div>
+                        <div class="cms-compose-field">
+                            <label for="startAt">Bắt đầu</label>
+                            <input id="startAt" name="StartAt" type="datetime-local" value="@Model.StartAt" required />
+                        </div>
+                        <div class="cms-compose-field">
+                            <label for="endAt">Kết thúc</label>
+                            <input id="endAt" name="EndAt" type="datetime-local" value="@Model.EndAt" required />
+                        </div>
+                        <div class="cms-compose-field cms-compose-span">
+                            <label for="location">Địa điểm</label>
+                            <input id="location" name="Location" value="@Model.Location" maxlength="300" />
+                        </div>
+                        <div class="cms-compose-field cms-compose-span">
+                            <label for="summary">Tóm tắt</label>
+                            <textarea id="summary" name="Summary" rows="3">@Model.Summary</textarea>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="cms-compose-card">
+                    <header class="cms-compose-card-head">
+                        <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">article</span></span>
+                        <div>
+                            <h2>Nội dung HTML</h2>
+                            <small>Trình soạn thảo văn bản</small>
+                        </div>
+                    </header>
+                    <div class="cms-compose-editor">
+                        <label class="visually-hidden" for="html">Nội dung HTML</label>
+                        <textarea id="html" name="Html" rows="12" data-editor="cms">@Model.Html</textarea>
+                    </div>
+                </section>
+
+                <section class="cms-compose-card">
+                    <header class="cms-compose-card-head">
+                        <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">visibility</span></span>
+                        <h2>Xem trước</h2>
+                    </header>
+                    <div class="cms-compose-preview">
+                        <h3 data-compose-preview-title>@(string.IsNullOrWhiteSpace(Model.Title) ? "Tiêu đề sự kiện" : Model.Title)</h3>
+                        @if (!string.IsNullOrWhiteSpace(Model.PreviewHtml))
+                        {
+                            <div class="ck-content">@Html.Raw(Model.PreviewHtml)</div>
+                        }
+                        else
+                        {
+                            <p>Nội dung xem trước hiện sau khi lưu sự kiện.</p>
+                        }
+                    </div>
+                </section>
             </div>
-            <div>
-                <label for="slug">Đường dẫn (tự gợi ý từ tiêu đề, có thể chỉnh)</label>
-                <input id="slug" name="Slug" value="@Model.Slug" maxlength="280" data-slug-target data-slug-prefix="/su-kien/" />
-                <small>Đường dẫn xem trước: <code data-slug-preview>/su-kien/@Model.Slug</code></small>
-            </div>
-            <div>
-                <label for="startAt">Bắt đầu</label>
-                <input id="startAt" name="StartAt" type="datetime-local" value="@Model.StartAt" required />
-            </div>
-            <div>
-                <label for="endAt">Kết thúc</label>
-                <input id="endAt" name="EndAt" type="datetime-local" value="@Model.EndAt" required />
-            </div>
-            <div>
-                <label for="location">Địa điểm</label>
-                <input id="location" name="Location" value="@Model.Location" maxlength="300" />
-            </div>
-            <div>
-                <label for="summary">Tóm tắt</label>
-                <textarea id="summary" name="Summary" rows="3">@Model.Summary</textarea>
-            </div>
-            <div>
-                <label for="html">Nội dung HTML</label>
-                <textarea id="html" name="Html" rows="8" data-editor="cms">@Model.Html</textarea>
-            </div>
-            <button type="submit">Lưu nháp</button>
+
+            <aside class="cms-compose-side">
+                <section class="cms-compose-card">
+                    <header class="cms-compose-card-head cms-compose-card-head-plain">
+                        <h2>Trạng thái</h2>
+                    </header>
+                    <span class="cms-status-badge @statusClass"><i></i>@Model.StatusLabel</span>
+                    @if (Model.PublishedAt > DateTimeOffset.UtcNow)
+                    {
+                        <p class="cms-compose-hint" role="status">Đã lên lịch: @Model.PublishedAt.Value.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm") (giờ Việt Nam).</p>
+                    }
+                    <div class="cms-compose-actions">
+                        @if (Model.EventId is Guid previewId)
+                        {
+                            <a class="cms-btn cms-btn-outline" href="/admin/cms/su-kien/sua/@previewId?preview=true" target="_blank" rel="noopener"><span class="material-symbols-outlined" aria-hidden="true">visibility</span>Xem trước như trang công khai</a>
+                        }
+                        <button type="submit" class="cms-btn cms-btn-primary" asp-page-handler="Save"><svg class="cms-compose-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>Lưu nháp</button>
+                        @if (Model.EventId is Guid eventId && Model.CanPublish)
+                        {
+                            if (!published && !cancelled)
+                            {
+                                <button type="submit" class="cms-btn cms-btn-outline" asp-page-handler="Publish"><span class="material-symbols-outlined" aria-hidden="true">campaign</span>Đăng sự kiện</button>
+                                <label class="cms-compose-schedule" for="scheduleAt">Hẹn giờ xuất bản (giờ Việt Nam)</label>
+                                <input id="scheduleAt" name="ScheduleAt" type="datetime-local" />
+                                <button type="submit" class="cms-btn cms-btn-outline" asp-page-handler="Schedule">Đặt lịch</button>
+                            }
+                            else if (published)
+                            {
+                                <button type="submit" class="cms-btn cms-btn-danger" asp-page-handler="Cancel"><svg class="cms-compose-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v6M18.4 5.6a9 9 0 11-12.8 0"/></svg>Hủy sự kiện</button>
+                                <a class="cms-btn cms-btn-outline" href="/su-kien/@Model.Slug"><span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>Xem trên Portal</a>
+                            }
+                        }
+                    </div>
+                </section>
+                <section class="cms-compose-card">
+                    <header class="cms-compose-card-head cms-compose-card-head-plain">
+                        <h2>Thông tin đường dẫn</h2>
+                    </header>
+                    <p class="cms-compose-slug">/su-kien/<b data-slug-preview data-slug-preview-bare>@Model.Slug</b></p>
+                </section>
+            </aside>
         </form>
-        @if (Model.EventId is Guid eventId)
-        {
-            <p class="row-actions">
-                @if (Model.Status != "PUBLISHED" && Model.Status != "CANCELLED")
-                {
-                    <form method="post" asp-page-handler="Publish">
-                        <button type="submit">Đăng sự kiện</button>
-                    </form>
-                    <form method="post" asp-page-handler="Schedule" class="row-actions">
-                        <label for="scheduleAt">Hoặc hẹn giờ xuất bản (giờ Việt Nam)</label>
-                        <input id="scheduleAt" name="ScheduleAt" type="datetime-local" required />
-                        <button type="submit">Đặt lịch</button>
-                    </form>
-                }
-                @if (Model.Status == "PUBLISHED")
-                {
-                    <form method="post" asp-page-handler="Cancel">
-                        <button type="submit" class="button-quiet">Hủy sự kiện</button>
-                    </form>
-                    <a class="button" href="/su-kien/@Model.Slug">Xem trên Portal</a>
-                }
-            </p>
-        }
     }
-    @if (!string.IsNullOrEmpty(Model.Html))
+    else
     {
-        <h2>Xem trước</h2>
-        <article class="card">
-            <h3>@Model.Title</h3>
-            @Html.Raw(Model.PreviewHtml)
-        </article>
+        <p class="empty" role="status">Không có quyền biên tập sự kiện này.</p>
     }
 </section>
 }

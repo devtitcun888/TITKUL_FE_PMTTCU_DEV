@@ -49,7 +49,7 @@ public sealed class ClubCalendarPageTests
         Assert.Contains($"session-{SessionId}", html, StringComparison.Ordinal);
         Assert.Contains("10:30", html, StringComparison.Ordinal);
         Assert.Contains("Tháng sau", html, StringComparison.Ordinal);
-        Assert.Equal(expectManageControls, html.Contains("Thêm buổi sinh hoạt", StringComparison.Ordinal));
+        Assert.Equal(expectManageControls, html.Contains("Thêm buổi", StringComparison.Ordinal));
         Assert.Equal(expectManageControls, html.Contains("Hủy buổi", StringComparison.Ordinal));
     }
 

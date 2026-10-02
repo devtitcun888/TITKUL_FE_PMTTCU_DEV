@@ -18,9 +18,18 @@ public sealed class LienHeChiTietModel(BackendApiClient api) : PageModel
         return await LoadAsync(id);
     }
 
+    public async Task<IActionResult> OnPostStatusAsync(Guid id, string status)
+    {
+        if (!Has("cms.update")) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        await api.SendJsonAsync(HttpMethod.Put, "/api/v1/admin/contacts/" + id, token, new { status });
+        return RedirectToPage("/LienHeChiTiet", new { id });
+    }
+
     public async Task<IActionResult> OnPostAsync(Guid id)
     {
-        if (!Has("cms.create") && !Has("cms.update")) return Redirect("/admin/khong-quyen");
+        if (!Has("cms.update")) return Redirect("/admin/khong-quyen");
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
         if (!ModelState.IsValid || string.IsNullOrWhiteSpace(Body) || Body.Trim().Length is < 3 or > 4000)
@@ -42,14 +51,14 @@ public sealed class LienHeChiTietModel(BackendApiClient api) : PageModel
     {
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
-        CanEdit = Has("cms.create") || Has("cms.update");
+        CanEdit = Has("cms.update");
         var envelope = await api.GetJsonAsync<ItemEnvelope<AdminThread>>($"/api/v1/admin/contacts/{id}/thread", token);
         Thread = envelope?.Item;
         if (Thread is null) Error ??= "Không tìm thấy phản ánh.";
         return Page();
     }
 
-    private bool HasView() => Has("cms.view") || Has("cms.create");
+    private bool HasView() => Has("cms.view") || Has("cms.update");
     private bool Has(string permission) => (HttpContext.Items["StaffProfile"] as StaffProfile)?.Permissions?.Contains(permission) == true;
     private string? Token() => Request.Cookies[AdminGateMiddleware.CookieName];
 

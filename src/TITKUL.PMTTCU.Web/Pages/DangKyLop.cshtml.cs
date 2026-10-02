@@ -9,13 +9,20 @@ namespace TITKUL.PMTTCU.Web.Pages;
 public class DangKyLopModel : PageModel
 {
     private readonly BackendApiClient _api;
-    public DangKyLopModel(BackendApiClient api) => _api = api;
+    private readonly PublicSiteConfigProvider _siteConfig;
+    public DangKyLopModel(BackendApiClient api, PublicSiteConfigProvider siteConfig)
+    {
+        _api = api;
+        _siteConfig = siteConfig;
+    }
     public PublicClass? Class { get; private set; }
     public IReadOnlyList<Hamlet> Hamlets { get; private set; } = [];
     public string? ErrorMessage { get; private set; }
     public string? SubmissionMessage { get; private set; }
     public bool SubmissionAcceptedWithoutCode { get; private set; }
     public bool HamletCatalogUnavailable { get; private set; }
+    public string Commune { get; private set; } = "xã Tân Trụ";
+    public string Province { get; private set; } = "tỉnh Tây Ninh";
 
     [BindProperty] public string FullName { get; set; } = "";
     [BindProperty] public string Phone { get; set; } = "";
@@ -24,6 +31,8 @@ public class DangKyLopModel : PageModel
     [BindProperty] public string Gender { get; set; } = "NAM";
     [BindProperty] public Guid? HamletId { get; set; }
     [BindProperty] public string? HamletName { get; set; }
+    [BindProperty] public string? HouseNumber { get; set; }
+    [BindProperty] public string? Street { get; set; }
     [BindProperty] public string? Note { get; set; }
     [BindProperty] public bool Consent { get; set; }
     [BindProperty] public string? ReminderEmail { get; set; }
@@ -52,8 +61,8 @@ public class DangKyLopModel : PageModel
             birthDate = BirthDate,
             gender = Gender,
             hamletId = HamletId,
-            hamletName = HamletName,
-            note = Note,
+            hamletName = HamletId is Guid ? null : HamletName,
+            note = ComposeNote(),
             consent = Consent,
             reminderEmail = ReminderEmail,
             reminderSms = ReminderSms,
@@ -123,6 +132,9 @@ public class DangKyLopModel : PageModel
         Class = cls.Value?.Item;
         HamletCatalogUnavailable = !hamlets.IsAvailable || hamlets.Value is null;
         Hamlets = hamlets.Value?.Items ?? [];
+        var settings = await _siteConfig.GetAsync();
+        Commune = ReadSetting(settings, "org.commune", "xã Tân Trụ");
+        Province = ReadSetting(settings, "org.province", "tỉnh Tây Ninh");
         if (Class is null)
         {
             ErrorMessage ??= cls.IsNotFound || cls.IsAvailable
@@ -134,6 +146,24 @@ public class DangKyLopModel : PageModel
         }
         return Page();
     }
+
+    private string? ComposeNote()
+    {
+        var parts = new List<string>();
+        var house = HouseNumber?.Trim();
+        var street = Street?.Trim();
+        if (!string.IsNullOrWhiteSpace(house))
+            parts.Add(house.StartsWith("Số ", StringComparison.OrdinalIgnoreCase) ? house : "Số " + house);
+        if (!string.IsNullOrWhiteSpace(street))
+            parts.Add(street.StartsWith("đường ", StringComparison.OrdinalIgnoreCase) ? street : "đường " + street);
+        var line = string.Join(", ", parts);
+        var note = Note?.Trim();
+        if (string.IsNullOrWhiteSpace(line)) return string.IsNullOrWhiteSpace(note) ? null : note;
+        return string.IsNullOrWhiteSpace(note) ? line : line + ". " + note;
+    }
+
+    private static string ReadSetting(IReadOnlyDictionary<string, string> settings, string key, string fallback) =>
+        settings.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value) ? value.Trim() : fallback;
 
     public sealed record PublicClass(string Code, string Name, string ProgramName, DateOnly StartDate, DateOnly EndDate, int Remaining, bool CanRegister, string? ClosedReason);
     public sealed record Hamlet(Guid Id, string Code, string Name);

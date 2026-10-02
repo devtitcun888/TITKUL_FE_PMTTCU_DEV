@@ -2,32 +2,35 @@
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CauLacBoChiTietModel
 @{
     ViewData["Title"] = Model.Club?.Name ?? "Lịch câu lạc bộ";
+    var showCreate = Model.CanManage && Request.Query.ContainsKey("create");
 }
-<section class="card stack">
-    <p><a href="/admin/cau-lac-bo">← Danh sách câu lạc bộ</a></p>
+<section class="crm-page">
+    <header class="crm-page-heading">
+        <div>
+            <p class="crm-eyebrow">Đào tạo &amp; người học</p>
+            <h1>@(Model.Club?.Name ?? "Lịch câu lạc bộ")</h1>
+            <p class="crm-page-description">Lịch sinh hoạt và người phụ trách.</p>
+        </div>
+        <a class="education-cancel-button" href="/admin/cau-lac-bo">Danh sách câu lạc bộ</a>
+    </header>
     @if (!string.IsNullOrWhiteSpace(Model.Error)) { <p class="alert" role="alert">@Model.Error</p> }
     @if (!string.IsNullOrWhiteSpace(Model.Message)) { <p class="status-note" role="status">@Model.Message</p> }
     @if (Model.Club is not null)
     {
-        <h1>@Model.Club.Name</h1>
-        <p>@Model.Club.Location · @Model.Club.RegularSchedule</p>
-        @if (Model.CanManage && Model.Club.Status == "ACTIVE")
-        {
-            <details open>
-                <summary>Thêm buổi sinh hoạt</summary>
-                <form method="post" asp-page-handler="Create" class="stack">
-                    <input type="hidden" name="month" value="@Model.CalendarMonth.ToString("yyyy-MM")" />
-                    <div><label for="title">Nội dung</label><input id="title" name="title" required minlength="3" maxlength="250" /></div>
-                    <div><label for="startAt">Bắt đầu</label><input id="startAt" name="startAt" type="datetime-local" required /></div>
-                    <div><label for="endAt">Kết thúc</label><input id="endAt" name="endAt" type="datetime-local" required /></div>
-                    <div><label for="location">Địa điểm</label><input id="location" name="location" maxlength="300" value="@Model.Club.Location" /></div>
-                    <div><label for="facilitatorId">Người phụ trách</label><select id="facilitatorId" name="facilitatorId"><option value="">Chưa phân công</option>@foreach (var person in Model.Staff) { <option value="@person.Id">@person.Username</option> }</select></div>
-                    <div><label for="note">Ghi chú</label><textarea id="note" name="note" rows="2" maxlength="1000"></textarea></div>
-                    <button class="button" type="submit">Tạo buổi sinh hoạt</button>
-                </form>
-            </details>
-        }
-        <h2>Lịch các buổi</h2>
+        <section class="crm-panel">
+            <header class="crm-panel-heading">
+                <div>
+                    <h2>@Model.Club.Name</h2>
+                    <p>@Model.Club.Location · @Model.Club.RegularSchedule</p>
+                </div>
+                @if (Model.CanManage && Model.Club.Status == "ACTIVE")
+                {
+                    <a class="crm-primary-button" href="/admin/cau-lac-bo/@Model.Club.Id?create=true&amp;month=@Model.CalendarMonth.ToString("yyyy-MM")"><span aria-hidden="true">＋</span> Thêm buổi</a>
+                }
+            </header>
+        </section>
+        <section class="crm-panel">
+        <header class="crm-panel-heading"><h2>Lịch các buổi</h2></header>
         <nav class="club-calendar-nav" aria-label="Điều hướng tháng">
             <a class="button button-quiet" href="/admin/cau-lac-bo/@Model.Club.Id?month=@Model.CalendarMonth.AddMonths(-1).ToString("yyyy-MM")">← Tháng trước</a>
             <strong>Tháng @Model.CalendarMonth.ToString("MM/yyyy")</strong>
@@ -101,5 +104,37 @@
             }
             </div>
         }
+        </section>
     }
 </section>
+
+@if (showCreate && Model.Club is not null && Model.Club.Status == "ACTIVE")
+{
+    <dialog class="crm-modal" open data-close-href="/admin/cau-lac-bo/@Model.Club.Id?month=@Model.CalendarMonth.ToString("yyyy-MM")" aria-labelledby="club-session-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Câu lạc bộ</p><h2 id="club-session-title">Thêm buổi sinh hoạt</h2></div>
+                <a class="crm-modal-close" href="/admin/cau-lac-bo/@Model.Club.Id?month=@Model.CalendarMonth.ToString("yyyy-MM")" aria-label="Đóng">×</a>
+            </header>
+            <form method="post" asp-page-handler="Create" class="crm-modal-body">
+                <input type="hidden" name="month" value="@Model.CalendarMonth.ToString("yyyy-MM")" />
+                <label for="title">Nội dung<input id="title" name="title" required minlength="3" maxlength="250" /></label>
+                <label for="startAt">Bắt đầu<input id="startAt" name="startAt" type="datetime-local" required /></label>
+                <label for="endAt">Kết thúc<input id="endAt" name="endAt" type="datetime-local" required /></label>
+                <label for="location">Địa điểm<input id="location" name="location" maxlength="300" value="@Model.Club.Location" /></label>
+                <label for="facilitatorId">Người phụ trách
+                    <select id="facilitatorId" name="facilitatorId">
+                        <option value="">Chưa phân công</option>
+                        @foreach (var person in Model.Staff) { <option value="@person.Id">@person.Username</option> }
+                    </select>
+                </label>
+                <label for="note">Ghi chú<textarea id="note" name="note" rows="2" maxlength="1000"></textarea></label>
+                <footer class="crm-modal-actions">
+                    <a class="education-cancel-button" href="/admin/cau-lac-bo/@Model.Club.Id?month=@Model.CalendarMonth.ToString("yyyy-MM")">Hủy</a>
+                    <button class="crm-primary-button" type="submit">Tạo buổi sinh hoạt</button>
+                </footer>
+            </form>
+        </section>
+    </dialog>
+}

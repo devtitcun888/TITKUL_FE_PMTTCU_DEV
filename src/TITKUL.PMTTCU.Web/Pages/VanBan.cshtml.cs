@@ -32,10 +32,9 @@ public class VanBanModel : PageModel
     public async Task<IActionResult> OnGetTaiAsync(Guid id)
     {
         var file = await _api.GetFileResultAsync("/api/v1/public/files/documents/" + id);
-        if (!file.IsSuccess) return file.IsNotFound ? NotFound() : StatusCode(503);
-        return File(file.Bytes!, file.ContentType ?? "application/octet-stream", file.FileName ?? "van-ban");
+        return HostFile.Download(file, "van-ban");
     }
 
-    public sealed record DocumentItem(Guid Id, string? Symbol, string Title, string? Issuer, DateOnly? IssuedOn, string? Field, string FileName, DateOnly? EffectiveFrom = null, DateOnly? ExpiresOn = null);
+    public sealed record DocumentItem(Guid Id, string? Symbol, string Title, string? Issuer, DateOnly? IssuedOn, string? Field, string FileName, DateOnly? EffectiveFrom = null, DateOnly? ExpiresOn = null, string? FileUrl = null);
     private sealed record ListEnvelope<T>(IReadOnlyList<T>? Items, int? Page, int? PageSize, int? Total);
 }

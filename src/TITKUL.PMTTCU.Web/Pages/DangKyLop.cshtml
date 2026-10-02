@@ -5,9 +5,12 @@
     ViewData["Robots"] = "noindex, nofollow, noarchive";
 }
 
-<section class="card stack">
-    <h1>Đăng ký lớp</h1>
-    <p><a href="/lop-hoc">← Về danh sách lớp</a></p>
+<section class="card stack public-detail-page">
+    <p class="public-detail-back"><a href="/lop-hoc"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span> Về danh sách lớp</a></p>
+    <header class="public-detail-heading">
+        <p class="public-detail-eyebrow">Đăng ký học</p>
+        <h1>Đăng ký lớp</h1>
+    </header>
     @if (Model.Class is not null)
     {
         <p><strong>@Model.Class.Name</strong> · @Model.Class.ProgramName · còn @Model.Class.Remaining chỗ</p>
@@ -64,32 +67,40 @@
                     <option value="KHAC" selected="@(Model.Gender == "KHAC" ? "selected" : null)">Khác</option>
                 </select>
             </div>
-            @if (Model.Hamlets.Count > 0)
-            {
+            <fieldset class="stack">
+                <legend>Địa chỉ</legend>
+                <p>Mẫu: Số 123, đường Trương Gia Mô, Ấp Bình Hòa, @Model.Commune, @Model.Province.</p>
                 <div>
-                    <label for="hamletId">Thôn/ấp có trong danh mục</label>
-                    <select id="hamletId" name="HamletId">
-                        <option value="">Không có trong danh mục</option>
-                        @foreach (var hamlet in Model.Hamlets)
-                        {
-                            <option value="@hamlet.Id" selected="@(Model.HamletId == hamlet.Id ? "selected" : null)">@hamlet.Name</option>
-                        }
-                    </select>
+                    <label for="houseNumber">Số nhà</label>
+                    <input id="houseNumber" name="HouseNumber" value="@Model.HouseNumber" maxlength="40" autocomplete="address-line1" />
                 </div>
                 <div>
-                    <label for="hamletName">Hoặc ghi tên thôn/ấp nếu chưa có trong danh mục</label>
-                    <input id="hamletName" name="HamletName" value="@Model.HamletName" maxlength="120" autocomplete="address-level3" />
-                    <small>Chọn một trong hai cách. Tên tự nhập được giữ nguyên để Trung tâm đối chiếu khi có danh mục địa chỉ ở giai đoạn sau.</small>
+                    <label for="street">Tên đường</label>
+                    <input id="street" name="Street" value="@Model.Street" maxlength="120" autocomplete="address-line2" />
                 </div>
-            }
-            else
-            {
-                <div>
-                    <label for="hamletName">@(Model.HamletCatalogUnavailable ? "Thôn/ấp (danh mục tạm thời chưa tải được)" : "Thôn/ấp")</label>
-                    <input id="hamletName" name="HamletName" value="@Model.HamletName" required maxlength="120" autocomplete="address-level3" />
-                    <small>@(Model.HamletCatalogUnavailable ? "Bạn có thể nhập tên thôn/ấp để tiếp tục; hệ thống lưu nguyên văn và không tự tạo mã địa bàn." : "Danh mục mã thôn/ấp chưa được cấu hình. Nhập tên gọi hiện có; hệ thống lưu nguyên văn và không tự tạo mã địa bàn.")</small>
-                </div>
-            }
+                @if (Model.Hamlets.Count > 0)
+                {
+                    <div>
+                        <label for="hamletId">Ấp</label>
+                        <select id="hamletId" name="HamletId" required>
+                            <option value="">Chọn ấp</option>
+                            @foreach (var hamlet in Model.Hamlets)
+                            {
+                                <option value="@hamlet.Id" selected="@(Model.HamletId == hamlet.Id ? "selected" : null)">@hamlet.Name</option>
+                            }
+                        </select>
+                    </div>
+                }
+                else
+                {
+                    <div>
+                        <label for="hamletName">@(Model.HamletCatalogUnavailable ? "Ấp (danh mục tạm thời chưa tải được)" : "Ấp")</label>
+                        <input id="hamletName" name="HamletName" value="@Model.HamletName" required maxlength="120" autocomplete="address-level3" />
+                        <small>@(Model.HamletCatalogUnavailable ? "Bạn có thể nhập tên ấp để tiếp tục; hệ thống lưu nguyên văn." : "Danh mục ấp chưa tải được. Nhập tên gọi hiện có.")</small>
+                    </div>
+                }
+                <p>@Model.Commune, @Model.Province.</p>
+            </fieldset>
             <div>
                 <label for="note">Ghi chú</label>
                 <input id="note" name="Note" value="@Model.Note" maxlength="1000" />

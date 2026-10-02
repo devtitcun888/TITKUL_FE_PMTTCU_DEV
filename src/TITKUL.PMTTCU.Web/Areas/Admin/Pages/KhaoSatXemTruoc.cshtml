@@ -3,8 +3,15 @@
 @{
     ViewData["Title"] = "Xem trước khảo sát";
 }
-<section class="card stack">
-    <p><a href="/admin/khao-sat/@Model.Survey?.Id/thiet-ke">Về thiết kế</a></p>
+<section class="crm-page">
+    <header class="crm-page-heading">
+        <div>
+            <p class="crm-eyebrow">Khảo sát &amp; báo cáo</p>
+            <h1>Xem trước khảo sát</h1>
+            <p class="crm-page-description">Bản xem trước nội bộ, chưa gửi phiếu công khai.</p>
+        </div>
+        <a class="education-cancel-button" href="/admin/khao-sat/@Model.Survey?.Id/thiet-ke">Về thiết kế</a>
+    </header>
     @if (Model.Survey is null)
     {
         <p class="empty">Không tìm thấy đợt khảo sát.</p>

@@ -1,12 +1,25 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="admin-auth" data-crm-theme="night">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+        (function () {
+            try {
+                var theme = localStorage.getItem('pmttcu.crmTheme');
+                if (theme === 'dark' || theme === 'night') {
+                    document.documentElement.setAttribute('data-crm-theme', theme);
+                }
+            } catch (e) { }
+        })();
+    </script>
     <title>@ViewData["Title"] - Quản trị PMTTCU</title>
+    <link rel="stylesheet" href="~/css/roboto.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/be-vietnam-pro.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/pmttcu.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-crm.css" asp-append-version="true" />
 </head>
-<body>
+<body class="admin-auth">
     <main class="login-screen" id="noi-dung">
         @RenderBody()
     </main>

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using TITKUL.PMTTCU.Web;
 using TITKUL.PMTTCU.Web.ApiClients;
 using TITKUL.PMTTCU.Web.Health;
 using TITKUL.PMTTCU.Web.Observability;
@@ -17,6 +18,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddTransient<CorrelationForwardingHandler>();
 builder.Services.AddScoped<PublicSiteConfigProvider>();
 builder.Services.AddScoped<PublicUrgentNoticeProvider>();
+builder.Services.AddScoped<PublicNavigationProvider>();
 builder.Services.AddHttpClient<BackendApiClient>(client =>
 {
     var baseUrl = builder.Configuration["Backend:BaseUrl"];
@@ -26,7 +28,8 @@ builder.Services.AddHttpClient<BackendApiClient>(client =>
     }
 
     client.Timeout = TimeSpan.FromSeconds(10);
-}).AddHttpMessageHandler<CorrelationForwardingHandler>();
+}).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false })
+    .AddHttpMessageHandler<CorrelationForwardingHandler>();
 builder.Services.AddHealthChecks()
     .AddCheck("self", () => HealthCheckResult.Healthy(), tags: ["live", "ready"]);
 
@@ -43,11 +46,13 @@ app.UseMiddleware<AdminGateMiddleware>();
 app.Use(async (context, next) =>
 {
     var headers = context.Response.Headers;
+    var inlinePdf = context.Request.Path.StartsWithSegments("/van-ban/pdf", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(context.Request.Query["handler"], "Xem", StringComparison.OrdinalIgnoreCase);
     headers["X-Content-Type-Options"] = "nosniff";
     headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-    headers["X-Frame-Options"] = "DENY";
+    headers["X-Frame-Options"] = inlinePdf ? "SAMEORIGIN" : "DENY";
     headers["Content-Security-Policy"] =
-        "default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; frame-src 'self' https://www.google.com https://maps.google.com https://www.google.com.vn https://www.youtube-nocookie.com https://www.facebook.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'";
+        $"default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: {HostFile.Origin}; media-src 'self' {HostFile.Origin}; frame-src 'self' {HostFile.Origin} https://www.google.com https://maps.google.com https://www.google.com.vn https://www.youtube-nocookie.com https://www.facebook.com; object-src 'none'; base-uri 'self'; frame-ancestors {(inlinePdf ? "'self'" : "'none'")}; form-action 'self'";
     await next();
 });
 

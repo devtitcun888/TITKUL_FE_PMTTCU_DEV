@@ -30,10 +30,9 @@ public class BieuMauModel : PageModel
     public async Task<IActionResult> OnGetTaiAsync(Guid id)
     {
         var file = await _api.GetFileResultAsync("/api/v1/public/files/forms/" + id);
-        if (!file.IsSuccess) return file.IsNotFound ? NotFound() : StatusCode(503);
-        return File(file.Bytes!, file.ContentType ?? "application/octet-stream", file.FileName ?? "bieu-mau");
+        return HostFile.Download(file, "bieu-mau");
     }
 
-    public sealed record FormItem(Guid Id, string? Code, string Title, string? Summary, string FileName, DateTimeOffset? PublishedAt = null, DateOnly? EffectiveFrom = null, DateOnly? ExpiresOn = null);
+    public sealed record FormItem(Guid Id, string? Code, string Title, string? Summary, string FileName, DateTimeOffset? PublishedAt = null, DateOnly? EffectiveFrom = null, DateOnly? ExpiresOn = null, string? FileUrl = null);
     private sealed record ListEnvelope<T>(IReadOnlyList<T>? Items, int? Page, int? PageSize, int? Total);
 }

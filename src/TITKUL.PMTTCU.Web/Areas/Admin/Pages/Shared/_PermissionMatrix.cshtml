@@ -1,0 +1,20 @@
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.PermissionMatrixModel
+<div class="permission-matrix">
+    @foreach (var group in Model.Groups)
+    {
+        <fieldset class="permission-group">
+            <legend>@group.Name</legend>
+            <div class="permission-options">
+            @foreach (var permission in group.Items)
+            {
+                <label class="permission-option">
+                    @if (Model.Disabled?.Contains(permission.Code, StringComparer.Ordinal) == true && Model.Selected.Contains(permission.Code, StringComparer.Ordinal))
+                    { <input type="hidden" name="@Model.InputName" value="@permission.Code" /> }
+                    <input type="checkbox" name="@Model.InputName" value="@permission.Code" checked="@Model.Selected.Contains(permission.Code, StringComparer.Ordinal)" disabled="@(Model.Disabled?.Contains(permission.Code, StringComparer.Ordinal) == true)" />
+                    <span><strong>@permission.Name</strong><small><code>@permission.Code</code> · @permission.Description</small></span>
+                </label>
+            }
+            </div>
+        </fieldset>
+    }
+</div>

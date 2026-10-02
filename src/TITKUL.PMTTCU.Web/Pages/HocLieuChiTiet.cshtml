@@ -3,8 +3,8 @@
 @{
     if (Model.Item is null) ViewData["Title"] = "Học liệu số";
 }
-<section class="card stack">
-    <p><a href="/hoc-lieu">Về học liệu chung</a></p>
+<section class="card stack public-detail-page">
+    <p class="public-detail-back"><a href="/hoc-lieu"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span> Về học liệu chung</a></p>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
         <h1>@(Model.ResourceNotFound ? "Không tìm thấy học liệu" : "Chưa tải được học liệu")</h1>
@@ -26,7 +26,12 @@
                     @if (file.FileId is Guid id)
                     {
                         <li>
-                            <a class="button" href="/hoc-lieu/@Uri.EscapeDataString(Model.Item.Slug)?handler=Tai&amp;id=@id">Tải @(file.Title ?? "tệp")</a>
+                            @if (file.MimeType == "application/pdf" && file.ViewMode != "DOWNLOAD_ONLY")
+                            {
+                                <h2>@(file.Title ?? "Tài liệu PDF")</h2>
+                                <iframe class="public-document-inline-frame" src="@HostFile.Href(file.FileUrl, "/hoc-lieu/" + Uri.EscapeDataString(Model.Item.Slug) + "?handler=Xem&id=" + id)" title="PDF: @(file.Title ?? Model.Item.Title)" loading="lazy"></iframe>
+                            }
+                            <a class="button" href="@HostFile.Href(file.FileUrl, "/hoc-lieu/" + Uri.EscapeDataString(Model.Item.Slug) + "?handler=Tai&id=" + id)">Tải @(file.Title ?? "tệp")</a>
                             <small>@HocLieuChiTietModel.FileType(file.MimeType)@if (file.Size is long size) { <span> · @HocLieuChiTietModel.FileSize(size)</span> }</small>
                         </li>
                     }

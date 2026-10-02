@@ -3,8 +3,8 @@
 @{
     if (Model.Item is null) ViewData["Title"] = "Thư viện";
 }
-<section class="card stack">
-    <p><a href="/thu-vien">Về thư viện</a></p>
+<section class="card stack public-detail-page">
+    <p class="public-detail-back"><a href="/thu-vien"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span> Về thư viện</a></p>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
         <h1>@(Model.ResourceNotFound ? "Không tìm thấy album" : "Chưa tải được thư viện")</h1>
@@ -36,7 +36,15 @@
                 {
                     <li>
                         <figure>
-                            <img class="portal-media-image" src="/thu-vien/@Uri.EscapeDataString(Model.Item.Slug)?handler=Anh&amp;id=@id" alt="@(string.IsNullOrWhiteSpace(item.AltText) ? (string.IsNullOrWhiteSpace(item.Title) ? "Hình ảnh hoạt động" : item.Title) : item.AltText)" loading="lazy" decoding="async" />
+                            @if (item.ViewMode != "DOWNLOAD_ONLY")
+                            {
+                                <img class="portal-media-image" src="@HostFile.Href(item.FileUrl, "/thu-vien/" + Uri.EscapeDataString(Model.Item.Slug) + "?handler=Anh&id=" + id)" alt="@(string.IsNullOrWhiteSpace(item.AltText) ? (string.IsNullOrWhiteSpace(item.Title) ? "Hình ảnh hoạt động" : item.Title) : item.AltText)" loading="lazy" decoding="async" />
+                                <a class="button-quiet" href="@HostFile.Href(item.FileUrl, "/thu-vien/" + Uri.EscapeDataString(Model.Item.Slug) + "?handler=TaiAnh&id=" + id)">Tải ảnh</a>
+                            }
+                            else
+                            {
+                                <p>Ảnh này chỉ cho phép tải xuống.</p><a class="button" href="@HostFile.Href(item.FileUrl, "/thu-vien/" + Uri.EscapeDataString(Model.Item.Slug) + "?handler=TaiAnh&id=" + id)">Tải ảnh</a>
+                            }
                             @if (!string.IsNullOrWhiteSpace(item.Title)) { <figcaption>@item.Title</figcaption> }
                         </figure>
                     </li>

@@ -2,54 +2,114 @@
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.NguoiDungModel
 @{
     ViewData["Title"] = "Người dùng";
+    var showModal = Request.Query.ContainsKey("create") || Request.HasFormContentType && string.IsNullOrEmpty(Request.Form["id"]);
 }
-<section class="card stack">
-    <h1>Người dùng</h1>
-    <p><a href="/admin/vai-tro">Vai trò hệ thống</a></p>
+
+<section class="crm-page">
+    <header class="crm-page-heading">
+        <div>
+            <p class="crm-eyebrow">Quản trị hệ thống</p>
+            <h1>Người dùng</h1>
+            <p class="crm-page-description">Tạo tài khoản cán bộ và khóa khi cần. Vai trò hệ thống xem tại trang vai trò.</p>
+        </div>
+        <div class="crm-heading-actions">
+            <a class="education-cancel-button" href="/admin/vai-tro">Vai trò hệ thống</a>
+            <a class="crm-primary-button" href="/admin/nguoi-dung?create=true"><span aria-hidden="true">＋</span> Tạo tài khoản</a>
+        </div>
+    </header>
+
     @if (!string.IsNullOrEmpty(Model.Notice))
     {
-        <p class="alert" role="status">@Model.Notice</p>
+        <p class="crm-ok" role="status">@Model.Notice</p>
     }
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <p class="crm-alert" role="alert">@Model.ErrorMessage</p>
     }
-    <form method="post" class="stack">
-        <div><label for="username">Tên đăng nhập</label><input id="username" name="Username" value="@Model.Username" /></div>
-        <div><label for="full-name">Họ tên</label><input id="full-name" name="FullName" value="@Model.FullName" /></div>
-        <div><label for="password">Mật khẩu</label><input id="password" name="Password" type="password" autocomplete="new-password" /></div>
-        <div>
-            <label for="role">Vai trò</label>
-            <select id="role" name="Role">
-                <option value="CAN_BO">Cán bộ</option>
-                <option value="BAN_GIAM_DOC">Ban giám đốc</option>
-                <option value="GIANG_VIEN">Giảng viên</option>
-                <option value="SUPER_ADMIN">Super Admin</option>
-            </select>
-        </div>
-        <button type="submit">Tạo tài khoản</button>
-    </form>
-    @if (Model.Items.Count == 0)
-    {
-        <p class="empty">Chưa có tài khoản.</p>
-    }
-    else
-    {
-        @foreach (var item in Model.Items)
+
+    <section class="crm-table-card" aria-labelledby="user-table-title">
+        <header class="crm-table-heading">
+            <div>
+                <h2 id="user-table-title">Danh sách tài khoản</h2>
+                <p>@Model.Total tài khoản</p>
+            </div>
+        </header>
+        @if (Model.Items.Count == 0)
         {
-            <article class="stack">
-                <h2>@item.FullName</h2>
-                <p>@item.Username · @string.Join(", ", item.Roles) · @item.Status</p>
-                @if (item.Status == "ACTIVE")
-                {
-                    <form method="post" asp-page-handler="Khoa">
-                        <input type="hidden" name="id" value="@item.Id" />
-                        <input type="hidden" name="fullName" value="@item.FullName" />
-                        <button type="submit">Khóa</button>
-                    </form>
-                }
-            </article>
+            <div class="crm-empty"><strong>Chưa có tài khoản</strong><p>Tạo tài khoản cán bộ để cấp quyền đăng nhập.</p></div>
         }
-    }
+        else
+        {
+            <div class="crm-table-scroll">
+                <table class="crm-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Họ tên</th>
+                            <th scope="col">Tên đăng nhập</th>
+                            <th scope="col">Vai trò</th>
+                            <th scope="col">Trạng thái</th>
+                            <th scope="col" class="education-actions-cell">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td><strong>@item.FullName</strong></td>
+                            <td><code class="crm-code">@item.Username</code></td>
+                            <td>@string.Join(", ", item.Roles)<small class="permission-account-count">@(item.DirectPermissions?.Count ?? 0) quyền cấp trực tiếp</small></td>
+                            <td><span class="education-status @(item.Status == "ACTIVE" ? "education-status-active" : "education-status-inactive")"><i aria-hidden="true"></i>@item.Status</span></td>
+                            <td class="education-actions-cell">
+                                <div class="permission-account-actions">
+                                    <a class="education-cancel-button" href="/admin/nguoi-dung/@item.Id/quyen">Phân quyền</a>
+                                @if (item.Status == "ACTIVE")
+                                {
+                                    <form method="post" asp-page-handler="Khoa" onsubmit="return confirm('Khóa tài khoản này?');">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <input type="hidden" name="fullName" value="@item.FullName" />
+                                        <button class="education-delete-button" type="submit">Khóa</button>
+                                    </form>
+                                }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <div class="crm-pager">@await Html.PartialAsync("/Pages/Shared/_PublicPager.cshtml", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))</div>
+        }
+    </section>
 </section>
-@await Html.PartialAsync("/Pages/Shared/_PublicPager.cshtml", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))
+
+@if (showModal)
+{
+    <dialog class="crm-modal" open data-close-href="/admin/nguoi-dung" aria-labelledby="user-modal-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Hệ thống</p><h2 id="user-modal-title">Tạo tài khoản</h2></div>
+                <a class="crm-modal-close" href="/admin/nguoi-dung" aria-label="Đóng">×</a>
+            </header>
+            <form method="post" class="crm-modal-body">
+                <div class="education-form-field"><label for="username">Tên đăng nhập <span>*</span></label><input id="username" name="Username" value="@Model.Username" required /></div>
+                <div class="education-form-field"><label for="full-name">Họ tên <span>*</span></label><input id="full-name" name="FullName" value="@Model.FullName" required /></div>
+                <div class="education-form-field"><label for="password">Mật khẩu <span>*</span></label><input id="password" name="Password" type="password" autocomplete="new-password" required /><p class="education-field-hint">8–72 ký tự, có chữ và số.</p></div>
+                <div class="education-form-field">
+                    <label for="assigned-roles">Vai trò</label>
+                    <select id="assigned-roles" name="AssignedRoles" multiple required size="@(Math.Min(Math.Max(Model.RolesAvailable.Count, 2), 6))">
+                        @foreach (var role in Model.RolesAvailable)
+                        {
+                            <option value="@role.Code" selected="@(role.Code == "CAN_BO")">@role.Name (@role.Code)</option>
+                        }
+                    </select>
+                    <p class="education-field-hint">Có thể chọn nhiều vai trò. Quyền hiệu lực là hợp quyền từ các vai trò.</p>
+                </div>
+                <footer class="crm-modal-actions">
+                    <a class="education-cancel-button" href="/admin/nguoi-dung">Hủy</a>
+                    <button class="crm-primary-button" type="submit">Tạo tài khoản</button>
+                </footer>
+            </form>
+        </section>
+    </dialog>
+}

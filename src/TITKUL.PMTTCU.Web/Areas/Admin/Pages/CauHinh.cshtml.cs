@@ -24,7 +24,7 @@ public class CauHinhModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!Has("cms.create") && !Has("cms.update")) return Redirect("/admin/khong-quyen");
+        if (!Has("setting.manage")) return Redirect("/admin/khong-quyen");
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
         var response = await _api.SendJsonAsync(HttpMethod.Put, "/api/v1/admin/site-config", token, new { key = Key, value = Value });
@@ -37,13 +37,13 @@ public class CauHinhModel : PageModel
     {
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
-        CanEdit = Has("cms.create") || Has("cms.update");
+        CanEdit = Has("setting.manage");
         var body = await _api.GetJsonAsync<ConfigEnvelope>("/api/v1/admin/site-config", token);
         Values = body?.Item ?? [];
         return Page();
     }
 
-    private bool HasView() => Has("cms.view") || Has("cms.create");
+    private bool HasView() => Has("setting.manage");
     private bool Has(string permission) => (HttpContext.Items["StaffProfile"] as StaffProfile)?.Permissions?.Contains(permission) == true;
     private string? Token() => Request.Cookies[AdminGateMiddleware.CookieName];
     public sealed record ConfigEnvelope(Dictionary<string, string>? Item);

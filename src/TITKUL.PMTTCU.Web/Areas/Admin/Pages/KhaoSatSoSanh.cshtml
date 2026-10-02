@@ -5,10 +5,15 @@
     ViewData["Title"] = "So sánh khảo sát";
     ViewData["UseAdminCharts"] = true;
 }
-<section class="card stack">
-    <p><a href="/admin/khao-sat">Về danh sách khảo sát</a></p>
-    <h1>So sánh kết quả khảo sát</h1>
-    <p class="muted">Chọn từ 2 đến 10 đợt. Hệ thống chỉ đối chiếu câu lựa chọn và thang điểm có cùng nội dung; câu trả lời tự luận không được đưa vào báo cáo.</p>
+<section class="crm-page">
+    <header class="crm-page-heading">
+        <div>
+            <p class="crm-eyebrow">Khảo sát &amp; báo cáo</p>
+            <h1>So sánh kết quả khảo sát</h1>
+            <p class="crm-page-description">Chọn từ 2 đến 10 đợt. Chỉ đối chiếu câu lựa chọn và thang điểm có cùng nội dung.</p>
+        </div>
+        <a class="education-cancel-button" href="/admin/khao-sat">Về danh sách</a>
+    </header>
 
     <form method="get" action="/admin/khao-sat/so-sanh" class="public-filter">
         <label for="survey-query">Lọc danh sách khảo sát</label>

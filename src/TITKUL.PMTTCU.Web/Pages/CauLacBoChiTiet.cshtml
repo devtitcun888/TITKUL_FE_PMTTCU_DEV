@@ -9,8 +9,8 @@
         ViewData["CanonicalPath"] = "/cau-lac-bo/" + Uri.EscapeDataString(Model.Code);
     }
 }
-<section class="card stack">
-    <p><a href="/cau-lac-bo">← Danh sách câu lạc bộ</a></p>
+<section class="card stack public-detail-page">
+    <p class="public-detail-back"><a href="/cau-lac-bo"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span> Danh sách câu lạc bộ</a></p>
     @if (Model.ClubNotFound)
     {
         <h1>Không tìm thấy câu lạc bộ</h1>

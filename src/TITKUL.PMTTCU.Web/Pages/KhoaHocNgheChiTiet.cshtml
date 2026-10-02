@@ -1,0 +1,39 @@
+@page "/khoa-hoc-nghe/chuong-trinh/{slug}"
+@model TITKUL.PMTTCU.Web.Pages.KhoaHocNgheChiTietModel
+@{
+    ViewData["Title"] = Model.Item?.SeoTitle ?? Model.Item?.Name ?? "Chương trình học";
+    ViewData["Description"] = Model.Item?.SeoDescription ?? Model.Item?.Summary;
+}
+
+<article class="card stack public-learning-page public-detail-page portal-article">
+    <p><a href="/khoa-hoc-nghe">← Các khóa học nghề</a> · @Model.Item!.CategoryName</p>
+    <h1>@Model.Item.Name</h1>
+    @if (!string.IsNullOrWhiteSpace(Model.Item.CoverUrl))
+    {
+        <img class="cms-cover-preview" src="@Model.Item.CoverUrl" alt="Ảnh chương trình @Model.Item.Name" />
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.Item.Summary)) { <p class="portal-lead">@Model.Item.Summary</p> }
+    <div class="portal-rich-content ck-content">@Html.Raw(Model.Item.ContentHtml)</div>
+
+    <section class="public-learning-feed" aria-labelledby="program-classes-title">
+        <div class="public-learning-feed-heading"><h2 id="program-classes-title">Lớp đang mở đăng ký</h2></div>
+        @if (Model.Item.OpenClasses?.Count > 0)
+        {
+            <div class="public-learning-grid">
+                @foreach (var item in Model.Item.OpenClasses)
+                {
+                    <article class="public-learning-card public-learning-card-copy">
+                        <span class="public-learning-category">@item.Code</span>
+                        <h3>@item.Name</h3>
+                        <p>@item.StartDate.ToString("dd/MM/yyyy") – @item.EndDate.ToString("dd/MM/yyyy") · Còn @item.Remaining chỗ</p>
+                        @if (item.CanRegister) { <a class="button" href="/dang-ky/@Uri.EscapeDataString(item.Code)">Đăng ký lớp</a> }
+                    </article>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="empty">Chưa có lớp công khai đang mở đăng ký cho chương trình này.</p>
+        }
+    </section>
+</article>

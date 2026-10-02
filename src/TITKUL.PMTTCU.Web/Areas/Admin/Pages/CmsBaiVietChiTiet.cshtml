@@ -1,10 +1,14 @@
-﻿@page "/admin/cms/bai-viet/sua/{id:guid?}"
+@page "/admin/cms/bai-viet/sua/{id:guid?}"
 @using TITKUL.PMTTCU.Web.Areas.Admin
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsBaiVietChiTietModel
 @{
     ViewData["UseCmsEditor"] = true;
     ViewData["Title"] = Model.PostId is null ? "Bài mới" : "Biên tập bài viết";
     if (Model.Preview) Layout = "/Pages/Shared/_Layout.cshtml";
+    var published = Model.Status == "PUBLISHED";
+    var scheduled = Model.Status == "SCHEDULED";
+    var hasCover = !string.IsNullOrWhiteSpace(Model.CoverUrl);
+    var statusClass = published ? "is-published" : scheduled ? "is-scheduled" : "is-draft";
 }
 
 @if (Model.Preview)
@@ -19,107 +23,194 @@
 }
 else
 {
-<section class="card stack">
-    <h1>@(Model.PostId is null ? "Bài mới" : "Biên tập bài viết")</h1>
-    <p><a href="/admin/cms/bai-viet">Về danh sách</a></p>
-    @if (!string.IsNullOrEmpty(Model.Status))
-    {
-        <p>Trạng thái: @EducationUi.Status(Model.Status)</p>
-        @if (Model.PublishedAt > DateTimeOffset.UtcNow) { <p role="status">Đã lên lịch xuất bản: @Model.PublishedAt.Value.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm") (giờ Việt Nam).</p> }
-    }
-@if (Model.PostId is Guid previewId)
-    {
-        <p><a class="button" href="/admin/cms/bai-viet/sua/@previewId?preview=true" target="_blank" rel="noopener">Xem trước như trang công khai</a></p>
-    }
+<section class="crm-page cms-admin-page cms-compose">
+    <header class="cms-compose-head">
+        <div>
+            <p class="cms-compose-eyebrow">@Model.KindTitle</p>
+            <h1>@(Model.PostId is null ? "Bài mới" : "Biên tập bài viết")</h1>
+            <p class="cms-compose-sub">Form 2 cột · nội dung soạn thảo chiếm cả hàng</p>
+        </div>
+        <a class="cms-compose-back" href="/admin/cms/bai-viet?kind=@Model.KindFilter">Về danh sách</a>
+    </header>
+
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
         <p class="alert" role="alert">@Model.ErrorMessage</p>
     }
+
     @if (Model.CanEdit)
     {
-        <form method="post" asp-page-handler="Save" class="stack">
-            <div>
-                <label for="categoryId">Chuyên mục</label>
-                <select id="categoryId" name="CategoryId" required>
-                    @foreach (var cat in Model.Categories)
+        <form method="post" asp-page-handler="Save" class="cms-compose-grid" id="cmsComposeForm" data-cms-compose>
+            <input type="hidden" name="KindFilter" value="@Model.KindFilter" />
+            <div class="cms-compose-main">
+                <section class="cms-compose-card">
+                    <header class="cms-compose-card-head">
+                        <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">category</span></span>
+                        <h2>Thông tin bài viết</h2>
+                    </header>
+                    <div class="cms-compose-fields cms-compose-fields-2">
+                        <div class="cms-compose-field">
+                            <label for="categoryId">Chuyên mục</label>
+                            <select id="categoryId" name="CategoryId" required data-compose-category>
+                                @foreach (var cat in Model.Categories)
+                                {
+                                    <option value="@cat.Id" selected="@(Model.CategoryId == cat.Id ? "selected" : null)">@cat.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="cms-compose-field">
+                            <label for="title">Tiêu đề</label>
+                            <input id="title" name="Title" value="@Model.Title" required maxlength="250" data-slug-source data-seo-title-source data-compose-title />
+                        </div>
+                        <div class="cms-compose-field cms-compose-span">
+                            <label for="slug">Đường dẫn <span class="cms-compose-optional">(tự gợi ý từ tiêu đề, có thể chỉnh)</span></label>
+                            <input id="slug" name="Slug" value="@Model.Slug" maxlength="280" data-slug-target data-slug-prefix="/tin-tuc/" />
+                            <p class="cms-compose-hint">Xem trước: <b data-slug-preview>/tin-tuc/@Model.Slug</b></p>
+                        </div>
+                        <div class="cms-compose-field cms-compose-span">
+                            <label for="summary">Tóm tắt / SEO mô tả</label>
+                            <textarea id="summary" name="Summary" rows="3" data-seo-description-source>@Model.Summary</textarea>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="cms-compose-card">
+                    <header class="cms-compose-card-head">
+                        <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">photo_library</span></span>
+                        <div>
+                            <h2>Ảnh bìa bài viết</h2>
+                            <small>PNG/JPEG · tối đa 5 MiB · tự tối ưu cạnh dài tối đa 1.600 px</small>
+                        </div>
+                    </header>
+                    <label class="cms-cover-drop" for="coverUpload" data-cover-drop>
+                        <span class="material-symbols-outlined" aria-hidden="true">photo_library</span>
+                        <b>Kéo thả ảnh vào đây hoặc bấm để chọn</b>
+                        <small>Gợi ý tỉ lệ 16:9 để hiển thị đẹp trên trang công khai</small>
+                    </label>
+                    <input id="coverUpload" type="file" accept="image/png,image/jpeg" data-cms-cover-upload hidden />
+                    <input id="coverKey" type="hidden" name="CoverKey" value="@Model.CoverKey" />
+                    <input id="thumbnailKey" type="hidden" name="ThumbnailKey" value="@Model.ThumbnailKey" />
+                    <p data-cover-status role="status" aria-live="polite" class="cms-compose-hint"></p>
+                    <div class="cms-cover-preview-wrap" data-cover-preview-wrap @(hasCover ? null : "hidden")>
+                        <img class="cms-cover-preview" data-cover-preview src="@Model.CoverUrl" alt="Xem trước ảnh đại diện" />
+                        <button type="button" class="cms-cover-remove" data-cover-clear><svg class="cms-compose-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>Xóa ảnh đại diện</button>
+                    </div>
+                </section>
+
+                <section class="cms-compose-card">
+                    <header class="cms-compose-card-head">
+                        <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">article</span></span>
+                        <div>
+                            <h2>Nội dung HTML</h2>
+                            <small>Trình soạn thảo văn bản</small>
+                        </div>
+                    </header>
+                    <div class="cms-compose-editor">
+                        <label class="visually-hidden" for="html">Nội dung HTML</label>
+                        <textarea id="html" name="Html" rows="12" required data-editor="cms">@Model.Html</textarea>
+                        <p class="alert" role="alert" data-editor-validation hidden>Nhập nội dung bài viết trước khi lưu.</p>
+                    </div>
+                </section>
+
+                <section class="cms-compose-card">
+                    <header class="cms-compose-card-head">
+                        <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">travel_explore</span></span>
+                        <h2>SEO</h2>
+                    </header>
+                    <div class="cms-compose-fields cms-compose-fields-2">
+                        <div class="cms-compose-field">
+                            <label for="seoTitle">SEO tiêu đề <span class="cms-compose-optional">(tối đa 70)</span></label>
+                            <input id="seoTitle" name="SeoTitle" value="@Model.SeoTitle" maxlength="70" data-seo-title-target />
+                            <p class="cms-compose-counter" data-seo-title-count>@((Model.SeoTitle ?? string.Empty).Length)/70 ký tự</p>
+                        </div>
+                        <div class="cms-compose-field">
+                            <label for="seoDescription">SEO mô tả <span class="cms-compose-optional">(tối đa 170)</span></label>
+                            <textarea id="seoDescription" name="SeoDescription" maxlength="170" rows="3" data-seo-description-target>@Model.SeoDescription</textarea>
+                            <p class="cms-compose-counter" data-seo-description-count>@((Model.SeoDescription ?? string.Empty).Length)/170 ký tự</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="cms-compose-card">
+                    <header class="cms-compose-card-head">
+                        <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">visibility</span></span>
+                        <h2>Xem trước</h2>
+                    </header>
+                    <div class="cms-compose-preview">
+                        <h3 data-compose-preview-title>@(string.IsNullOrWhiteSpace(Model.Title) ? "Tiêu đề bài viết" : Model.Title)</h3>
+                        @if (!string.IsNullOrWhiteSpace(Model.PreviewHtml))
+                        {
+                            <div class="ck-content">@Html.Raw(Model.PreviewHtml)</div>
+                        }
+                        else
+                        {
+                            <p>Nội dung xem trước hiện sau khi lưu bài.</p>
+                        }
+                    </div>
+                </section>
+            </div>
+
+            <aside class="cms-compose-side">
+                <section class="cms-compose-card">
+                    <header class="cms-compose-card-head cms-compose-card-head-plain">
+                        <h2>Trạng thái</h2>
+                    </header>
+                    <span class="cms-status-badge @statusClass"><i></i>@Model.StatusLabel</span>
+                    @if (Model.PublishedAt > DateTimeOffset.UtcNow)
                     {
-                        <option value="@cat.Id" selected="@(Model.CategoryId == cat.Id ? "selected" : null)">@cat.Name</option>
+                        <p class="cms-compose-hint" role="status">Đã lên lịch: @Model.PublishedAt.Value.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm") (giờ Việt Nam).</p>
                     }
-                </select>
-            </div>
-            <div>
-                <label for="title">Tiêu đề</label>
-                <input id="title" name="Title" value="@Model.Title" required maxlength="250" data-slug-source data-seo-title-source />
-            </div>
-            <div>
-                <label for="slug">Đường dẫn (tự gợi ý từ tiêu đề, có thể chỉnh)</label>
-                <input id="slug" name="Slug" value="@Model.Slug" maxlength="280" data-slug-target data-slug-prefix="/tin-tuc/" />
-                <small>Đường dẫn xem trước: <code data-slug-preview>/tin-tuc/@Model.Slug</code></small>
-            </div>
-            <div>
-                <label for="summary">Tóm tắt / SEO mô tả</label>
-                <textarea id="summary" name="Summary" rows="3" data-seo-description-source>@Model.Summary</textarea>
-            </div>
-            <div class="cms-cover-picker">
-                <label for="coverUpload">Ảnh bìa bài viết (PNG/JPEG, tối đa 5 MiB; tự tối ưu cạnh dài tối đa 1.600 px)</label>
-                <input id="coverUpload" type="file" accept="image/png,image/jpeg" data-cms-cover-upload />
-                <input id="coverKey" type="hidden" name="CoverKey" value="@Model.CoverKey" />
-                <input id="thumbnailKey" type="hidden" name="ThumbnailKey" value="@Model.ThumbnailKey" />
-                <p data-cover-status role="status" aria-live="polite"></p>
-                <img class="cms-cover-preview" data-cover-preview src="@Model.CoverUrl" alt="Xem trước ảnh đại diện" hidden="@(string.IsNullOrWhiteSpace(Model.CoverUrl) ? "hidden" : null)" />
-                <button type="button" class="button-quiet" data-cover-clear>Xóa ảnh đại diện</button>
-            </div>
-            <div>
-                <label for="html">Nội dung HTML</label>
-                <textarea id="html" name="Html" rows="12" required data-editor="cms">@Model.Html</textarea>
-                <p class="alert" role="alert" data-editor-validation hidden>Nhập nội dung bài viết trước khi lưu.</p>
-            </div>
-            <div>
-                <label for="seoTitle">SEO tiêu đề (tối đa 70)</label>
-                <input id="seoTitle" name="SeoTitle" value="@Model.SeoTitle" maxlength="70" data-seo-title-target />
-                <small data-seo-title-count>@((Model.SeoTitle ?? string.Empty).Length)/70 ký tự · hệ thống gợi ý theo tiêu đề</small>
-            </div>
-            <div>
-                <label for="seoDescription">SEO mô tả (tối đa 170)</label>
-                <input id="seoDescription" name="SeoDescription" value="@Model.SeoDescription" maxlength="170" data-seo-description-target />
-                <small data-seo-description-count>@((Model.SeoDescription ?? string.Empty).Length)/170 ký tự · hệ thống gợi ý theo tóm tắt</small>
-            </div>
-            <div>
-                <label for="pinned"><input id="pinned" name="Pinned" type="checkbox" value="true" checked="@(Model.Pinned ? "checked" : null)" /> Ghim lên trang chủ</label>
-            </div>
-            <button type="submit">Lưu nháp</button>
+                    <div class="cms-compose-actions">
+                        @if (Model.PostId is Guid previewId)
+                        {
+                            <a class="cms-btn cms-btn-outline" href="/admin/cms/bai-viet/sua/@previewId?preview=true" target="_blank" rel="noopener"><span class="material-symbols-outlined" aria-hidden="true">visibility</span>Xem trước như trang công khai</a>
+                        }
+                        <button type="submit" class="cms-btn cms-btn-primary" asp-page-handler="Save"><svg class="cms-compose-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>Lưu nháp</button>
+                        @if (Model.PostId is Guid postId && Model.CanPublish)
+                        {
+                            if (!published)
+                            {
+                                <button type="submit" class="cms-btn cms-btn-outline" asp-page-handler="Publish"><span class="material-symbols-outlined" aria-hidden="true">campaign</span>Đăng bài</button>
+                                <label class="cms-compose-schedule" for="scheduleAt">Hẹn giờ xuất bản (giờ Việt Nam)</label>
+                                <input id="scheduleAt" name="ScheduleAt" type="datetime-local" />
+                                <button type="submit" class="cms-btn cms-btn-outline" asp-page-handler="Schedule">Đặt lịch</button>
+                            }
+                            else
+                            {
+                                <button type="submit" class="cms-btn cms-btn-danger" asp-page-handler="Unpublish"><svg class="cms-compose-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v6M18.4 5.6a9 9 0 11-12.8 0"/></svg>Gỡ đăng</button>
+                                <a class="cms-btn cms-btn-outline" href="/tin-tuc/@Model.Slug"><span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>Xem trên Portal</a>
+                            }
+                        }
+                    </div>
+                </section>
+
+                <section class="cms-compose-card">
+                    <header class="cms-compose-card-head">
+                        <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">keep</span></span>
+                        <h2>Ghim lên trang chủ</h2>
+                    </header>
+                    <label class="cms-switch">
+                        <span>Hiển thị bài viết ở khối tin nổi bật</span>
+                        <input id="pinned" name="Pinned" type="checkbox" value="true" @(Model.Pinned ? "checked" : null) />
+                        <span class="cms-switch-ui" aria-hidden="true"></span>
+                    </label>
+                </section>
+
+                <section class="cms-compose-card">
+                    <header class="cms-compose-card-head cms-compose-card-head-plain">
+                        <h2>Thông tin đường dẫn</h2>
+                    </header>
+                    <p class="cms-compose-slug">/tin-tuc/<b data-slug-preview data-slug-preview-bare>@Model.Slug</b></p>
+                    <div class="cms-compose-meta"><span>Chuyên mục</span><span data-compose-category-label>@(Model.SelectedCategoryName ?? "—")</span></div>
+                    <div class="cms-compose-meta"><span>SEO tiêu đề</span><span data-seo-title-count data-seo-count-short>@((Model.SeoTitle ?? string.Empty).Length)/70</span></div>
+                    <div class="cms-compose-meta"><span>SEO mô tả</span><span data-seo-description-count data-seo-count-short>@((Model.SeoDescription ?? string.Empty).Length)/170</span></div>
+                </section>
+            </aside>
         </form>
-        @if (Model.PostId is Guid postId)
-        {
-            <p class="row-actions">
-                @if (Model.Status != "PUBLISHED")
-                {
-                    <form method="post" asp-page-handler="Publish">
-                        <button type="submit">Đăng bài</button>
-                    </form>
-                    <form method="post" asp-page-handler="Schedule" class="row-actions">
-                        <label for="scheduleAt">Hoặc hẹn giờ xuất bản (giờ Việt Nam)</label>
-                        <input id="scheduleAt" name="ScheduleAt" type="datetime-local" required />
-                        <button type="submit">Đặt lịch</button>
-                    </form>
-                }
-                else
-                {
-                    <form method="post" asp-page-handler="Unpublish">
-                        <button type="submit" class="button-quiet">Gỡ đăng</button>
-                    </form>
-                    <a class="button" href="/tin-tuc/@Model.Slug">Xem trên Portal</a>
-                }
-            </p>
-        }
     }
-    @if (!string.IsNullOrEmpty(Model.Html))
+    else
     {
-        <h2>Xem trước</h2>
-        <article class="card">
-            <h3>@Model.Title</h3>
-            @Html.Raw(Model.PreviewHtml)
-        </article>
+        <p class="empty" role="status">Không có quyền biên tập bài viết này.</p>
     }
 </section>
 }

@@ -1,0 +1,58 @@
+@page "/admin/nguoi-dung/{id:guid}/quyen"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.NguoiDungQuyenModel
+@{
+    ViewData["Title"] = "Phân quyền tài khoản";
+}
+
+<section class="crm-page permission-admin">
+    <header class="crm-page-heading">
+        <div>
+            <p class="crm-eyebrow">Quản trị hệ thống / Người dùng</p>
+            <h1>Phân quyền tài khoản</h1>
+            <p class="crm-page-description">@Model.FullName <code class="crm-code">@Model.Username</code> · Vai trò: @string.Join(", ", Model.Roles)</p>
+        </div>
+        <a class="education-cancel-button" href="/admin/nguoi-dung">Quay lại người dùng</a>
+    </header>
+
+    @if (!string.IsNullOrEmpty(Model.Notice)) { <p class="crm-ok" role="status">@Model.Notice</p> }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage)) { <p class="crm-alert" role="alert">@Model.ErrorMessage</p> }
+
+    <section class="crm-table-card permission-source-card">
+        <header class="crm-table-heading"><div><h2>Quyền kế thừa từ vai trò</h2><p>@Model.RolePermissions.Count quyền. Muốn thay đổi các quyền này, chỉnh vai trò.</p></div></header>
+        <div class="permission-readonly-list">
+            @foreach (var permission in Model.Groups.SelectMany(group => group.Items).Where(permission => Model.RolePermissions.Contains(permission.Code)))
+            { <span class="permission-chip">@permission.Name <code>@permission.Code</code></span> }
+        </div>
+    </section>
+
+    <section class="crm-table-card permission-source-card">
+        <header class="crm-table-heading"><div><h2>Quyền cấp trực tiếp</h2><p>@Model.DirectPermissions.Count quyền. Chỉ tài khoản này nhận quyền bổ sung.</p></div></header>
+        @if (Model.CanEdit)
+        {
+            <form method="post" asp-page-handler="Save" asp-route-id="@Model.AccountId" class="permission-form">
+                @if (!Model.CanGrantProtected)
+                {
+                    <p class="permission-security-note">Các quyền quản trị cấp cao chỉ SUPER_ADMIN được thay đổi.</p>
+                }
+                @await Html.PartialAsync("Shared/_PermissionMatrix.cshtml", new TITKUL.PMTTCU.Web.Areas.Admin.Pages.PermissionMatrixModel(Model.Groups, Model.DirectPermissions, "Permissions", Model.DisabledPermissions))
+                <div class="crm-modal-actions"><button class="crm-primary-button" type="submit">Lưu quyền trực tiếp</button></div>
+            </form>
+        }
+        else
+        {
+            <p class="permission-security-note">Quyền của tài khoản SUPER_ADMIN chỉ SUPER_ADMIN mới có thể chỉnh sửa.</p>
+            <div class="permission-readonly-list">
+                @foreach (var permission in Model.Groups.SelectMany(group => group.Items).Where(permission => Model.DirectPermissions.Contains(permission.Code)))
+                { <span class="permission-chip">@permission.Name <code>@permission.Code</code></span> }
+            </div>
+        }
+    </section>
+
+    <details class="crm-table-card permission-source-card">
+        <summary class="crm-table-heading"><div><h2>Quyền hiệu lực</h2><p>@Model.EffectivePermissions.Count quyền từ vai trò và cấp trực tiếp</p></div></summary>
+        <div class="permission-readonly-list">
+            @foreach (var permission in Model.Groups.SelectMany(group => group.Items).Where(permission => Model.EffectivePermissions.Contains(permission.Code)))
+            { <span class="permission-chip">@permission.Name <code>@permission.Code</code></span> }
+        </div>
+    </details>
+</section>

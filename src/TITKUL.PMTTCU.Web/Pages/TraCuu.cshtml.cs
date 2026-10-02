@@ -38,8 +38,7 @@ public class TraCuuModel : PageModel
     {
         SetPrivateCacheHeaders();
         var file = await _api.GetFileResultAsync($"/api/v1/public/certificates/{Uri.EscapeDataString(ma)}/pdf");
-        if (!file.IsSuccess) return file.IsNotFound ? NotFound() : StatusCode(503);
-        return File(file.Bytes!, "application/pdf", file.FileName ?? "chung-nhan.pdf");
+        return HostFile.Download(file, "chung-nhan.pdf", "application/pdf");
     }
 
     private async Task LoadAsync(string code)

@@ -8,10 +8,21 @@
 <section class="card stack public-learning-page">
     <header class="public-learning-intro">
         <p class="public-learning-eyebrow">HỌC TẬP CỘNG ĐỒNG</p>
-        <h1>Bình dân học vụ số</h1>
+        <h1>@Model.CategoryTitle</h1>
         <p>Hướng dẫn kỹ năng số thiết thực để người dân tự tin tiếp cận thông tin và dịch vụ trực tuyến.</p>
     </header>
+    @if (Model.Categories.Count > 1)
+    {
+        <nav class="public-learning-category-nav" aria-label="Chủ đề Bình dân học vụ số">
+            <a href="/binh-dan-hoc-vu-so" aria-current="@(Model.CategorySlug is null ? "page" : null)">Tất cả chủ đề</a>
+            @foreach (var category in Model.Categories.Where(item => item.Slug != "binh-dan-hoc-vu-so"))
+            {
+                <a href="/binh-dan-hoc-vu-so?categorySlug=@Uri.EscapeDataString(category.Slug)" aria-current="@(Model.CategorySlug == category.Slug ? "page" : null)">@category.Name</a>
+            }
+        </nav>
+    }
     <form class="public-filter" method="get" action="/binh-dan-hoc-vu-so" role="search">
+        @if (Model.CategorySlug is not null) { <input type="hidden" name="categorySlug" value="@Model.CategorySlug" /> }
         <label for="digital-literacy-query">Tìm nội dung</label>
         <div><input id="digital-literacy-query" name="q" type="search" value="@Model.Query" maxlength="80" placeholder="Nhập tiêu đề hoặc từ khóa" /><button class="button" type="submit">Tìm kiếm</button></div>
         @if (!string.IsNullOrWhiteSpace(Model.Query)) { <a href="/binh-dan-hoc-vu-so">Xóa tìm kiếm</a> }
@@ -31,7 +42,7 @@
             {
                 var imageUrl = item.ThumbnailUrl ?? item.CoverUrl;
                 <article class="public-learning-card">
-                    <a class="public-learning-card-image" href="/tin-tuc/@Uri.EscapeDataString(item.Slug)">
+                    <a class="public-learning-card-image" href="/binh-dan-hoc-vu-so/bai-viet/@Uri.EscapeDataString(item.Slug)">
                         @if (!string.IsNullOrWhiteSpace(imageUrl))
                         {
                             <img src="@imageUrl" alt="" loading="lazy" decoding="async" />
@@ -43,7 +54,7 @@
                     </a>
                     <div class="public-learning-card-copy">
                         <span class="public-learning-category">@item.CategoryName</span>
-                        <h2><a href="/tin-tuc/@Uri.EscapeDataString(item.Slug)">@item.Title</a></h2>
+                        <h2><a href="/binh-dan-hoc-vu-so/bai-viet/@Uri.EscapeDataString(item.Slug)">@item.Title</a></h2>
                         @if (!string.IsNullOrWhiteSpace(item.Summary)) { <p>@item.Summary</p> }
                         @if (item.PublishedAt is DateTimeOffset publishedAt) { <time datetime="@publishedAt.ToString("O")">@publishedAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</time> }
                     </div>

@@ -1,7 +1,10 @@
+using System.Globalization;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.WebUtilities;
 using TITKUL.PMTTCU.Web.ApiClients;
+using TITKUL.PMTTCU.Web.Areas.Admin;
 using TITKUL.PMTTCU.Web.Observability;
 
 namespace TITKUL.PMTTCU.Web.Areas.Admin.Pages;
@@ -16,6 +19,17 @@ public sealed class KeHoachHoatDongModel : PageModel
     public PlanItem? SelectedPlan { get; private set; }
     public string? ErrorMessage { get; private set; }
     public bool CanManage { get; private set; }
+    public bool ShowPlanModal { get; private set; }
+    public bool ShowActivityModal { get; private set; }
+    public string? StatusFilter { get; private set; }
+    public string? Sort { get; private set; }
+    public string Dir { get; private set; } = "asc";
+    public string? ActivitySort { get; private set; }
+    public string ActivityDir { get; private set; } = "asc";
+    public int TotalAll { get; private set; }
+    public int TotalDraft { get; private set; }
+    public int TotalApproved { get; private set; }
+    public bool FiltersActive => Year is not null || StatusFilter is not null;
 
     [BindProperty(SupportsGet = true)] public Guid? Id { get; set; }
     [BindProperty(SupportsGet = true)] public int? Year { get; set; }
@@ -41,7 +55,51 @@ public sealed class KeHoachHoatDongModel : PageModel
     [BindProperty] public string? DetailedExpectedResult { get; set; }
     [BindProperty] public string? RisksAndMitigation { get; set; }
 
-    public async Task<IActionResult> OnGetAsync(Guid? id, Guid? activityId) => await LoadAsync(id, activityId);
+    public async Task<IActionResult> OnGetAsync(Guid? id, Guid? activityId, string? status, string? sort, string? dir, string? asort, string? adir, bool create = false, bool editPlan = false, bool createActivity = false)
+    {
+        var page = await LoadAsync(id, activityId, status, sort, dir, asort, adir);
+        ShowPlanModal = create || (editPlan && SelectedPlan is not null);
+        ShowActivityModal = SelectedPlan is not null && (ActivityId.HasValue || createActivity);
+        return page;
+    }
+
+    public string ListUrl(int? year = null, string? status = null, string? sort = null, string? dir = null, Guid? id = null, bool omitId = false, bool clearYear = false)
+    {
+        var query = new Dictionary<string, string?>();
+        var nextYear = clearYear ? null : year ?? Year;
+        var nextStatus = status ?? StatusFilter;
+        if (status == "") nextStatus = null;
+        var nextId = omitId ? null : id ?? Id;
+        if (nextYear is int y) query["Year"] = y.ToString(CultureInfo.InvariantCulture);
+        if (!string.IsNullOrWhiteSpace(nextStatus)) query["status"] = nextStatus;
+        CmsListSort.Append(query, sort ?? Sort, dir ?? Dir);
+        if (!string.IsNullOrWhiteSpace(ActivitySort))
+        {
+            query["asort"] = ActivitySort;
+            if (ActivityDir == "desc") query["adir"] = "desc";
+        }
+        if (nextId is Guid planId) query["id"] = planId.ToString();
+        return QueryHelpers.AddQueryString("/admin/ke-hoach-hoat-dong", query);
+    }
+
+    public string SortUrl(string column) => ListUrl(sort: column, dir: CmsListSort.NextDir(Sort, column, Dir));
+
+    public string ActivitySortUrl(string column)
+    {
+        var query = new Dictionary<string, string?>();
+        if (Year is int y) query["Year"] = y.ToString(CultureInfo.InvariantCulture);
+        if (!string.IsNullOrWhiteSpace(StatusFilter)) query["status"] = StatusFilter;
+        CmsListSort.Append(query, Sort, Dir);
+        var next = CmsListSort.Normalize(column, "seq", "activity", "audience");
+        var nextDir = CmsListSort.NextDir(ActivitySort, column, ActivityDir);
+        if (next is not null)
+        {
+            query["asort"] = next;
+            if (nextDir == "desc") query["adir"] = "desc";
+        }
+        if (Id is Guid planId) query["id"] = planId.ToString();
+        return QueryHelpers.AddQueryString("/admin/ke-hoach-hoat-dong", query);
+    }
 
     public async Task<IActionResult> OnPostSavePlanAsync()
     {
@@ -56,7 +114,8 @@ public sealed class KeHoachHoatDongModel : PageModel
         if (response is null || !response.IsSuccessStatusCode)
         {
             ErrorMessage = await ReadErrorAsync(response) ?? "Không lưu được kế hoạch. Kiểm tra năm bắt đầu và năm kết thúc.";
-            return await LoadAsync(Id, null);
+            ShowPlanModal = true;
+            return await LoadAsync(Id, null, StatusFilter, Sort, Dir, ActivitySort, ActivityDir);
         }
 
         var envelope = await response.Content.ReadFromJsonAsync<ItemEnvelope<PlanItem>>();
@@ -79,7 +138,8 @@ public sealed class KeHoachHoatDongModel : PageModel
         if (response is null || !response.IsSuccessStatusCode)
         {
             ErrorMessage = await ReadErrorAsync(response) ?? "Không lưu được hoạt động. Cần nhập cột Hoạt động và thời gian thực hiện.";
-            return await LoadAsync(planId, ActivityId);
+            ShowActivityModal = true;
+            return await LoadAsync(planId, ActivityId, StatusFilter, Sort, Dir, ActivitySort, ActivityDir);
         }
 
         return Redirect($"/admin/ke-hoach-hoat-dong?id={planId}");
@@ -94,7 +154,7 @@ public sealed class KeHoachHoatDongModel : PageModel
         if (response is null || !response.IsSuccessStatusCode)
         {
             ErrorMessage = await ReadErrorAsync(response) ?? "Không xóa được hoạt động.";
-            return await LoadAsync(id, null);
+            return await LoadAsync(id, null, StatusFilter, Sort, Dir, ActivitySort, ActivityDir);
         }
 
         return Redirect($"/admin/ke-hoach-hoat-dong?id={id}");
@@ -109,7 +169,7 @@ public sealed class KeHoachHoatDongModel : PageModel
         if (response is null || !response.IsSuccessStatusCode)
         {
             ErrorMessage = await ReadErrorAsync(response) ?? "Không cập nhật được trạng thái kế hoạch.";
-            return await LoadAsync(id, null);
+            return await LoadAsync(id, null, StatusFilter, Sort, Dir, ActivitySort, ActivityDir);
         }
 
         return Redirect($"/admin/ke-hoach-hoat-dong?id={id}");
@@ -128,15 +188,39 @@ public sealed class KeHoachHoatDongModel : PageModel
     private bool CanManageUser() => (HttpContext.Items["StaffProfile"] as StaffProfile)?.Permissions?.Contains("education.manage") == true;
     private string? Token() => Request.Cookies[AdminGateMiddleware.CookieName];
 
-    private async Task<IActionResult> LoadAsync(Guid? id, Guid? activityId)
+    private async Task<IActionResult> LoadAsync(Guid? id, Guid? activityId, string? status, string? sort, string? dir, string? asort, string? adir)
     {
         CanManage = CanManageUser();
         if (!CanManage) return Redirect("/admin/khong-quyen");
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
+        StatusFilter = status is "APPROVED" or "DRAFT" ? status : null;
+        Sort = CmsListSort.Normalize(sort, "year", "range", "status", "planner", "approver");
+        Dir = CmsListSort.Dir(dir);
+        ActivitySort = CmsListSort.Normalize(asort, "seq", "activity", "audience");
+        ActivityDir = CmsListSort.Dir(adir);
         var listPath = "/api/v1/admin/activity-plans?pageSize=100" + (Year is int year ? "&year=" + year : "");
         var list = await _api.GetJsonAsync<PagedEnvelope<PlanItem>>(listPath, token);
-        Plans = list?.Items ?? [];
+        var all = list?.Items ?? [];
+        if (list is null && string.IsNullOrEmpty(ErrorMessage)) ErrorMessage = "Không tải được danh sách kế hoạch.";
+        TotalAll = all.Count;
+        TotalApproved = all.Count(item => item.Status == "APPROVED");
+        TotalDraft = all.Count(item => item.Status != "APPROVED");
+        IEnumerable<PlanItem> filtered = all;
+        if (StatusFilter == "APPROVED") filtered = filtered.Where(item => item.Status == "APPROVED");
+        else if (StatusFilter == "DRAFT") filtered = filtered.Where(item => item.Status != "APPROVED");
+        Plans = filtered.ToArray();
+        if (Sort is not null)
+        {
+            Plans = CmsListSort.Order(Plans, Dir, Sort switch
+            {
+                "range" => Plans.OrderBy(item => item.FromYear ?? 0).ThenBy(item => item.ToYear ?? 0),
+                "status" => Plans.OrderBy(item => item.Status, StringComparer.OrdinalIgnoreCase),
+                "planner" => Plans.OrderBy(item => item.Planner ?? "", StringComparer.CurrentCultureIgnoreCase),
+                "approver" => Plans.OrderBy(item => item.Approver ?? "", StringComparer.CurrentCultureIgnoreCase),
+                _ => Plans.OrderBy(item => item.PlanYear ?? 0)
+            });
+        }
         if (id is Guid planId)
         {
             var detail = await _api.GetJsonAsync<PlanDetailEnvelope>($"/api/v1/admin/activity-plans/{planId}", token);
@@ -148,6 +232,15 @@ public sealed class KeHoachHoatDongModel : PageModel
             SelectedPlan = detail.Item;
             Id = planId;
             Activities = detail.Activities ?? [];
+            if (ActivitySort is not null)
+            {
+                Activities = CmsListSort.Order(Activities, ActivityDir, ActivitySort switch
+                {
+                    "activity" => Activities.OrderBy(item => item.ActivityAndTime, StringComparer.CurrentCultureIgnoreCase),
+                    "audience" => Activities.OrderBy(item => item.Audience ?? "", StringComparer.CurrentCultureIgnoreCase),
+                    _ => Activities.OrderBy(item => item.Sequence)
+                });
+            }
             FromYear = detail.Item.FromYear;
             ToYear = detail.Item.ToYear;
             PlanYear = detail.Item.PlanYear;

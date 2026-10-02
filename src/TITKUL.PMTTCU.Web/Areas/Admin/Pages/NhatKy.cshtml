@@ -4,50 +4,83 @@
     ViewData["Title"] = "Nhật ký";
 }
 
-<section class="card stack">
-    <h1>Nhật ký</h1>
-    <p>Nhật ký không chứa mật khẩu, mã phiên hay chuỗi kết nối.</p>
-    <form class="public-filter" method="get" action="/admin/nhat-ky" role="search">
-        <label for="audit-action">Lọc theo thao tác</label>
-        <div><input id="audit-action" name="action" type="search" value="@Model.ActionFilter" placeholder="Ví dụ: CMS_PUBLISH" /><button class="button" type="submit">Lọc</button></div>
-        <a class="button button-quiet" href="/admin/nhat-ky?handler=Xuat&amp;action=@Uri.EscapeDataString(Model.ActionFilter ?? "")">Xuất CSV (tối đa 5.000 dòng gần nhất)</a>
-    </form>
+<section class="crm-page">
+    <header class="crm-page-heading">
+        <div>
+            <p class="crm-eyebrow">Quản trị hệ thống</p>
+            <h1>Nhật ký</h1>
+            <p class="crm-page-description">Nhật ký không chứa mật khẩu, mã phiên hay chuỗi kết nối.</p>
+        </div>
+        <a class="crm-primary-button" href="/admin/nhat-ky?handler=Xuat&amp;action=@Uri.EscapeDataString(Model.ActionFilter ?? "")">Xuất CSV</a>
+    </header>
+
+    <section class="crm-toolbar" aria-label="Lọc nhật ký">
+        <form class="crm-filter" method="get" action="/admin/nhat-ky" role="search">
+            <label class="crm-search" for="audit-action">
+                <span aria-hidden="true">⌕</span>
+                <span class="visually-hidden">Lọc theo thao tác</span>
+                <input id="audit-action" name="action" type="search" value="@Model.ActionFilter" placeholder="Ví dụ: CMS_PUBLISH" />
+            </label>
+            <button class="crm-primary-button" type="submit">Lọc</button>
+        </form>
+    </section>
+
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <p class="crm-alert" role="alert">@Model.ErrorMessage</p>
     }
-    else if (Model.Rows.Count == 0)
-    {
-        <p class="empty">Chưa có bản ghi nhật ký.</p>
-    }
-    else
-    {
-        <div class="table-scroll">
-            <table>
-                <caption>Nhật ký quản trị — @Model.Total bản ghi</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">Thời điểm</th>
-                        <th scope="col">Tài khoản</th>
-                        <th scope="col">Việc</th>
-                        <th scope="col">Đối tượng</th>
-                        <th scope="col">Mã theo dõi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var row in Model.Rows)
-                {
-                    <tr>
-                        <td>@row.OccurredAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</td>
-                        <td>@row.Username</td>
-                        <td>@row.Action</td>
-                        <td>@(row.EntityType is null ? "—" : row.EntityType)@(row.EntityId is Guid entityId ? $" · {entityId:D}" : "")</td>
-                        <td>@row.TraceId</td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        </div>
-    }
+
+    <section class="crm-table-card" aria-labelledby="audit-table-title">
+        <header class="crm-table-heading">
+            <div>
+                <h2 id="audit-table-title">Nhật ký quản trị</h2>
+                <p>@Model.Total bản ghi</p>
+            </div>
+        </header>
+        @if (string.IsNullOrEmpty(Model.ErrorMessage) && Model.Rows.Count == 0)
+        {
+            <div class="crm-empty"><strong>Chưa có bản ghi nhật ký</strong><p>Thao tác quản trị sẽ được ghi lại tại đây.</p></div>
+        }
+        else if (Model.Rows.Count > 0)
+        {
+            <div class="crm-table-scroll">
+                <table class="crm-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Thời điểm</th>
+                            <th scope="col">Tài khoản</th>
+                            <th scope="col">Việc</th>
+                            <th scope="col">Đối tượng</th>
+                            <th scope="col">Thay đổi</th>
+                            <th scope="col">Mã theo dõi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr>
+                            <td>@row.OccurredAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@row.Username</td>
+                            <td>@row.Action</td>
+                            <td>@(row.EntityType is null ? "—" : row.EntityType)@(row.EntityId is Guid entityId ? $" · {entityId:D}" : "")</td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(row.BeforeData) || !string.IsNullOrWhiteSpace(row.AfterData))
+                                {
+                                    <details class="audit-change-details">
+                                        <summary>Xem trước/sau</summary>
+                                        <div><strong>Trước</strong><pre>@(row.BeforeData ?? "—")</pre></div>
+                                        <div><strong>Sau</strong><pre>@(row.AfterData ?? "—")</pre></div>
+                                    </details>
+                                }
+                                else { <span>—</span> }
+                            </td>
+                            <td><code class="crm-code">@row.TraceId</code></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <div class="crm-pager">@await Html.PartialAsync("/Pages/Shared/_PublicPager.cshtml", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))</div>
+        }
+    </section>
 </section>
-@await Html.PartialAsync("/Pages/Shared/_PublicPager.cshtml", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))

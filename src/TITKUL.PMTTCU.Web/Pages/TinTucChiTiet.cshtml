@@ -8,8 +8,8 @@
     var hasWideTable = PortalRichContent.ContainsTable(Model.Item?.Html);
 }
 
-<section class="card stack">
-    <p><a href="/tin-tuc">Về danh sách tin</a></p>
+<section class="card stack public-detail-page">
+    <p class="public-detail-back"><a href="@Model.ReturnPath"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span> @Model.ReturnLabel</a></p>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
         <h1>@(Model.ResourceNotFound ? "Không tìm thấy tin tức" : "Chưa tải được tin tức")</h1>
@@ -17,11 +17,20 @@
     }
     @if (Model.Item is not null)
     {
-        <article class="stack" aria-labelledby="article-title">
-            <h1 id="article-title">@Model.Item.Title</h1>
-            <p class="muted">@Model.Item.CategoryName @if (Model.Item.PublishedAt is DateTimeOffset at) { <span>· <time datetime="@at.ToString("O")">@at.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</time></span> }</p>
-            @if (!string.IsNullOrWhiteSpace(Model.Item.CoverUrl)) { <img class="cms-cover-preview" src="@Model.Item.CoverUrl" alt="Ảnh đại diện: @Model.Item.Title" width="1200" height="675" fetchpriority="high" decoding="async" /> }
-            @if (!string.IsNullOrWhiteSpace(Model.Item.Summary)) { <p class="article-summary">@Model.Item.Summary</p> }
+        <article class="stack public-detail-article" aria-labelledby="article-title">
+            <header class="public-detail-heading">
+                <p class="public-detail-eyebrow">Tin tức · @Model.Item.CategoryName</p>
+                <h1 id="article-title">@Model.Item.Title</h1>
+                @if (Model.Item.PublishedAt is DateTimeOffset at)
+                {
+                    <div class="public-detail-meta"><time datetime="@at.ToString("O")">@at.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</time></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.Item.Summary)) { <p class="public-detail-lead">@Model.Item.Summary</p> }
+            </header>
+            @if (!string.IsNullOrWhiteSpace(Model.Item.CoverUrl))
+            {
+                <figure class="public-article-cover"><img src="@Model.Item.CoverUrl" alt="Ảnh đại diện: @Model.Item.Title" width="1200" height="675" fetchpriority="high" decoding="async" /></figure>
+            }
             @if (hasWideTable) { <p id="cms-table-scroll-hint" class="portal-table-hint">Nếu bảng rộng, vuốt ngang để xem đủ cột. Dùng phím Tab để chọn bảng, sau đó dùng phím mũi tên.</p> }
             <div class="portal-rich-content">@Html.Raw(PortalRichContent.WithScrollableTables(Model.Item.Html))</div>
         </article>

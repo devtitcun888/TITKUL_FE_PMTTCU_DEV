@@ -1,66 +1,254 @@
 @page "/admin/pcgd-xmc"
+@using TITKUL.PMTTCU.Web.Areas.Admin
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.PcgdXmcModel
 @{
     ViewData["Title"] = "Điều tra PCGD/XMC";
 }
-<section class="card stack admin-education-page">
-    <h1>Điều tra phổ cập giáo dục, xóa mù chữ</h1>
-    <p>Quản lý theo đợt; tên địa bàn được giữ nguyên dưới dạng văn bản từ biểu mẫu. Chưa ánh xạ sang mã địa bàn.</p>
-    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <p class="alert" role="alert">@Model.ErrorMessage</p> }
-    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage)) { <p class="status-note" role="status">@Model.SuccessMessage</p> }
-    <section class="card stack">
-        <h2>Tạo đợt điều tra</h2>
-        <form method="post" asp-page-handler="CreateRound" class="row-actions">
-            <div><label for="year">Năm</label><input id="year" name="Year" type="number" min="1" max="9999" value="@Model.Year" /></div>
-            <div><label for="roundTitle">Tên đợt</label><input id="roundTitle" name="RoundTitle" maxlength="240" required placeholder="Điều tra PCGD/XMC năm ..." /></div>
-            <button type="submit">Tạo đợt</button>
-        </form>
+
+<section class="crm-page cms-posts-page cms-list-page cms-list-stack">
+
+    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage)) { <p class="crm-ok" role="status">@Model.SuccessMessage</p> }
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <p class="crm-alert" role="alert">@Model.ErrorMessage</p> }
+
+    <form class="cms-posts-toolbar" method="get" action="/admin/pcgd-xmc" role="search" data-cms-autofilter data-cols="2">
+        @await Html.PartialAsync("Shared/_CmsSortHidden", (Model.Sort, Model.Dir))
+        @if (!string.IsNullOrWhiteSpace(Model.EntrySort))
+        {
+            <input type="hidden" name="esort" value="@Model.EntrySort" />
+            @if (Model.EntryDir == "desc") { <input type="hidden" name="edir" value="desc" /> }
+        }
+        @if (Model.Id is Guid selectedId) { <input type="hidden" name="id" value="@selectedId" /> }
+        <button class="cms-posts-filter-toggle @(Model.FiltersActive ? "has-active-filters" : null)" type="button" aria-label="Bộ lọc" aria-expanded="false" aria-controls="edu-pcgd-filter-fields" data-cms-filter-toggle>
+            <svg class="cms-posts-filter-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                <path d="M4 5h16l-6.5 7.5v5l-3 1.5v-6.5L4 5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </button>
+        <div class="cms-posts-filter-fields" id="edu-pcgd-filter-fields">
+            <label class="cms-posts-field">
+                <span>Từ khóa</span>
+                <span class="cms-posts-search">
+                    <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                    <input name="q" type="search" value="@Model.Query" placeholder="Tên đợt, họ tên, ấp" />
+                </span>
+            </label>
+            <label class="cms-posts-field">
+                <span>Năm</span>
+                <input name="year" type="number" min="1" max="9999" value="@Model.FilterYear" data-cms-filter />
+            </label>
+            <div class="cms-posts-toolbar-actions">
+                <a class="cms-posts-reset" href="/admin/pcgd-xmc">
+                    <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
+                    Xóa lọc
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <section class="cms-posts-list" aria-labelledby="pcgd-round-title">
+        <header class="cms-posts-list-heading">
+            <div>
+                <h2 id="pcgd-round-title">Các đợt điều tra PCGD/XMC</h2>
+                <p>@Model.Rounds.Count.ToString("N0") đợt</p>
+            </div>
+            <div class="cms-posts-list-actions">
+                <a class="crm-primary-button cms-posts-create" href="/admin/pcgd-xmc?create=true"><span class="material-symbols-outlined" aria-hidden="true">add</span> Tạo đợt</a>
+            </div>
+        </header>
+        @if (Model.Rounds.Count == 0)
+        {
+            <div class="cms-posts-empty">
+                <span class="material-symbols-outlined" aria-hidden="true">article</span>
+                <strong>@(Model.FiltersActive ? "Không tìm thấy đợt phù hợp" : "Chưa có đợt điều tra")</strong>
+                <p>@(Model.FiltersActive ? "Thử xóa bộ lọc hoặc đổi năm." : "Tạo đợt để nhập biểu mẫu hoặc thêm dòng thủ công.")</p>
+            </div>
+        }
+        else
+        {
+            <div class="cms-posts-table-scroll">
+                <table class="cms-posts-table">
+                    <thead>
+                        <tr>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "year", Model.Dir)" href="@Model.SortUrl("year")">Năm <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "year", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "title", Model.Dir)" href="@Model.SortUrl("title")">Tên đợt <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "title", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "created", Model.Dir)" href="@Model.SortUrl("created")">Ngày tạo <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "created", Model.Dir)</span></a></th>
+                            <th class="cms-posts-actions-col" scope="col">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var round in Model.Rounds)
+                    {
+                        <tr>
+                            <td>@(round.Year?.ToString() ?? "—")</td>
+                            <td class="cms-posts-title-cell"><strong>@round.Title</strong></td>
+                            <td>@round.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                            <td class="cms-posts-actions-col">
+                                <details class="cms-posts-row-menu">
+                                    <summary aria-label="Thao tác @round.Title"><span class="material-symbols-outlined" aria-hidden="true">more_horiz</span></summary>
+                                    <div class="cms-posts-row-panel" role="menu">
+                                        <a role="menuitem" href="/admin/pcgd-xmc?id=@round.Id">Mở</a>
+                                    </div>
+                                </details>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
     </section>
-    <div class="table-scroll"><table>
-        <caption>Các đợt điều tra PCGD/XMC</caption>
-        <thead><tr><th>Năm</th><th>Tên đợt</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
-        <tbody>
-            @if (Model.Rounds.Count == 0) { <tr><td colspan="4">Chưa có đợt điều tra.</td></tr> }
-            @foreach (var round in Model.Rounds) { <tr><td>@round.Year</td><td>@round.Title</td><td>@round.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td><td><a href="/admin/pcgd-xmc?id=@round.Id">Mở</a></td></tr> }
-        </tbody>
-    </table></div>
+
     @if (Model.SelectedRound is not null)
     {
-        <section class="card stack">
-            <div class="row-actions"><div><h2>@Model.SelectedRound.Title (@Model.SelectedRound.Year)</h2><p>@Model.Entries.Count dòng trong đợt.</p></div><a class="button button-quiet" href="/admin/pcgd-xmc?handler=Export&amp;id=@Model.SelectedRound.Id">Xuất Excel</a></div>
-            <h3>Nhập biểu mẫu Excel</h3>
-            <form method="post" enctype="multipart/form-data" asp-page-handler="Import" asp-route-id="@Model.SelectedRound.Id" class="row-actions">
-                <label for="importFile">Workbook .xlsx</label><input id="importFile" name="ImportFile" type="file" accept=".xlsx" required /><button type="submit">Nhập dữ liệu</button>
-            </form>
-            <details class="stack" open="@(Model.EntryId.HasValue ? "open" : null)">
-                <summary>@(Model.EntryId.HasValue ? "Sửa dòng" : "Thêm dòng thủ công")</summary>
-                <form method="post" asp-page-handler="SaveEntry" asp-route-id="@Model.SelectedRound.Id" class="stack">
-                    @if (Model.EntryId is Guid entryId) { <input type="hidden" name="EntryId" value="@entryId" /> }
-                    <div class="row-actions">
-                        <div><label for="sourceSheet">Sheet nguồn</label><input id="sourceSheet" name="SourceSheet" value="@Model.SourceSheet" maxlength="100" placeholder="BD / BH / BT / MANUAL" /></div>
-                        <div><label for="sequence">STT</label><input id="sequence" name="Sequence" type="number" min="0" value="@Model.Sequence" /></div>
-                        <div><label for="province">Tỉnh</label><input id="province" name="Province" value="@Model.Province" maxlength="240" /></div>
-                        <div><label for="commune">Xã</label><input id="commune" name="Commune" value="@Model.Commune" maxlength="240" /></div>
-                        <div><label for="hamlet">Ấp</label><input id="hamlet" name="Hamlet" value="@Model.Hamlet" maxlength="240" /></div>
-                        <div><label for="surveyTime">Thời điểm điều tra</label><input id="surveyTime" name="SurveyTime" value="@Model.SurveyTime" maxlength="240" /></div>
-                    </div>
-                    <div class="row-actions">
-                        <div><label for="familyName">Họ và</label><input id="familyName" name="FamilyName" value="@Model.FamilyName" maxlength="180" /></div>
-                        <div><label for="givenName">Tên</label><input id="givenName" name="GivenName" value="@Model.GivenName" maxlength="180" /></div>
-                        <div><label for="birthYear">Năm sinh</label><input id="birthYear" name="BirthYear" type="number" value="@Model.BirthYear" /></div>
-                        <div><label for="female">Nữ</label><select id="female" name="Female"><option value="false" selected="@(!Model.Female ? "selected" : null)">Không</option><option value="true" selected="@(Model.Female ? "selected" : null)">Có</option></select></div>
-                        <div><label for="educationLevel">Trình độ VH</label><input id="educationLevel" name="EducationLevel" value="@Model.EducationLevel" maxlength="240" /></div>
-                        <div><label for="studyStatus">Đã nghỉ/đang học</label><input id="studyStatus" name="StudyStatus" value="@Model.StudyStatus" maxlength="120" /></div>
-                    </div>
-                    <div class="row-actions"><div><label for="address">Địa chỉ</label><input id="address" name="Address" value="@Model.Address" maxlength="500" /></div><div><label for="note">Ghi chú</label><input id="note" name="Note" value="@Model.Note" /></div></div>
-                    <button type="submit">@(Model.EntryId.HasValue ? "Lưu dòng" : "Thêm dòng")</button>
-                </form>
-            </details>
-            <div class="table-scroll"><table>
-                <caption>Danh sách điều tra theo mẫu</caption>
-                <thead><tr><th>Sheet</th><th>Ấp</th><th>STT</th><th>Họ và tên</th><th>Năm sinh</th><th>Nữ</th><th>Địa chỉ</th><th>Trình độ VH</th><th>Đã nghỉ/đang học</th><th>Ghi chú</th><th>Thao tác</th></tr></thead>
-                <tbody>@foreach (var item in Model.Entries) { <tr><td>@item.SourceSheet</td><td>@item.Hamlet</td><td>@item.Sequence</td><td>@item.FamilyName @item.GivenName</td><td>@item.BirthYear</td><td>@(item.Female ? "X" : "")</td><td>@item.Address</td><td>@item.EducationLevel</td><td>@item.StudyStatus</td><td>@item.Note</td><td class="row-actions"><a href="/admin/pcgd-xmc?id=@item.RoundId&amp;entryId=@item.Id">Sửa</a><form method="post" asp-page-handler="DeleteEntry" asp-route-id="@item.RoundId"><input type="hidden" name="entryId" value="@item.Id" /><button type="submit" class="button-quiet">Xóa</button></form></td></tr> }</tbody>
-            </table></div>
+        <section class="cms-posts-list" aria-labelledby="pcgd-entry-title">
+            <header class="cms-posts-list-heading">
+                <div>
+                    <h2 id="pcgd-entry-title">@Model.SelectedRound.Title (@Model.SelectedRound.Year)</h2>
+                    <p>@Model.Entries.Count.ToString("N0") dòng trong đợt</p>
+                </div>
+                <div class="cms-posts-list-actions">
+                    <a class="cms-posts-ghost" href="/admin/pcgd-xmc?handler=Export&amp;id=@Model.SelectedRound.Id"><span class="material-symbols-outlined" aria-hidden="true">download</span> Xuất Excel</a>
+                    <a class="cms-posts-ghost" href="/admin/pcgd-xmc?id=@Model.SelectedRound.Id&amp;import=true"><span class="material-symbols-outlined" aria-hidden="true">cloud_upload</span> Nhập Excel</a>
+                    <a class="crm-primary-button cms-posts-create" href="/admin/pcgd-xmc?id=@Model.SelectedRound.Id&amp;entry=true"><span class="material-symbols-outlined" aria-hidden="true">add</span> Thêm dòng</a>
+                </div>
+            </header>
+            @if (Model.Entries.Count == 0)
+            {
+                <div class="cms-posts-empty">
+                    <span class="material-symbols-outlined" aria-hidden="true">article</span>
+                    <strong>@(Model.FiltersActive ? "Không có dòng khớp bộ lọc" : "Chưa có dòng")</strong>
+                    <p>@(Model.FiltersActive ? "Đổi từ khóa hoặc xóa lọc." : "Nhập workbook hoặc thêm dòng thủ công.")</p>
+                </div>
+            }
+            else
+            {
+                <div class="cms-posts-table-scroll">
+                    <table class="cms-posts-table cms-posts-table-wide">
+                        <thead>
+                            <tr>
+                                <th scope="col"><a class="@EducationUi.SortClass(Model.EntrySort, "sheet", Model.EntryDir)" href="@Model.EntrySortUrl("sheet")">Sheet <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.EntrySort, "sheet", Model.EntryDir)</span></a></th>
+                                <th scope="col"><a class="@EducationUi.SortClass(Model.EntrySort, "hamlet", Model.EntryDir)" href="@Model.EntrySortUrl("hamlet")">Ấp <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.EntrySort, "hamlet", Model.EntryDir)</span></a></th>
+                                <th scope="col"><a class="@EducationUi.SortClass(Model.EntrySort, "seq", Model.EntryDir)" href="@Model.EntrySortUrl("seq")">STT <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.EntrySort, "seq", Model.EntryDir)</span></a></th>
+                                <th scope="col"><a class="@EducationUi.SortClass(Model.EntrySort, "name", Model.EntryDir)" href="@Model.EntrySortUrl("name")">Họ và tên <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.EntrySort, "name", Model.EntryDir)</span></a></th>
+                                <th scope="col"><a class="@EducationUi.SortClass(Model.EntrySort, "birth", Model.EntryDir)" href="@Model.EntrySortUrl("birth")">Năm sinh <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.EntrySort, "birth", Model.EntryDir)</span></a></th>
+                                <th scope="col"><a class="@EducationUi.SortClass(Model.EntrySort, "female", Model.EntryDir)" href="@Model.EntrySortUrl("female")">Nữ <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.EntrySort, "female", Model.EntryDir)</span></a></th>
+                                <th scope="col">Địa chỉ</th>
+                                <th scope="col">Trình độ VH</th>
+                                <th scope="col">Đã nghỉ/đang học</th>
+                                <th scope="col">Ghi chú</th>
+                                <th class="cms-posts-actions-col" scope="col">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Entries)
+                        {
+                            <tr>
+                                <td>@item.SourceSheet</td>
+                                <td>@(item.Hamlet ?? "—")</td>
+                                <td>@item.Sequence</td>
+                                <td class="cms-posts-title-cell"><strong>@item.FamilyName @item.GivenName</strong></td>
+                                <td>@(item.BirthYear?.ToString() ?? "—")</td>
+                                <td>@(item.Female ? "X" : "")</td>
+                                <td>@(item.Address ?? "—")</td>
+                                <td>@(item.EducationLevel ?? "—")</td>
+                                <td>@(item.StudyStatus ?? "—")</td>
+                                <td>@(item.Note ?? "—")</td>
+                                <td class="cms-posts-actions-col">
+                                    <details class="cms-posts-row-menu">
+                                        <summary aria-label="Thao tác @item.FamilyName @item.GivenName"><span class="material-symbols-outlined" aria-hidden="true">more_horiz</span></summary>
+                                        <div class="cms-posts-row-panel" role="menu">
+                                            <a role="menuitem" href="/admin/pcgd-xmc?id=@item.RoundId&amp;entryId=@item.Id">Sửa</a>
+                                            <button class="cms-posts-menu-btn" type="submit" form="pcgd-entry-delete-@item.Id" role="menuitem">Xóa</button>
+                                        </div>
+                                    </details>
+                                    <form id="pcgd-entry-delete-@item.Id" method="post" asp-page-handler="DeleteEntry" asp-route-id="@item.RoundId" hidden onsubmit="return confirm('Xóa dòng này?');">
+                                        <input type="hidden" name="entryId" value="@item.Id" />
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
         </section>
     }
 </section>
+
+@if (Model.ShowCreate)
+{
+    <dialog class="crm-modal" open data-close-href="/admin/pcgd-xmc" aria-labelledby="pcgd-create-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Điều tra PCGD/XMC</p><h2 id="pcgd-create-title">Tạo đợt điều tra</h2></div>
+                <a class="crm-modal-close" href="/admin/pcgd-xmc" aria-label="Đóng">×</a>
+            </header>
+            <form method="post" asp-page-handler="CreateRound" class="crm-modal-body">
+                <label for="year">Năm<input id="year" name="Year" type="number" min="1" max="9999" value="@Model.Year" /></label>
+                <label for="roundTitle">Tên đợt<input id="roundTitle" name="RoundTitle" maxlength="240" required placeholder="Điều tra PCGD/XMC năm ..." /></label>
+                <footer class="crm-modal-actions">
+                    <a class="education-cancel-button" href="/admin/pcgd-xmc">Hủy</a>
+                    <button class="crm-primary-button" type="submit">Tạo đợt</button>
+                </footer>
+            </form>
+        </section>
+    </dialog>
+}
+
+@if (Model.ShowImport && Model.SelectedRound is not null)
+{
+    <dialog class="crm-modal" open data-close-href="/admin/pcgd-xmc?id=@Model.SelectedRound.Id" aria-labelledby="pcgd-import-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Nhập liệu</p><h2 id="pcgd-import-title">Nhập biểu mẫu Excel</h2></div>
+                <a class="crm-modal-close" href="/admin/pcgd-xmc?id=@Model.SelectedRound.Id" aria-label="Đóng">×</a>
+            </header>
+            <form method="post" enctype="multipart/form-data" asp-page-handler="Import" asp-route-id="@Model.SelectedRound.Id" class="crm-modal-body">
+                <label for="importFile">Workbook .xlsx<input id="importFile" name="ImportFile" type="file" accept=".xlsx" required /></label>
+                <footer class="crm-modal-actions">
+                    <a class="education-cancel-button" href="/admin/pcgd-xmc?id=@Model.SelectedRound.Id">Hủy</a>
+                    <button class="crm-primary-button" type="submit">Nhập dữ liệu</button>
+                </footer>
+            </form>
+        </section>
+    </dialog>
+}
+
+@if (Model.ShowEntry && Model.SelectedRound is not null)
+{
+    <dialog class="crm-modal" open data-close-href="/admin/pcgd-xmc?id=@Model.SelectedRound.Id" aria-labelledby="pcgd-entry-modal">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel crm-modal-wide">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Dòng điều tra</p><h2 id="pcgd-entry-modal">@(Model.EntryId.HasValue ? "Sửa dòng" : "Thêm dòng thủ công")</h2></div>
+                <a class="crm-modal-close" href="/admin/pcgd-xmc?id=@Model.SelectedRound.Id" aria-label="Đóng">×</a>
+            </header>
+            <form method="post" asp-page-handler="SaveEntry" asp-route-id="@Model.SelectedRound.Id" class="crm-modal-body">
+                @if (Model.EntryId is Guid entryId) { <input type="hidden" name="EntryId" value="@entryId" /> }
+                <div class="crm-form-grid" style="padding:0">
+                    <label for="sourceSheet">Sheet nguồn<input id="sourceSheet" name="SourceSheet" value="@Model.SourceSheet" maxlength="100" placeholder="BD / BH / BT / MANUAL" /></label>
+                    <label for="sequence">STT<input id="sequence" name="Sequence" type="number" min="0" value="@Model.Sequence" /></label>
+                    <label for="province">Tỉnh<input id="province" name="Province" value="@Model.Province" maxlength="240" /></label>
+                    <label for="commune">Xã<input id="commune" name="Commune" value="@Model.Commune" maxlength="240" /></label>
+                    <label for="hamlet">Ấp<input id="hamlet" name="Hamlet" value="@Model.Hamlet" maxlength="240" /></label>
+                    <label for="surveyTime">Thời điểm điều tra<input id="surveyTime" name="SurveyTime" value="@Model.SurveyTime" maxlength="240" /></label>
+                    <label for="familyName">Họ và<input id="familyName" name="FamilyName" value="@Model.FamilyName" maxlength="180" /></label>
+                    <label for="givenName">Tên<input id="givenName" name="GivenName" value="@Model.GivenName" maxlength="180" /></label>
+                    <label for="birthYear">Năm sinh<input id="birthYear" name="BirthYear" type="number" value="@Model.BirthYear" /></label>
+                    <label for="female">Nữ<select id="female" name="Female"><option value="false" selected="@(!Model.Female ? "selected" : null)">Không</option><option value="true" selected="@(Model.Female ? "selected" : null)">Có</option></select></label>
+                    <label for="educationLevel">Trình độ VH<input id="educationLevel" name="EducationLevel" value="@Model.EducationLevel" maxlength="240" /></label>
+                    <label for="studyStatus">Đã nghỉ/đang học<input id="studyStatus" name="StudyStatus" value="@Model.StudyStatus" maxlength="120" /></label>
+                    <label class="crm-field-wide" for="address">Địa chỉ<input id="address" name="Address" value="@Model.Address" maxlength="500" /></label>
+                    <label class="crm-field-wide" for="note">Ghi chú<input id="note" name="Note" value="@Model.Note" /></label>
+                </div>
+                <footer class="crm-modal-actions">
+                    <a class="education-cancel-button" href="/admin/pcgd-xmc?id=@Model.SelectedRound.Id">Hủy</a>
+                    <button class="crm-primary-button" type="submit">@(Model.EntryId.HasValue ? "Lưu dòng" : "Thêm dòng")</button>
+                </footer>
+            </form>
+        </section>
+    </dialog>
+}
+
+<script src="~/js/admin-cms-list.js" asp-append-version="true" defer></script>

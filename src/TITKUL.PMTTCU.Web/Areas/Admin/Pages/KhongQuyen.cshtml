@@ -3,8 +3,19 @@
     ViewData["Title"] = "Không có quyền";
 }
 
-<section class="card stack" role="alert">
-    <h1>Không có quyền</h1>
-    <p>Tài khoản này không được mở chức năng vừa chọn.</p>
-    <a class="button" href="/admin">Về tổng quan</a>
+<section class="crm-page">
+    <header class="crm-page-heading">
+        <div>
+            <p class="crm-eyebrow">Cổng quản trị</p>
+            <h1>Không có quyền</h1>
+            <p class="crm-page-description">Tài khoản này không được mở chức năng vừa chọn.</p>
+        </div>
+        <a class="crm-primary-button" href="/admin/tong-quan">Về tổng quan</a>
+    </header>
+    <section class="crm-panel" role="alert">
+        <div class="crm-empty">
+            <strong>Thiếu quyền truy cập</strong>
+            <p>Liên hệ Super Admin nếu bạn cần được cấp thêm quyền.</p>
+        </div>
+    </section>
 </section>

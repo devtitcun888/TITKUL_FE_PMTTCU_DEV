@@ -3,36 +3,69 @@
 @{
     ViewData["Title"] = "Sao lưu";
 }
-<section class="card stack">
-    <h1>Sao lưu</h1>
-    <p>Màn này chỉ đọc. Không hiện đường dẫn tệp, máy chủ hay mật khẩu.</p>
+
+<section class="crm-page">
+    <header class="crm-page-heading">
+        <div>
+            <p class="crm-eyebrow">Quản trị hệ thống</p>
+            <h1>Sao lưu</h1>
+            <p class="crm-page-description">Màn này chỉ đọc. Không hiện đường dẫn tệp, máy chủ hay mật khẩu.</p>
+        </div>
+    </header>
+
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <p class="crm-alert" role="alert">@Model.ErrorMessage</p>
     }
+
     @if (Model.Item is not null)
     {
-        <div class="kpi-grid">
-            <article class="card kpi"><span>Bản database</span><strong>@Model.Item.DatabaseCopies</strong></article>
-            <article class="card kpi"><span>Bản media</span><strong>@Model.Item.MediaCopies</strong></article>
-            <article class="card kpi"><span>Chính sách giữ</span><strong>@Model.Item.RetentionPolicyDays</strong></article>
-        </div>
-        <p>@(Model.Item.MeetsRetention ? "Đủ số bản theo chính sách." : "Chưa đủ 7 bản database và 7 bản media trong thư mục được cấu hình.")</p>
-        <p>Ứng dụng không chạy dump và không phục hồi. Theo dõi sống: @Model.Item.LiveCheck. Sẵn sàng: @Model.Item.ReadyCheck.</p>
-        @if (Model.Item.Copies.Count == 0)
-        {
-            <p class="empty">Chưa thấy gói sao lưu.</p>
-        }
-        else
-        {
-            @foreach (var copy in Model.Item.Copies)
+        <section class="crm-kpi-grid" aria-label="Tình trạng sao lưu">
+            <article class="crm-kpi"><span>Bản database</span><strong>@Model.Item.DatabaseCopies</strong></article>
+            <article class="crm-kpi"><span>Bản media</span><strong>@Model.Item.MediaCopies</strong></article>
+            <article class="crm-kpi"><span>Chính sách giữ (ngày)</span><strong>@Model.Item.RetentionPolicyDays</strong></article>
+        </section>
+        <p class="crm-page-description">@(Model.Item.MeetsRetention ? "Đủ số bản theo chính sách." : "Chưa đủ 7 bản database và 7 bản media trong thư mục được cấu hình.") Ứng dụng không chạy dump và không phục hồi. Theo dõi sống: @Model.Item.LiveCheck. Sẵn sàng: @Model.Item.ReadyCheck.</p>
+
+        <section class="crm-table-card">
+            <header class="crm-table-heading">
+                <div>
+                    <h2>Gói sao lưu</h2>
+                    <p>@Model.Item.Copies.Count gói</p>
+                </div>
+            </header>
+            @if (Model.Item.Copies.Count == 0)
             {
-                <article class="stack">
-                    <h2>@copy.Name</h2>
-                    <p>@copy.Kind · @copy.Bytes byte · @copy.CreatedAt.ToOffset(TimeSpan.FromHours(7)).ToString("yyyy-MM-dd HH:mm")</p>
-                    <p style="overflow-wrap:anywhere">SHA-256 @copy.Sha256</p>
-                </article>
+                <div class="crm-empty"><strong>Chưa thấy gói sao lưu</strong><p>Sao lưu do máy chủ thực hiện bên ngoài ứng dụng.</p></div>
             }
-        }
+            else
+            {
+                <div class="crm-table-scroll">
+                    <table class="crm-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Tên</th>
+                                <th scope="col">Loại</th>
+                                <th scope="col">Dung lượng</th>
+                                <th scope="col">Thời điểm</th>
+                                <th scope="col">SHA-256</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var copy in Model.Item.Copies)
+                        {
+                            <tr>
+                                <td><strong>@copy.Name</strong></td>
+                                <td>@copy.Kind</td>
+                                <td>@copy.Bytes</td>
+                                <td>@copy.CreatedAt.ToOffset(TimeSpan.FromHours(7)).ToString("yyyy-MM-dd HH:mm")</td>
+                                <td><code class="crm-code">@copy.Sha256</code></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
     }
 </section>

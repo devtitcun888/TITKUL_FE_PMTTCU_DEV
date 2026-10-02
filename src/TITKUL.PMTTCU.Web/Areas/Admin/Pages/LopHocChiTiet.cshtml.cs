@@ -214,9 +214,8 @@ public class LopHocChiTietModel : PageModel
         if (!HasView()) return Redirect("/admin/khong-quyen");
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
-        var file = await _api.GetFileAsync($"/api/v1/admin/materials/{materialId}/file", token);
-        if (file.Bytes is null) return NotFound();
-        return File(file.Bytes, file.ContentType ?? "application/octet-stream", file.FileName ?? "hoc-lieu");
+        var file = await _api.GetFileResultAsync($"/api/v1/admin/materials/{materialId}/file", token);
+        return HostFile.Download(file, "hoc-lieu");
     }
 
     public async Task<IActionResult> OnPostRemoveTeacherAsync(Guid id, Guid userId)

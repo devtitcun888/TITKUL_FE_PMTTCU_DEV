@@ -5,9 +5,15 @@
     ViewData["Title"] = "Chứng nhận";
 }
 
-<section class="card stack">
-    <h1>Chứng nhận lớp</h1>
-    <p><a href="/admin/lop-hoc/@Model.ClassId">Về lớp</a></p>
+<section class="crm-page">
+    <header class="crm-page-heading">
+        <div>
+            <p class="crm-eyebrow">Đào tạo &amp; người học</p>
+            <h1>Chứng nhận lớp</h1>
+            <p class="crm-page-description">Ngưỡng chuyên cần tạm thời @Model.MinPercent% (D-03/D-05 chưa chốt mẫu/người ký). Mẫu PDF lập trình, chưa có con dấu.</p>
+        </div>
+        <a class="education-cancel-button" href="/admin/lop-hoc/@Model.ClassId">Về lớp</a>
+    </header>
     <p class="status-note">Ngưỡng chuyên cần tạm thời @Model.MinPercent% (D-03/D-05 chưa chốt mẫu/người ký). Mẫu PDF lập trình, chưa có con dấu.</p>
     @if (!string.IsNullOrEmpty(Model.SuccessMessage))
     {

@@ -5,8 +5,11 @@
     ViewData["Description"] = "Trao đổi với Trung tâm về phản ánh đã gửi.";
     ViewData["Robots"] = "noindex, nofollow, noarchive";
 }
-<section class="card stack">
-    <h1>Theo dõi phản ánh</h1>
+<section class="card stack public-detail-page">
+    <header class="public-detail-heading">
+        <p class="public-detail-eyebrow">Liên hệ</p>
+        <h1>Theo dõi phản ánh</h1>
+    </header>
     @if (!string.IsNullOrWhiteSpace(Model.Error)) { <p class="alert" role="alert">@Model.Error</p> }
     @if (Model.Thread is not null)
     {

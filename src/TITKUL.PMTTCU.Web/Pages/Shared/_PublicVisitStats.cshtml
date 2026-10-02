@@ -1,0 +1,26 @@
+@model TITKUL.PMTTCU.Web.Pages.IndexModel.PublicVisitStats?
+<section class="portal-module portal-visit-stats public-list-stats" aria-labelledby="public-visit-stats-title">
+    <div class="portal-module-heading">
+        <h2 id="public-visit-stats-title"><span class="material-symbols-outlined portal-module-icon" aria-hidden="true">bar_chart</span>Thống kê truy cập</h2>
+    </div>
+    @if (Model is { } visits)
+    {
+        <div class="portal-visit-total">
+            <span>Tổng lượt truy cập</span>
+            <strong aria-label="@($"{TITKUL.PMTTCU.Web.Pages.IndexModel.FormatVisitCount(visits.Total)} lượt truy cập")"><span aria-hidden="true">@visits.Total.ToString("D8", System.Globalization.CultureInfo.InvariantCulture)</span></strong>
+        </div>
+        <dl class="portal-visit-stats-list">
+            <div><dt>Đang online</dt><dd>@TITKUL.PMTTCU.Web.Pages.IndexModel.FormatVisitCount(visits.OnlineNow)</dd></div>
+            <div><dt>Hôm nay</dt><dd>@TITKUL.PMTTCU.Web.Pages.IndexModel.FormatVisitCount(visits.Today)</dd></div>
+            <div><dt>Hôm qua</dt><dd>@TITKUL.PMTTCU.Web.Pages.IndexModel.FormatVisitCount(visits.Yesterday)</dd></div>
+            <div><dt>Tuần này</dt><dd>@TITKUL.PMTTCU.Web.Pages.IndexModel.FormatVisitCount(visits.ThisWeek)</dd></div>
+            <div><dt>Tuần trước</dt><dd>@TITKUL.PMTTCU.Web.Pages.IndexModel.FormatVisitCount(visits.LastWeek)</dd></div>
+            <div><dt>Tháng này</dt><dd>@TITKUL.PMTTCU.Web.Pages.IndexModel.FormatVisitCount(visits.ThisMonth)</dd></div>
+            <div><dt>Tháng trước</dt><dd>@TITKUL.PMTTCU.Web.Pages.IndexModel.FormatVisitCount(visits.LastMonth)</dd></div>
+        </dl>
+    }
+    else
+    {
+        <div class="portal-empty" role="status">Chưa tải được số liệu truy cập.</div>
+    }
+</section>

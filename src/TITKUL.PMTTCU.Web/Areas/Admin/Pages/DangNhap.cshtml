@@ -6,22 +6,27 @@
 }
 
 <section class="card login-card stack">
-<h1>Đăng nhập quản trị</h1>
-<form method="post" class="stack">
-    <div>
-        <label for="username">Tên đăng nhập</label>
-        <input id="username" name="Username" autocomplete="username" />
-    </div>
-    <div>
-        <label for="password">Mật khẩu</label>
-        <input id="password" name="Password" type="password" autocomplete="current-password" />
-    </div>
-    <div>
-        <label for="otpCode">Mã xác thực hai bước (nếu đã bật)</label>
-        <input id="otpCode" name="OtpCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" />
-    </div>
-    <button type="submit">Đăng nhập</button>
-</form>
+    <header class="login-brand">
+        <span class="side-nav-mark" aria-hidden="true">TT</span>
+        <h1>Trung tâm Tân Trụ</h1>
+        <p>Cổng quản trị</p>
+    </header>
+    <p class="login-lead">Đăng nhập hệ thống quản trị Trung tâm dịch vụ sự nghiệp công xã Tân Trụ.</p>
+    <form method="post" class="stack">
+        <div>
+            <label for="username">Tên đăng nhập</label>
+            <input id="username" name="Username" autocomplete="username" />
+        </div>
+        <div>
+            <label for="password">Mật khẩu</label>
+            <input id="password" name="Password" type="password" autocomplete="current-password" />
+        </div>
+        <div>
+            <label for="otpCode">Mã xác thực hai bước (nếu đã bật)</label>
+            <input id="otpCode" name="OtpCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" />
+        </div>
+        <button type="submit">Đăng nhập</button>
+    </form>
 @if (!string.IsNullOrEmpty(Model.ErrorMessage))
 {
     <p class="alert" role="alert">@Model.ErrorMessage</p>

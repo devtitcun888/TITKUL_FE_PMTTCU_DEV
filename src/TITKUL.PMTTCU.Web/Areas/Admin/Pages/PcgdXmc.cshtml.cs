@@ -1,8 +1,11 @@
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.WebUtilities;
 using TITKUL.PMTTCU.Web.ApiClients;
+using TITKUL.PMTTCU.Web.Areas.Admin;
 using TITKUL.PMTTCU.Web.Observability;
 
 namespace TITKUL.PMTTCU.Web.Areas.Admin.Pages;
@@ -17,6 +20,16 @@ public sealed class PcgdXmcModel : PageModel
     public RoundItem? SelectedRound { get; private set; }
     public string? ErrorMessage { get; private set; }
     public string? SuccessMessage { get; private set; }
+    public bool ShowCreate { get; private set; }
+    public bool ShowImport { get; private set; }
+    public bool ShowEntry { get; private set; }
+    public string? Query { get; private set; }
+    public int? FilterYear { get; private set; }
+    public string? Sort { get; private set; }
+    public string Dir { get; private set; } = "asc";
+    public string? EntrySort { get; private set; }
+    public string EntryDir { get; private set; } = "asc";
+    public bool FiltersActive => Query is not null || FilterYear is not null;
 
     [BindProperty(SupportsGet = true)] public Guid? Id { get; set; }
     [BindProperty(SupportsGet = true)] public Guid? EntryId { get; set; }
@@ -38,7 +51,51 @@ public sealed class PcgdXmcModel : PageModel
     [BindProperty] public string? Note { get; set; }
     [BindProperty] public IFormFile? ImportFile { get; set; }
 
-    public Task<IActionResult> OnGetAsync(Guid? id, Guid? entryId) => LoadAsync(id, entryId);
+    public async Task<IActionResult> OnGetAsync(string? q, int? year, string? sort, string? dir, string? esort, string? edir, Guid? id, Guid? entryId, bool create = false, bool import = false, bool entry = false)
+    {
+        var page = await LoadAsync(q, year, sort, dir, esort, edir, id, entryId);
+        ShowCreate = create;
+        ShowImport = import && SelectedRound is not null;
+        ShowEntry = SelectedRound is not null && (EntryId.HasValue || entry);
+        return page;
+    }
+
+    public string ListUrl(string? q = null, int? year = null, string? sort = null, string? dir = null, Guid? id = null, bool omitId = false, bool clearYear = false)
+    {
+        var query = new Dictionary<string, string?>();
+        var nextQ = q ?? Query;
+        var nextYear = clearYear ? null : year ?? FilterYear;
+        var nextId = omitId ? null : id ?? Id;
+        if (!string.IsNullOrWhiteSpace(nextQ)) query["q"] = nextQ;
+        if (nextYear is int y) query["year"] = y.ToString(CultureInfo.InvariantCulture);
+        CmsListSort.Append(query, sort ?? Sort, dir ?? Dir);
+        if (!string.IsNullOrWhiteSpace(EntrySort))
+        {
+            query["esort"] = EntrySort;
+            if (EntryDir == "desc") query["edir"] = "desc";
+        }
+        if (nextId is Guid roundId) query["id"] = roundId.ToString();
+        return QueryHelpers.AddQueryString("/admin/pcgd-xmc", query);
+    }
+
+    public string SortUrl(string column) => ListUrl(sort: column, dir: CmsListSort.NextDir(Sort, column, Dir));
+
+    public string EntrySortUrl(string column)
+    {
+        var query = new Dictionary<string, string?>();
+        if (Query is not null) query["q"] = Query;
+        if (FilterYear is int y) query["year"] = y.ToString(CultureInfo.InvariantCulture);
+        CmsListSort.Append(query, Sort, Dir);
+        var next = CmsListSort.Normalize(column, "sheet", "hamlet", "seq", "name", "birth", "female");
+        var nextDir = CmsListSort.NextDir(EntrySort, column, EntryDir);
+        if (next is not null)
+        {
+            query["esort"] = next;
+            if (nextDir == "desc") query["edir"] = "desc";
+        }
+        if (Id is Guid roundId) query["id"] = roundId.ToString();
+        return QueryHelpers.AddQueryString("/admin/pcgd-xmc", query);
+    }
 
     public async Task<IActionResult> OnPostCreateRoundAsync()
     {
@@ -49,7 +106,8 @@ public sealed class PcgdXmcModel : PageModel
         if (response is null || !response.IsSuccessStatusCode)
         {
             ErrorMessage = await ReadErrorAsync(response) ?? "Không tạo được đợt điều tra.";
-            return await LoadAsync(null, null);
+            ShowCreate = true;
+            return await LoadAsync(Query, FilterYear, Sort, Dir, EntrySort, EntryDir, null, null);
         }
         var result = await response.Content.ReadFromJsonAsync<ItemEnvelope<RoundItem>>();
         return result?.Item is RoundItem round ? Redirect($"/admin/pcgd-xmc?id={round.Id}") : Redirect("/admin/pcgd-xmc");
@@ -63,7 +121,8 @@ public sealed class PcgdXmcModel : PageModel
         if (ImportFile is null || ImportFile.Length == 0)
         {
             ErrorMessage = "Chọn workbook Excel PCGD/XMC (.xlsx).";
-            return await LoadAsync(id, null);
+            ShowImport = true;
+            return await LoadAsync(Query, FilterYear, Sort, Dir, EntrySort, EntryDir, id, null);
         }
         using var content = new MultipartFormDataContent();
         await using var stream = ImportFile.OpenReadStream();
@@ -74,11 +133,12 @@ public sealed class PcgdXmcModel : PageModel
         if (response is null || !response.IsSuccessStatusCode)
         {
             ErrorMessage = await ReadErrorAsync(response) ?? "Không nhập được workbook.";
-            return await LoadAsync(id, null);
+            ShowImport = true;
+            return await LoadAsync(Query, FilterYear, Sort, Dir, EntrySort, EntryDir, id, null);
         }
         var result = await response.Content.ReadFromJsonAsync<ImportResult>();
         SuccessMessage = $"Đã nhập {result?.Created ?? 0} dòng; bỏ qua {result?.SkippedBlankRows ?? 0} dòng trống.";
-        return await LoadAsync(id, null);
+        return await LoadAsync(Query, FilterYear, Sort, Dir, EntrySort, EntryDir, id, null);
     }
 
     public async Task<IActionResult> OnPostSaveEntryAsync(Guid id)
@@ -95,7 +155,8 @@ public sealed class PcgdXmcModel : PageModel
         if (response is null || !response.IsSuccessStatusCode)
         {
             ErrorMessage = await ReadErrorAsync(response) ?? "Không lưu được dòng PCGD/XMC.";
-            return await LoadAsync(id, EntryId);
+            ShowEntry = true;
+            return await LoadAsync(Query, FilterYear, Sort, Dir, EntrySort, EntryDir, id, EntryId);
         }
         return Redirect($"/admin/pcgd-xmc?id={id}");
     }
@@ -109,7 +170,7 @@ public sealed class PcgdXmcModel : PageModel
         if (response is null || !response.IsSuccessStatusCode)
         {
             ErrorMessage = await ReadErrorAsync(response) ?? "Không xóa được dòng dữ liệu.";
-            return await LoadAsync(id, null);
+            return await LoadAsync(Query, FilterYear, Sort, Dir, EntrySort, EntryDir, id, null);
         }
         return Redirect($"/admin/pcgd-xmc?id={id}");
     }
@@ -126,19 +187,64 @@ public sealed class PcgdXmcModel : PageModel
     private bool CanManage() => (HttpContext.Items["StaffProfile"] as StaffProfile)?.Permissions?.Contains("education.manage") == true;
     private string? Token() => Request.Cookies[AdminGateMiddleware.CookieName];
 
-    private async Task<IActionResult> LoadAsync(Guid? id, Guid? entryId)
+    private async Task<IActionResult> LoadAsync(string? q, int? year, string? sort, string? dir, string? esort, string? edir, Guid? id, Guid? entryId)
     {
         if (!CanManage()) return Redirect("/admin/khong-quyen");
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
+        Query = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
+        FilterYear = year is int y && y >= 1 ? y : null;
+        Sort = CmsListSort.Normalize(sort, "year", "title", "created");
+        Dir = CmsListSort.Dir(dir);
+        EntrySort = CmsListSort.Normalize(esort, "sheet", "hamlet", "seq", "name", "birth", "female");
+        EntryDir = CmsListSort.Dir(edir);
         var rounds = await _api.GetJsonAsync<ListEnvelope<RoundItem>>("/api/v1/admin/pcgd-xmc/rounds", token);
-        Rounds = rounds?.Items ?? [];
+        var all = rounds?.Items ?? [];
+        if (rounds is null && string.IsNullOrEmpty(ErrorMessage)) ErrorMessage = "Không tải được các đợt điều tra.";
+        IEnumerable<RoundItem> filtered = all;
+        if (FilterYear is int filterYear) filtered = filtered.Where(item => item.Year == filterYear);
+        if (Query is not null)
+        {
+            filtered = filtered.Where(item =>
+                item.Title.Contains(Query, StringComparison.CurrentCultureIgnoreCase)
+                || (item.Year?.ToString().Contains(Query, StringComparison.Ordinal) ?? false));
+        }
+        Rounds = filtered.ToArray();
+        if (Sort is not null)
+        {
+            Rounds = CmsListSort.Order(Rounds, Dir, Sort switch
+            {
+                "title" => Rounds.OrderBy(item => item.Title, StringComparer.CurrentCultureIgnoreCase),
+                "created" => Rounds.OrderBy(item => item.CreatedAt),
+                _ => Rounds.OrderBy(item => item.Year ?? 0)
+            });
+        }
         if (id is Guid roundId)
         {
             var detail = await _api.GetJsonAsync<RoundDetailEnvelope>($"/api/v1/admin/pcgd-xmc/rounds/{roundId}", token);
             SelectedRound = detail?.Item;
-            Entries = detail?.Entries ?? [];
-            if (entryId is Guid selectedId && Entries.FirstOrDefault(row => row.Id == selectedId) is { } item) LoadEntry(item);
+            var entries = detail?.Entries ?? [];
+            if (Query is not null && SelectedRound is not null)
+            {
+                entries = entries.Where(item =>
+                    ($"{item.FamilyName} {item.GivenName}").Contains(Query, StringComparison.CurrentCultureIgnoreCase)
+                    || (item.Hamlet?.Contains(Query, StringComparison.CurrentCultureIgnoreCase) ?? false)
+                    || (item.Address?.Contains(Query, StringComparison.CurrentCultureIgnoreCase) ?? false)).ToArray();
+            }
+            Entries = entries;
+            if (EntrySort is not null)
+            {
+                Entries = CmsListSort.Order(Entries, EntryDir, EntrySort switch
+                {
+                    "sheet" => Entries.OrderBy(item => item.SourceSheet, StringComparer.OrdinalIgnoreCase),
+                    "hamlet" => Entries.OrderBy(item => item.Hamlet ?? "", StringComparer.CurrentCultureIgnoreCase),
+                    "name" => Entries.OrderBy(item => item.FamilyName ?? "", StringComparer.CurrentCultureIgnoreCase).ThenBy(item => item.GivenName ?? "", StringComparer.CurrentCultureIgnoreCase),
+                    "birth" => Entries.OrderBy(item => item.BirthYear ?? 0),
+                    "female" => Entries.OrderBy(item => item.Female),
+                    _ => Entries.OrderBy(item => item.Sequence)
+                });
+            }
+            if (entryId is Guid selectedId && (detail?.Entries ?? []).FirstOrDefault(row => row.Id == selectedId) is { } item) LoadEntry(item);
         }
         return Page();
     }

@@ -32,7 +32,11 @@
                     @if (item.PublishedAt is DateTimeOffset publishedAt) { <p class="muted">Công bố ngày @publishedAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy")</p> }
                     @if (item.EffectiveFrom is not null || item.ExpiresOn is not null) { <p class="status-note">Thời hạn: @(item.EffectiveFrom?.ToString("dd/MM/yyyy") ?? "chưa ghi ngày bắt đầu") – @(item.ExpiresOn?.ToString("dd/MM/yyyy") ?? "không giới hạn") · @(expired ? "Đã hết hiệu lực" : notYetEffective ? "Chưa đến ngày hiệu lực" : "Trong thời hạn")</p> }
                     @if (!string.IsNullOrWhiteSpace(item.Summary)) { <p>@item.Summary</p> }
-                    <p><a class="button" href="/bieu-mau?handler=Tai&amp;id=@item.Id">Tải @item.FileName</a></p>
+                    @if (!expired && !notYetEffective)
+                    {
+                        <p><a class="button" href="/bieu-mau/@item.Id">Chi tiết và xem biểu mẫu</a> <a class="button-quiet" href="@HostFile.Href(item.FileUrl, "/bieu-mau?handler=Tai&id=" + item.Id)">Tải @item.FileName</a></p>
+                    }
+                    else { <p class="muted">Tệp ngoài thời hạn hiệu lực, hiện không thể xem hoặc tải.</p> }
                 </li>
             }
         </ul>

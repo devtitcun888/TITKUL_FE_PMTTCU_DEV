@@ -1,94 +1,159 @@
 @page "/admin/phong-hoc"
+@using TITKUL.PMTTCU.Web.Areas.Admin
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.PhongHocModel
 @{
     ViewData["Title"] = "Phòng học";
 }
 
-<section class="card stack admin-education-page education-legacy-page">
-    <h1>Phòng học</h1>
+<section class="crm-page cms-posts-page cms-list-page">
+
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <p class="crm-alert" role="alert">@Model.ErrorMessage</p>
     }
-    @if (Model.CanManage)
-    {
-        <form method="post" class="stack">
-            @if (Model.Id is Guid editId)
-            {
-                <input type="hidden" name="Id" value="@editId" />
-                <p class="status-note">Đang sửa @Model.Code</p>
-            }
-            <div>
-                <label for="code">Mã</label>
-                <input id="code" name="Code" value="@Model.Code" required maxlength="50" autocomplete="off" />
-            </div>
-            <div>
-                <label for="name">Tên</label>
-                <input id="name" name="Name" value="@Model.Name" required maxlength="180" />
-            </div>
-            <div>
-                <label for="location">Địa điểm</label>
-                <input id="location" name="Location" value="@Model.Location" required maxlength="300" />
-            </div>
-            <div>
-                <label for="capacity">Sức chứa</label>
-                <input id="capacity" name="Capacity" type="number" min="1" value="@Model.Capacity" />
-            </div>
-            <div>
-                <label for="active">Hiệu lực</label>
-                <select id="active" name="Active">
-                    <option value="true" selected="@(Model.Active ? "selected" : null)">Đang dùng</option>
-                    <option value="false" selected="@(!Model.Active ? "selected" : null)">Ngưng</option>
+
+    <form class="cms-posts-toolbar" method="get" action="/admin/phong-hoc" role="search" data-cms-autofilter data-cols="2">
+        @await Html.PartialAsync("Shared/_CmsSortHidden", (Model.Sort, Model.Dir))
+        <button class="cms-posts-filter-toggle @(Model.FiltersActive ? "has-active-filters" : null)" type="button" aria-label="Bộ lọc" aria-expanded="false" aria-controls="edu-room-filter-fields" data-cms-filter-toggle>
+            <svg class="cms-posts-filter-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                <path d="M4 5h16l-6.5 7.5v5l-3 1.5v-6.5L4 5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </button>
+        <div class="cms-posts-filter-fields" id="edu-room-filter-fields">
+            <label class="cms-posts-field">
+                <span>Từ khóa</span>
+                <span class="cms-posts-search">
+                    <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                    <input name="q" type="search" value="@Model.Query" placeholder="Mã, tên hoặc địa điểm" />
+                </span>
+            </label>
+            <label class="cms-posts-field">
+                <span>Hiệu lực</span>
+                <select name="status" data-cms-filter>
+                    <option value="">Tất cả hiệu lực</option>
+                    <option value="active" selected="@(Model.StatusFilter == "active" ? "selected" : null)">Đang dùng</option>
+                    <option value="inactive" selected="@(Model.StatusFilter == "inactive" ? "selected" : null)">Ngưng</option>
                 </select>
+            </label>
+            <div class="cms-posts-toolbar-actions">
+                <a class="cms-posts-reset" href="/admin/phong-hoc">
+                    <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
+                    Xóa lọc
+                </a>
             </div>
-            <div class="row-actions">
-                <button type="submit">@(Model.Editing ? "Lưu phòng" : "Thêm phòng")</button>
-                @if (Model.Editing)
-                {
-                    <a class="button button-quiet" href="/admin/phong-hoc">Hủy sửa</a>
-                }
-            </div>
-        </form>
-    }
-    @if (Model.Items.Count == 0)
-    {
-        <p class="empty">Chưa có phòng học.</p>
-    }
-    else
-    {
-        <div class="table-scroll">
-            <table>
-                <caption>Danh sách phòng học</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">Mã</th>
-                        <th scope="col">Tên</th>
-                        <th scope="col">Địa điểm</th>
-                        <th scope="col">Sức chứa</th>
-                        <th scope="col">Hiệu lực</th>
-                        @if (Model.CanManage)
-                        {
-                            <th scope="col">Thao tác</th>
-                        }
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var item in Model.Items)
-                {
-                    <tr>
-                        <td>@item.Code</td>
-                        <td>@item.Name</td>
-                        <td>@item.Location</td>
-                        <td>@(item.Capacity?.ToString() ?? "—")</td>
-                        <td>@(item.Active ? "Đang dùng" : "Ngưng")</td>
-                        @if (Model.CanManage)
-                        {
-                            <td><a href="/admin/phong-hoc?id=@item.Id">Sửa</a></td>
-                        }
-                    </tr>
-                }
-                </tbody>
-            </table>
         </div>
-    }
+    </form>
+
+    <section class="cms-posts-kpis" data-cols="3" aria-label="Thống kê phòng học">
+        <a class="cms-posts-kpi is-all @(Model.StatusFilter is null ? "is-current" : null)" href="@Model.ListUrl(status: "")">
+            <span class="cms-posts-kpi-icon" aria-hidden="true"><span class="material-symbols-outlined">meeting_room</span></span>
+            <span><span class="cms-posts-kpi-label">Tất cả</span><strong>@Model.TotalAll.ToString("N0")</strong></span>
+        </a>
+        <a class="cms-posts-kpi is-published @(Model.StatusFilter == "active" ? "is-current" : null)" href="@Model.ListUrl(status: "active")">
+            <span class="cms-posts-kpi-icon" aria-hidden="true"><span class="cms-posts-dot"></span></span>
+            <span><span class="cms-posts-kpi-label">Đang dùng</span><strong>@Model.TotalActive.ToString("N0")</strong></span>
+        </a>
+        <a class="cms-posts-kpi is-cancelled @(Model.StatusFilter == "inactive" ? "is-current" : null)" href="@Model.ListUrl(status: "inactive")">
+            <span class="cms-posts-kpi-icon" aria-hidden="true"><span class="material-symbols-outlined">keep</span></span>
+            <span><span class="cms-posts-kpi-label">Ngưng</span><strong>@Model.TotalInactive.ToString("N0")</strong></span>
+        </a>
+    </section>
+
+    <section class="cms-posts-list" aria-labelledby="room-table-title">
+        <header class="cms-posts-list-heading">
+            <div>
+                <h2 id="room-table-title">Danh sách phòng học</h2>
+                <p>@Model.Items.Count.ToString("N0") phòng</p>
+            </div>
+            <div class="cms-posts-list-actions">
+                @if (Model.CanManage)
+                {
+                    <a class="crm-primary-button cms-posts-create" href="/admin/phong-hoc?create=true"><span class="material-symbols-outlined" aria-hidden="true">add</span> Thêm phòng</a>
+                }
+            </div>
+        </header>
+        @if (Model.Items.Count == 0)
+        {
+            <div class="cms-posts-empty">
+                <span class="material-symbols-outlined" aria-hidden="true">meeting_room</span>
+                <strong>@(Model.FiltersActive ? "Không tìm thấy phòng học phù hợp" : "Chưa có phòng học")</strong>
+                <p>@(Model.FiltersActive ? "Thử xóa bộ lọc hoặc đổi từ khóa." : "Thêm phòng để gán vào lớp và kiểm tra trùng lịch.")</p>
+            </div>
+        }
+        else
+        {
+            <div class="cms-posts-table-scroll">
+                <table class="cms-posts-table">
+                    <thead>
+                        <tr>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "code", Model.Dir)" href="@Model.SortUrl("code")">Mã <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "code", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "name", Model.Dir)" href="@Model.SortUrl("name")">Tên <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "name", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "location", Model.Dir)" href="@Model.SortUrl("location")">Địa điểm <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "location", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "capacity", Model.Dir)" href="@Model.SortUrl("capacity")">Sức chứa <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "capacity", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "status", Model.Dir)" href="@Model.SortUrl("status")">Hiệu lực <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "status", Model.Dir)</span></a></th>
+                            @if (Model.CanManage) { <th class="cms-posts-actions-col" scope="col">Thao tác</th> }
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        var statusClass = item.Active ? "published" : "cancelled";
+                        <tr>
+                            <td><span class="cms-posts-category">@item.Code</span></td>
+                            <td class="cms-posts-title-cell"><strong>@item.Name</strong></td>
+                            <td>@item.Location</td>
+                            <td>@(item.Capacity?.ToString("N0") ?? "—")</td>
+                            <td><span class="cms-posts-status is-@statusClass"><i aria-hidden="true"></i>@(item.Active ? "Đang dùng" : "Ngưng")</span></td>
+                            @if (Model.CanManage)
+                            {
+                                <td class="cms-posts-actions-col">
+                                    <details class="cms-posts-row-menu">
+                                        <summary aria-label="Thao tác @item.Name"><span class="material-symbols-outlined" aria-hidden="true">more_horiz</span></summary>
+                                        <div class="cms-posts-row-panel" role="menu">
+                                            <a role="menuitem" href="/admin/phong-hoc?id=@item.Id">Sửa</a>
+                                        </div>
+                                    </details>
+                                </td>
+                            }
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
 </section>
+
+@if (Model.ShowModal && Model.CanManage)
+{
+    <dialog class="crm-modal" open data-close-href="/admin/phong-hoc" aria-labelledby="room-modal-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Danh mục đào tạo</p><h2 id="room-modal-title">@(Model.Editing ? "Cập nhật phòng học" : "Thêm phòng học")</h2></div>
+                <a class="crm-modal-close" href="/admin/phong-hoc" aria-label="Đóng">×</a>
+            </header>
+            <form method="post" class="crm-modal-body">
+                @Html.AntiForgeryToken()
+                @if (Model.Id is Guid editId) { <input type="hidden" name="Id" value="@editId" /> }
+                <div class="education-form-field"><label for="code">Mã <span>*</span></label><input id="code" name="Code" value="@Model.Code" required maxlength="50" autocomplete="off" /></div>
+                <div class="education-form-field"><label for="name">Tên <span>*</span></label><input id="name" name="Name" value="@Model.Name" required maxlength="180" /></div>
+                <div class="education-form-field"><label for="location">Địa điểm <span>*</span></label><input id="location" name="Location" value="@Model.Location" required maxlength="300" /></div>
+                <div class="education-form-field"><label for="capacity">Sức chứa</label><input id="capacity" name="Capacity" type="number" min="1" value="@Model.Capacity" /></div>
+                <div class="education-form-field">
+                    <label for="active">Hiệu lực <span>*</span></label>
+                    <select id="active" name="Active">
+                        <option value="true" selected="@(Model.Active ? "selected" : null)">Đang dùng</option>
+                        <option value="false" selected="@(!Model.Active ? "selected" : null)">Ngưng</option>
+                    </select>
+                </div>
+                <footer class="crm-modal-actions">
+                    <a class="education-cancel-button" href="/admin/phong-hoc">Hủy</a>
+                    <button class="crm-primary-button" type="submit">@(Model.Editing ? "Lưu phòng" : "Thêm phòng")</button>
+                </footer>
+            </form>
+        </section>
+    </dialog>
+}
+
+<script src="~/js/admin-cms-list.js" asp-append-version="true" defer></script>

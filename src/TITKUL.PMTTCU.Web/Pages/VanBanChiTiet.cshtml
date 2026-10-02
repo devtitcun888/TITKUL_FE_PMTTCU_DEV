@@ -1,0 +1,53 @@
+@page "/van-ban/{id:guid}"
+@model TITKUL.PMTTCU.Web.Pages.VanBanChiTietModel
+@{
+    ViewData["Title"] = Model.Item?.Title ?? "Chi tiết văn bản";
+}
+
+@if (Model.Item is { } item)
+{
+    <article class="public-document-detail">
+        <a class="public-document-back" href="/van-ban"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span> Danh sách văn bản</a>
+        <header class="public-document-heading">
+            <p class="public-document-eyebrow">Văn bản</p>
+            <h1>@item.Title</h1>
+            <div class="public-document-actions">
+                @if (Model.CanPreview)
+                {
+                    <a class="button" href="@HostFile.Href(item.FileUrl, "/van-ban/pdf/" + item.Id)" target="_blank" rel="noopener">Mở PDF trong tab mới</a>
+                }
+                @if (Model.CanDownload) { <a class="button-quiet" href="@HostFile.Href(item.FileUrl, "/van-ban?handler=Tai&id=" + item.Id)">Tải @item.FileName</a> }
+            </div>
+        </header>
+
+        <dl class="public-document-metadata">
+            @if (!string.IsNullOrWhiteSpace(item.Symbol)) { <div><dt>Số / ký hiệu</dt><dd>@item.Symbol</dd></div> }
+            @if (!string.IsNullOrWhiteSpace(item.Issuer)) { <div><dt>Cơ quan ban hành</dt><dd>@item.Issuer</dd></div> }
+            @if (item.IssuedOn is DateOnly issuedOn) { <div><dt>Ngày ban hành</dt><dd>@issuedOn.ToString("dd/MM/yyyy")</dd></div> }
+            @if (!string.IsNullOrWhiteSpace(item.Field)) { <div><dt>Lĩnh vực</dt><dd>@item.Field</dd></div> }
+            @if (item.EffectiveFrom is not null) { <div><dt>Ngày hiệu lực</dt><dd>@item.EffectiveFrom.Value.ToString("dd/MM/yyyy")</dd></div> }
+            @if (item.ExpiresOn is not null) { <div><dt>Ngày hết hiệu lực</dt><dd>@item.ExpiresOn.Value.ToString("dd/MM/yyyy")</dd></div> }
+            <div><dt>Tệp đính kèm</dt><dd>@item.FileName</dd></div>
+        </dl>
+
+        @if (Model.CanPreview)
+        {
+            <section class="public-document-viewer" aria-label="Nội dung PDF">
+                <div class="public-document-viewer-heading">
+                    <div><p class="public-document-eyebrow">Bản xem trực tiếp</p><h2>@item.FileName</h2></div>
+                    <a href="@HostFile.Href(item.FileUrl, "/van-ban?handler=Tai&id=" + item.Id)">Tải PDF</a>
+                </div>
+                <iframe src="@HostFile.Href(item.FileUrl, "/van-ban/pdf/" + item.Id)" title="PDF: @item.Title" loading="eager"></iframe>
+                <p class="public-document-fallback">Nếu trình duyệt không hiển thị PDF, hãy <a href="@HostFile.Href(item.FileUrl, "/van-ban/pdf/" + item.Id)" target="_blank" rel="noopener">mở tệp trong tab mới</a> hoặc tải tệp xuống.</p>
+            </section>
+        }
+        else
+        {
+            <section class="public-document-download">
+                <span class="material-symbols-outlined" aria-hidden="true">description</span>
+                <div><h2>@(Model.IsPdf ? "Tệp được cấu hình chỉ tải xuống" : "Không thể xem trước định dạng này")</h2><p>Hãy tải tệp về để mở bằng ứng dụng phù hợp.</p></div>
+                @if (Model.CanDownload) { <a class="button" href="@HostFile.Href(item.FileUrl, "/van-ban?handler=Tai&id=" + item.Id)">Tải tệp</a> }
+            </section>
+        }
+    </article>
+}

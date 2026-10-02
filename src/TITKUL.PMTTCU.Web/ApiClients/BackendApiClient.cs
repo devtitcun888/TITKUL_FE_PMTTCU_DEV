@@ -191,9 +191,25 @@ public sealed class BackendApiClient
     public async Task<(byte[]? Bytes, string? ContentType, string? FileName)> GetFileAsync(string path, string? token = null)
     {
         var result = await GetFileResultAsync(path, token);
-        return result.IsSuccess
-            ? (result.Bytes, result.ContentType, result.FileName)
-            : (null, null, null);
+        if (result.IsSuccess) return (result.Bytes, result.ContentType, result.FileName);
+        if (!HostFile.IsPublicUrl(result.RedirectUrl)) return (null, null, null);
+        try
+        {
+            using var host = await HttpClient.GetAsync(result.RedirectUrl);
+            if (!host.IsSuccessStatusCode) return (null, null, null);
+            var name = host.Content.Headers.ContentDisposition?.FileNameStar
+                ?? host.Content.Headers.ContentDisposition?.FileName?.Trim('"');
+            var bytes = await host.Content.ReadAsByteArrayAsync();
+            return (bytes, host.Content.Headers.ContentType?.MediaType, name);
+        }
+        catch (HttpRequestException)
+        {
+            return (null, null, null);
+        }
+        catch (TaskCanceledException)
+        {
+            return (null, null, null);
+        }
     }
 
     public async Task<PublicFileResult> GetFileResultAsync(string path, string? token = null)
@@ -207,6 +223,16 @@ public sealed class BackendApiClient
             }
 
             using var response = await HttpClient.SendAsync(request);
+            if ((int)response.StatusCode is >= 300 and < 400)
+            {
+                var location = response.Headers.Location;
+                if (location is null) return new(null, null, null, response.StatusCode);
+                var absolute = location.IsAbsoluteUri
+                    ? location.ToString()
+                    : HttpClient.BaseAddress is { } baseUri ? new Uri(baseUri, location).ToString() : location.ToString();
+                return new(null, null, null, response.StatusCode, HostFile.IsPublicUrl(absolute) ? absolute : null);
+            }
+
             if (!response.IsSuccessStatusCode) return new(null, null, null, response.StatusCode);
             var name = response.Content.Headers.ContentDisposition?.FileNameStar
                 ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"');
@@ -255,7 +281,7 @@ public sealed record PublicJsonResult<T>(T? Value, System.Net.HttpStatusCode? St
     public bool IsAvailable => StatusCode is { } status && (int)status >= 200 && (int)status < 300 && !PayloadInvalid;
 }
 
-public sealed record PublicFileResult(byte[]? Bytes, string? ContentType, string? FileName, System.Net.HttpStatusCode? StatusCode)
+public sealed record PublicFileResult(byte[]? Bytes, string? ContentType, string? FileName, System.Net.HttpStatusCode? StatusCode, string? RedirectUrl = null)
 {
     public bool IsNotFound => StatusCode == System.Net.HttpStatusCode.NotFound;
     public bool IsSuccess => StatusCode is { } status && (int)status >= 200 && (int)status < 300 && Bytes is not null;

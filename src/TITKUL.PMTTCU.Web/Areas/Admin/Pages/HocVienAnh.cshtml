@@ -1,0 +1,32 @@
+@page "/admin/hoc-vien/{id:guid}/anh"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.HocVienAnhModel
+@{
+    ViewData["Title"] = "Ảnh hồ sơ học viên";
+}
+<section class="crm-page">
+    <header class="crm-page-heading">
+        <div>
+            <p class="crm-eyebrow">Đào tạo &amp; người học</p>
+            <h1>Ảnh hồ sơ</h1>
+            <p class="crm-page-description">@(string.IsNullOrWhiteSpace(Model.LearnerName) ? "Tải ảnh PNG hoặc JPEG, tối đa 5 MiB." : "Ảnh của " + Model.LearnerName + ".")</p>
+        </div>
+        <a class="education-cancel-button" href="/admin/hoc-vien/@Model.LearnerId">Về hồ sơ</a>
+    </header>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <p class="crm-alert" role="alert">@Model.ErrorMessage</p>
+    }
+    <section class="crm-panel">
+        @if (Model.HasPhoto)
+        {
+            <p><img src="/admin/hoc-vien/@Model.LearnerId/anh?handler=File" alt="Ảnh hồ sơ hiện tại" width="160" height="160" /></p>
+        }
+        <form method="post" enctype="multipart/form-data" class="stack cms-entry-form">
+            <div>
+                <label for="upload">Ảnh PNG hoặc JPEG (tối đa 5 MiB)</label>
+                <input id="upload" name="Upload" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" required />
+            </div>
+            <button class="crm-primary-button" type="submit">Lưu ảnh</button>
+        </form>
+    </section>
+</section>

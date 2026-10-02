@@ -4,9 +4,12 @@
     ViewData["Title"] = "Đã gửi khảo sát";
     ViewData["Robots"] = "noindex, nofollow, noarchive";
 }
-<section class="card stack">
+<section class="card stack public-detail-page public-survey-thanks">
+    <p class="public-detail-eyebrow">Khảo sát</p>
     <h1>Đã ghi nhận phiếu khảo sát</h1>
-    <p>@(string.IsNullOrWhiteSpace(Model.Thanks) ? "Cảm ơn bạn đã dành thời gian trả lời." : Model.Thanks)</p>
-    <p><a href="/khao-sat">Xem khảo sát đang mở</a></p>
-    <p><a href="/">Về trang chủ</a></p>
+    <p class="public-detail-lead">@(string.IsNullOrWhiteSpace(Model.Thanks) ? "Cảm ơn bạn đã dành thời gian trả lời." : Model.Thanks)</p>
+    <p class="public-detail-actions">
+        <a class="button" href="/khao-sat">Xem khảo sát đang mở</a>
+        <a class="button-quiet" href="/">Về trang chủ</a>
+    </p>
 </section>

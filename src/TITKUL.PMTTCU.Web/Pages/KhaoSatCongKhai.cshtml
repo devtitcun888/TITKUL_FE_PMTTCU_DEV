@@ -3,18 +3,24 @@
 @{
     ViewData["Title"] = Model.Item?.Title ?? "Khảo sát";
 }
-<section class="card stack">
-    <p><a href="/khao-sat">← Về danh sách khảo sát</a></p>
+<section class="card stack public-detail-page public-survey-page">
+    <p class="public-detail-back"><a href="/khao-sat"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span> Về danh sách khảo sát</a></p>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage) && Model.Item is null)
     {
-        <h1>@(Model.ResourceNotFound ? "Không tìm thấy khảo sát" : "Chưa tải được khảo sát")</h1>
+        <header class="public-detail-heading">
+            <p class="public-detail-eyebrow">Khảo sát công khai</p>
+            <h1>@(Model.ResourceNotFound ? "Không tìm thấy khảo sát" : "Chưa tải được khảo sát")</h1>
+        </header>
         <p class="@(Model.ResourceNotFound ? "empty" : "alert")" role="@(Model.ResourceNotFound ? "status" : "alert")">@Model.ErrorMessage</p>
     }
     @if (Model.Item is not null)
     {
-        <h1>@Model.Item.Title</h1>
-        @if (!string.IsNullOrWhiteSpace(Model.Item.Summary)) { <p>@Model.Item.Summary</p> }
-        @if (Model.Item.LimitOnePerPhone) { <p class="status-note">Mỗi số điện thoại chỉ được gửi một phản hồi cho khảo sát này.</p> }
+        <header class="public-detail-heading">
+            <p class="public-detail-eyebrow">Khảo sát công khai</p>
+            <h1>@Model.Item.Title</h1>
+            @if (!string.IsNullOrWhiteSpace(Model.Item.Summary)) { <p class="public-detail-lead">@Model.Item.Summary</p> }
+            @if (Model.Item.LimitOnePerPhone) { <p class="status-note">Mỗi số điện thoại chỉ được gửi một phản hồi cho khảo sát này.</p> }
+        </header>
         @if (!string.IsNullOrEmpty(Model.ErrorMessage)) { <p class="alert" role="alert">@Model.ErrorMessage</p> }
         @if (Model.Item.Questions.Count > 5)
         {
@@ -28,25 +34,27 @@
                 </ol>
             </nav>
         }
-        <p class="muted">Phiếu ghi nhận các câu trả lời và chỉ hỏi số điện thoại khi đợt khảo sát yêu cầu. <a href="/Privacy">Xem thông tin về dữ liệu và quyền riêng tư</a>.</p>
-        <form method="post" class="stack" data-survey-branch>
+        <p class="public-survey-privacy muted">Phiếu ghi nhận các câu trả lời và chỉ hỏi số điện thoại khi đợt khảo sát yêu cầu. <a href="/Privacy">Xem thông tin về dữ liệu và quyền riêng tư</a>.</p>
+        <form method="post" class="stack public-survey-form" data-survey-branch>
             <div class="hp" aria-hidden="true"><label for="website">Website</label><input id="website" name="Website" tabindex="-1" autocomplete="off" /></div>
                 <input type="hidden" name="IdempotencyKey" value="@Model.IdempotencyKey" />
             @if (Model.Item.RequirePhone)
             {
                 <div><label for="phone">Số điện thoại</label><input id="phone" name="Phone" value="@Model.Phone" required maxlength="20" /></div>
             }
+            @{ var questionNumber = 0; }
             @foreach (var question in Model.Item.Questions)
             {
-                <fieldset id="survey-question-@question.Id" class="stack survey-question" data-question-order="@question.Order">
-                    <legend>@question.Text @(question.Required ? "*" : "")</legend>
+                questionNumber++;
+                <fieldset id="survey-question-@question.Id" class="survey-question public-survey-question" data-question-order="@question.Order">
+                    <legend><span class="public-survey-qnum">@questionNumber</span><span>@question.Text @(question.Required ? "*" : "")</span></legend>
                     @if (question.Type == "SINGLE")
                     {
                         var options = Model.Item.Options.Where(item => item.QuestionId == question.Id).ToArray();
                         for (var optionIndex = 0; optionIndex < options.Length; optionIndex++)
                         {
                             var option = options[optionIndex];
-                            <label class="choice"><input type="radio" name="q-@question.Id" value="@option.Id" data-jump-to-order="@option.JumpToOrder" required="@(question.Required && optionIndex == 0 ? "required" : null)" aria-required="@(question.Required ? "true" : null)" checked="@(Model.SubmittedAnswers.GetValueOrDefault(question.Id)?.SingleOptionId == option.Id.ToString() ? "checked" : null)" /> @option.Text</label>
+                            <label class="choice public-survey-choice"><input type="radio" name="q-@question.Id" value="@option.Id" data-jump-to-order="@option.JumpToOrder" required="@(question.Required && optionIndex == 0 ? "required" : null)" aria-required="@(question.Required ? "true" : null)" checked="@(Model.SubmittedAnswers.GetValueOrDefault(question.Id)?.SingleOptionId == option.Id.ToString() ? "checked" : null)" /> @option.Text</label>
                         }
                     }
                     else if (question.Type == "MULTIPLE")
@@ -55,7 +63,7 @@
                         for (var optionIndex = 0; optionIndex < options.Length; optionIndex++)
                         {
                             var option = options[optionIndex];
-                            <label class="choice"><input type="checkbox" name="q-@question.Id" value="@option.Id" required="@(question.Required && optionIndex == 0 ? "required" : null)" aria-required="@(question.Required ? "true" : null)" checked="@(Model.SubmittedAnswers.GetValueOrDefault(question.Id)?.OptionIds.Contains(option.Id.ToString()) == true ? "checked" : null)" /> @option.Text</label>
+                            <label class="choice public-survey-choice"><input type="checkbox" name="q-@question.Id" value="@option.Id" required="@(question.Required && optionIndex == 0 ? "required" : null)" aria-required="@(question.Required ? "true" : null)" checked="@(Model.SubmittedAnswers.GetValueOrDefault(question.Id)?.OptionIds.Contains(option.Id.ToString()) == true ? "checked" : null)" /> @option.Text</label>
                         }
                     }
                     else if (question.Type == "TEXT")
@@ -64,11 +72,14 @@
                     }
                     else
                     {
-                        <input name="s-@question.Id" aria-label="@question.Text" aria-required="@(question.Required ? "true" : null)" required="@(question.Required ? "required" : null)" type="number" min="@question.ScaleMin" max="@question.ScaleMax" value="@Model.SubmittedAnswers.GetValueOrDefault(question.Id)?.Scale" />
+                        <p class="public-survey-scale-hint">Chọn mức từ @question.ScaleMin đến @question.ScaleMax</p>
+                        <input class="public-survey-scale" name="s-@question.Id" aria-label="@question.Text" aria-required="@(question.Required ? "true" : null)" required="@(question.Required ? "required" : null)" type="number" min="@question.ScaleMin" max="@question.ScaleMax" value="@Model.SubmittedAnswers.GetValueOrDefault(question.Id)?.Scale" />
                     }
                 </fieldset>
             }
-            <button type="submit">Gửi phiếu</button>
+            <div class="public-survey-actions">
+                <button type="submit">Gửi phiếu</button>
+            </div>
         </form>
     }
 </section>

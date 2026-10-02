@@ -6,60 +6,92 @@
     ViewData["UseAdminCharts"] = true;
     var currentYear = Model.CurrentYear;
 }
-<section class="card stack">
-    <h1>Chuyên cần theo lớp</h1>
-    <p><a href="/admin/tong-quan?From=@Model.From&amp;To=@Model.To">Về tổng quan</a></p>
-    @if (Model.CanExport)
-    {
-        <p><a class="button" href="/admin/bao-cao?handler=Pdf&amp;Period=@Model.Period&amp;From=@Model.From&amp;To=@Model.To">Xuất PDF kỳ báo cáo</a></p>
-    }
-    <form method="get" class="filter-grid">
+
+<section class="crm-page">
+    <header class="crm-page-heading">
         <div>
-            <label for="period">Kỳ báo cáo</label>
-            <select id="period" name="Period">
-                <option value="">Tùy chỉnh ngày</option>
-                <option value="current-quarter" selected="@(Model.Period == "current-quarter" ? "selected" : null)">Quý hiện tại</option>
-                <option value="current-year" selected="@(Model.Period == "current-year" ? "selected" : null)">Năm hiện tại</option>
-                @for (var year = currentYear; year >= currentYear - 4; year--)
-                {
-                    @for (var quarter = 1; quarter <= 4; quarter++)
-                    {
-                        var value = $"Q:{year}-Q{quarter}";
-                        <option value="@value" selected="@(Model.Period == value ? "selected" : null)">Quý @quarter/@year</option>
-                    }
-                    <option value="Y:@year" selected="@(Model.Period == $"Y:{year}" ? "selected" : null)">Năm @year</option>
-                }
-            </select>
+            <p class="crm-eyebrow">Khảo sát &amp; báo cáo</p>
+            <h1>Chuyên cần theo lớp</h1>
+            <p class="crm-page-description">Chỉ buổi đã kết thúc và không hủy. Vắng và phép không tính có mặt.</p>
         </div>
-        <div><label for="from">Từ ngày</label><input id="from" name="From" type="date" value="@Model.From" /></div>
-        <div><label for="to">Đến ngày</label><input id="to" name="To" type="date" value="@Model.To" /></div>
-        <div><button type="submit">Áp dụng</button></div>
-    </form>
+        <div class="crm-heading-actions">
+            <a class="education-cancel-button" href="/admin/tong-quan?From=@Model.From&amp;To=@Model.To">Về tổng quan</a>
+            @if (Model.CanExport)
+            {
+                <a class="crm-primary-button" href="/admin/bao-cao?handler=Pdf&amp;Period=@Model.Period&amp;From=@Model.From&amp;To=@Model.To">Xuất PDF</a>
+            }
+        </div>
+    </header>
+
+    <section class="crm-toolbar" aria-label="Kỳ báo cáo">
+        <form method="get" class="crm-filter">
+            <label for="period">Kỳ báo cáo
+                <select id="period" name="Period">
+                    <option value="">Tùy chỉnh ngày</option>
+                    <option value="current-quarter" selected="@(Model.Period == "current-quarter" ? "selected" : null)">Quý hiện tại</option>
+                    <option value="current-year" selected="@(Model.Period == "current-year" ? "selected" : null)">Năm hiện tại</option>
+                    @for (var year = currentYear; year >= currentYear - 4; year--)
+                    {
+                        @for (var quarter = 1; quarter <= 4; quarter++)
+                        {
+                            var value = $"Q:{year}-Q{quarter}";
+                            <option value="@value" selected="@(Model.Period == value ? "selected" : null)">Quý @quarter/@year</option>
+                        }
+                        <option value="Y:@year" selected="@(Model.Period == $"Y:{year}" ? "selected" : null)">Năm @year</option>
+                    }
+                </select>
+            </label>
+            <label for="from">Từ ngày
+                <input id="from" name="From" type="date" value="@Model.From" />
+            </label>
+            <label for="to">Đến ngày
+                <input id="to" name="To" type="date" value="@Model.To" />
+            </label>
+            <button class="crm-primary-button" type="submit">Áp dụng</button>
+        </form>
+    </section>
+
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <p class="crm-alert" role="alert">@Model.ErrorMessage</p>
     }
+
     @if (Model.Item is not null)
     {
-        <div class="kpi-grid">
-            <article class="card kpi"><span>Lớp</span><strong>@Model.Item.Classes</strong></article>
-            <article class="card kpi"><span>Học viên</span><strong>@Model.Item.Learners</strong></article>
-            <article class="card kpi"><span>Chuyên cần</span><strong>@Model.Item.AttendancePercent.ToString("0.##")%</strong></article>
-        </div>
-        <p>Chỉ buổi đã kết thúc và không hủy. Vắng và phép không tính có mặt.</p>
-        @if (Model.Item.Attendance.Count == 0)
-        {
-            <p class="empty">Chưa có lớp trong kỳ.</p>
-        }
-        else
-        {
-            <div class="admin-chart-wrap"><canvas data-chart="@JsonSerializer.Serialize(new { labels = Model.Item.Attendance.Select(row => row.ClassName), values = Model.Item.Attendance.Select(row => (double)row.Percent) })" data-chart-label="Tỷ lệ chuyên cần (%)" role="img" aria-label="Biểu đồ tỷ lệ chuyên cần theo lớp">Biểu đồ chuyên cần theo lớp</canvas></div>
-            <div class="table-scroll"><table class="report-table"><caption>Số liệu chuyên cần theo lớp</caption><thead><tr><th scope="col">Lớp</th><th scope="col">Buổi đã học</th><th scope="col">Sĩ số</th><th scope="col">Có mặt</th><th scope="col">Tỷ lệ</th></tr></thead><tbody>
-            @foreach (var row in Model.Item.Attendance)
+        <section class="crm-kpi-grid" aria-label="Tóm tắt chuyên cần">
+            <article class="crm-kpi"><span>Lớp</span><strong>@Model.Item.Classes</strong></article>
+            <article class="crm-kpi"><span>Học viên</span><strong>@Model.Item.Learners</strong></article>
+            <article class="crm-kpi"><span>Chuyên cần</span><strong>@Model.Item.AttendancePercent.ToString("0.##")%</strong></article>
+        </section>
+
+        <section class="crm-panel">
+            <header class="crm-panel-heading"><h2>Biểu đồ theo lớp</h2></header>
+            @if (Model.Item.Attendance.Count == 0)
             {
-                <tr><th scope="row">@row.ClassName</th><td>@row.Occurred</td><td>@row.Roster</td><td>@row.Present</td><td>@row.Percent.ToString("0.##")%</td></tr>
+                <div class="crm-empty"><strong>Chưa có lớp trong kỳ</strong></div>
             }
-            </tbody></table></div>
+            else
+            {
+                <div class="admin-chart-wrap" style="padding:16px"><canvas data-chart="@JsonSerializer.Serialize(new { labels = Model.Item.Attendance.Select(row => row.ClassName), values = Model.Item.Attendance.Select(row => (double)row.Percent) })" data-chart-label="Tỷ lệ chuyên cần (%)" role="img" aria-label="Biểu đồ tỷ lệ chuyên cần theo lớp">Biểu đồ chuyên cần theo lớp</canvas></div>
+            }
+        </section>
+
+        @if (Model.Item.Attendance.Count > 0)
+        {
+            <section class="crm-table-card">
+                <header class="crm-table-heading"><div><h2>Số liệu chuyên cần theo lớp</h2></div></header>
+                <div class="crm-table-scroll">
+                    <table class="crm-table">
+                        <thead><tr><th scope="col">Lớp</th><th scope="col">Buổi đã học</th><th scope="col">Sĩ số</th><th scope="col">Có mặt</th><th scope="col">Tỷ lệ</th></tr></thead>
+                        <tbody>
+                        @foreach (var row in Model.Item.Attendance)
+                        {
+                            <tr><th scope="row">@row.ClassName</th><td>@row.Occurred</td><td>@row.Roster</td><td>@row.Present</td><td>@row.Percent.ToString("0.##")%</td></tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         }
     }
 </section>

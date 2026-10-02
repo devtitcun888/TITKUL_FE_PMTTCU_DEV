@@ -1,26 +1,74 @@
 (() => {
+    const shell = document.querySelector('.admin-shell');
     const nav = document.querySelector('.side-nav');
     if (!nav) return;
 
     const mobileToggle = nav.querySelector('.side-nav-mobile-toggle');
+    const backdrop = document.querySelector('[data-admin-backdrop]');
+    const collapseButton = document.querySelector('[data-admin-collapse]');
+    const collapseKey = 'pmttcu.adminNavCollapsed';
+    const mobileQuery = window.matchMedia('(max-width: 1100px)');
+
+    const setBackdrop = (open) => {
+        if (!backdrop) return;
+        backdrop.hidden = !open;
+    };
+
     const closeMobileMenu = () => {
         nav.classList.remove('is-mobile-open');
+        shell?.classList.remove('is-mobile-open');
         mobileToggle?.setAttribute('aria-expanded', 'false');
         if (mobileToggle) mobileToggle.textContent = 'Mở menu';
+        setBackdrop(false);
+    };
+
+    const openMobileMenu = () => {
+        nav.classList.add('is-mobile-open');
+        shell?.classList.add('is-mobile-open');
+        mobileToggle?.setAttribute('aria-expanded', 'true');
+        if (mobileToggle) mobileToggle.textContent = 'Đóng menu';
+        setBackdrop(true);
+    };
+
+    const applyCollapse = () => {
+        if (!shell) return;
+        if (mobileQuery.matches) {
+            shell.classList.remove('admin-shell-collapsed');
+            return;
+        }
+        if (localStorage.getItem(collapseKey) === '1') {
+            shell.classList.add('admin-shell-collapsed');
+        } else {
+            shell.classList.remove('admin-shell-collapsed');
+        }
     };
 
     mobileToggle?.addEventListener('click', () => {
-        const isOpen = nav.classList.toggle('is-mobile-open');
-        mobileToggle.setAttribute('aria-expanded', String(isOpen));
-        mobileToggle.textContent = isOpen ? 'Đóng menu' : 'Mở menu';
+        if (nav.classList.contains('is-mobile-open')) closeMobileMenu();
+        else openMobileMenu();
     });
+    backdrop?.addEventListener('click', closeMobileMenu);
     nav.addEventListener('click', event => {
-        if (event.target.closest('.side-nav-body a') && window.matchMedia('(max-width: 768px)').matches)
+        if (event.target.closest('.side-nav-body a') && mobileQuery.matches)
             closeMobileMenu();
     });
     document.addEventListener('keydown', event => {
         if (event.key === 'Escape') closeMobileMenu();
     });
+    collapseButton?.addEventListener('click', () => {
+        if (mobileQuery.matches) {
+            if (nav.classList.contains('is-mobile-open')) closeMobileMenu();
+            else openMobileMenu();
+            return;
+        }
+        const collapsed = shell.classList.toggle('admin-shell-collapsed');
+        localStorage.setItem(collapseKey, collapsed ? '1' : '0');
+    });
+    mobileQuery.addEventListener('change', () => {
+        closeMobileMenu();
+        applyCollapse();
+    });
+    applyCollapse();
 
     const groups = [...nav.querySelectorAll('.side-nav-group')];
     groups.forEach(group => group.setAttribute('name', 'admin-navigation-groups'));
@@ -50,9 +98,10 @@
         let visibleCount = 0;
 
         links.forEach(link => {
-            const visible = !term || link.textContent.trim().toLocaleLowerCase('vi').includes(term);
+            const isUtility = link.classList.contains('side-nav-logout') || link.classList.contains('admin-account-button');
+            const visible = isUtility || !term || link.textContent.trim().toLocaleLowerCase('vi').includes(term);
             link.hidden = !visible;
-            if (visible) visibleCount++;
+            if (visible && !isUtility) visibleCount++;
         });
 
         groups.forEach(group => {
@@ -67,7 +116,8 @@
             }
         });
 
-        nav.querySelectorAll(':scope > a[href^="/admin/"]').forEach(link => {
+        nav.querySelectorAll(':scope > a[href^="/admin/"], .side-nav-body > a[href^="/admin/"]').forEach(link => {
+            if (link.classList.contains('side-nav-logout') || link.classList.contains('admin-account-button')) return;
             const visible = !term || link.textContent.trim().toLocaleLowerCase('vi').includes(term);
             link.hidden = !visible;
         });

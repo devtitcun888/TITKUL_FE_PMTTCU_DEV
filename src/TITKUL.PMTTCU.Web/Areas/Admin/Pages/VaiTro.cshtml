@@ -1,21 +1,74 @@
 @page "/admin/vai-tro"
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.VaiTroModel
 @{
-    ViewData["Title"] = "Vai trò";
+    ViewData["Title"] = "Vai trò và quyền";
 }
-<section class="card stack">
-    <h1>Vai trò</h1>
-    <p>Bốn vai trò hệ thống chỉ đọc. Không tạo mã quyền mới trên màn hình.</p>
-    <p><a href="/admin/nguoi-dung">Về người dùng</a></p>
-    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+
+<section class="crm-page permission-admin">
+    <header class="crm-page-heading">
+        <div>
+            <p class="crm-eyebrow">Quản trị hệ thống</p>
+            <h1>Vai trò và quyền</h1>
+            <p class="crm-page-description">Quyền hiệu lực là hợp của quyền từ các vai trò và quyền cấp trực tiếp cho tài khoản.</p>
+        </div>
+        <a class="education-cancel-button" href="/admin/nguoi-dung">Về người dùng</a>
+    </header>
+
+    @if (!string.IsNullOrEmpty(Model.Notice)) { <p class="crm-ok" role="status">@Model.Notice</p> }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage)) { <p class="crm-alert" role="alert">@Model.ErrorMessage</p> }
+
+    @if (Model.CanManage)
     {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <details class="crm-table-card permission-create-card">
+            <summary class="crm-table-heading"><div><h2>Tạo vai trò</h2><p>Chọn các quyền sẽ được cấp cho mọi tài khoản mang vai trò này.</p></div></summary>
+            <form method="post" asp-page-handler="Create" class="permission-form">
+                <div class="permission-role-fields">
+                    <label>Mã vai trò<input name="Code" required maxlength="50" pattern="[A-Za-z][A-Za-z0-9_-]{1,49}" placeholder="VD: NOI_DUNG_VIEN" /></label>
+                    <label>Tên vai trò<input name="Name" required maxlength="120" /></label>
+                    <label>Mô tả<input name="Description" maxlength="500" /></label>
+                </div>
+                @await Html.PartialAsync("Shared/_PermissionMatrix.cshtml", new TITKUL.PMTTCU.Web.Areas.Admin.Pages.PermissionMatrixModel(Model.Groups, Array.Empty<string>()))
+                <div class="crm-modal-actions"><button class="crm-primary-button" type="submit">Tạo vai trò</button></div>
+            </form>
+        </details>
     }
-    @foreach (var item in Model.Items)
+
+    <div class="permission-role-list">
+    @foreach (var role in Model.Items)
     {
-        <article>
-            <h2>@item.Code</h2>
-            <p>@(item.ReadOnly ? "Chỉ đọc" : "Có thể sửa")</p>
-        </article>
+        <details class="crm-table-card permission-role-card">
+            <summary class="crm-table-heading permission-role-summary">
+                <div><h2>@role.Name <code class="crm-code">@role.Code</code></h2><p>@(role.IsSystem ? "Vai trò hệ thống" : "Vai trò tùy chỉnh") · @role.Permissions.Count quyền · @(role.Active ? "Đang hoạt động" : "Đã tắt")</p></div>
+                <span class="education-status @(role.Active ? "education-status-active" : "education-status-inactive")"><i aria-hidden="true"></i>@(role.Active ? "Hoạt động" : "Tạm tắt")</span>
+            </summary>
+            @if (Model.CanManage)
+            {
+                <form method="post" asp-page-handler="Save" asp-route-id="@role.Id" class="permission-form">
+                    <div class="permission-role-fields">
+                        <label>Mã vai trò<input value="@role.Code" readonly /></label>
+                        <label>Tên vai trò<input name="Name" value="@role.Name" required maxlength="120" /></label>
+                        <label>Mô tả<input name="Description" value="@role.Description" maxlength="500" /></label>
+                    </div>
+                    @if (role.IsSystem)
+                    {
+                        <input type="hidden" name="Active" value="true" />
+                    }
+                    else
+                    {
+                        <label class="permission-active-toggle"><input type="checkbox" name="Active" value="true" checked="@role.Active" /> Vai trò đang hoạt động</label>
+                    }
+                    @await Html.PartialAsync("Shared/_PermissionMatrix.cshtml", new TITKUL.PMTTCU.Web.Areas.Admin.Pages.PermissionMatrixModel(Model.Groups, role.Permissions))
+                    <div class="crm-modal-actions"><button class="crm-primary-button" type="submit">Lưu quyền vai trò</button></div>
+                </form>
+            }
+            else
+            {
+                <div class="permission-readonly-list">
+                    @foreach (var permission in Model.Groups.SelectMany(group => group.Items).Where(permission => role.Permissions.Contains(permission.Code)))
+                    { <span class="permission-chip">@permission.Name</span> }
+                </div>
+            }
+        </details>
     }
+    </div>
 </section>

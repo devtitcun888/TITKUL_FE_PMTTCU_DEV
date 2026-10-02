@@ -1,0 +1,6 @@
+@model (string? Sort, string Dir)
+@if (!string.IsNullOrWhiteSpace(Model.Sort))
+{
+    <input type="hidden" name="sort" value="@Model.Sort" />
+    @if (Model.Dir == "desc") { <input type="hidden" name="dir" value="desc" /> }
+}

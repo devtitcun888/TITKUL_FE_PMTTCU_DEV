@@ -4,8 +4,11 @@
     ViewData["Title"] = "Cơ cấu tổ chức";
     var hasWideTable = PortalRichContent.ContainsTable(Model.Html);
 }
-<section class="card stack">
-    <h1>Cơ cấu tổ chức</h1>
+<section class="card stack public-detail-page">
+    <header class="public-detail-heading">
+        <p class="public-detail-eyebrow">Về Trung tâm</p>
+        <h1>Cơ cấu tổ chức</h1>
+    </header>
     @if (Model.Unavailable)
     {
         <p class="alert" role="alert">Chưa thể tải nội dung. Vui lòng thử lại sau.</p>

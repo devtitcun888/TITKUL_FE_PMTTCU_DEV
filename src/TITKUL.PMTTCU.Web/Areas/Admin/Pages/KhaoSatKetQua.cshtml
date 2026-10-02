@@ -5,9 +5,15 @@
     ViewData["Title"] = "Kết quả khảo sát";
     ViewData["UseAdminCharts"] = true;
 }
-<section class="card stack">
-    <p><a href="/admin/khao-sat/@Model.SurveyId/thiet-ke">Về thiết kế</a></p>
-    <h1>Kết quả</h1>
+<section class="crm-page">
+    <header class="crm-page-heading">
+        <div>
+            <p class="crm-eyebrow">Khảo sát &amp; báo cáo</p>
+            <h1>Kết quả khảo sát</h1>
+            <p class="crm-page-description">Bảng và biểu đồ theo từng câu hỏi.</p>
+        </div>
+        <a class="education-cancel-button" href="/admin/khao-sat/@Model.SurveyId/thiet-ke">Về thiết kế</a>
+    </header>
     @if (Model.CanExport)
     {
         <p><a class="button" href="/admin/khao-sat/@Model.SurveyId/ket-qua?handler=Xuat">Xuất Excel</a></p>

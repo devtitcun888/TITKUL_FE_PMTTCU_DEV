@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TITKUL.PMTTCU.Web.ApiClients;
 using TITKUL.PMTTCU.Web.Observability;
+using EducationUi = TITKUL.PMTTCU.Web.Areas.Admin.EducationUi;
 
 namespace TITKUL.PMTTCU.Web.Areas.Admin.Pages;
 
@@ -15,8 +16,10 @@ public class CmsThongBaoChiTietModel : PageModel
     public string? Status { get; private set; }
     public DateTimeOffset? PublishedAt { get; private set; }
     public bool CanEdit { get; private set; }
+    public bool CanPublish { get; private set; }
     public bool Preview { get; private set; }
     public string? PreviewHtml { get; private set; }
+    public string StatusLabel => string.IsNullOrWhiteSpace(Status) ? "Thông báo mới" : EducationUi.Status(Status);
 
     [BindProperty] public string Title { get; set; } = "";
     [BindProperty] public string? Slug { get; set; }
@@ -91,6 +94,7 @@ public class CmsThongBaoChiTietModel : PageModel
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
         CanEdit = id.HasValue ? Has("cms.update") : Has("cms.create");
+        CanPublish = Has("cms.publish");
         if (id is Guid existing)
         {
             NoticeId = existing;
@@ -116,7 +120,7 @@ public class CmsThongBaoChiTietModel : PageModel
         return Page();
     }
 
-    private bool HasView() => Has("cms.view") || Has("cms.create") || Has("cms.update");
+    private bool HasView() => Has("cms.view") || Has("cms.create") || Has("cms.update") || Has("cms.publish") || Has("cms.delete");
     private bool Has(string permission) => (HttpContext.Items["StaffProfile"] as StaffProfile)?.Permissions?.Contains(permission) == true;
     private string? Token() => Request.Cookies[AdminGateMiddleware.CookieName];
     private static DateTimeOffset? ToOffset(string? value) =>

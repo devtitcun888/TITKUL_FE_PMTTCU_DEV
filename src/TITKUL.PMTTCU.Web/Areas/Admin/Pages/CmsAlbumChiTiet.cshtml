@@ -3,46 +3,142 @@
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsAlbumChiTietModel
 @{
     ViewData["Title"] = Model.Item?.Title ?? "Album";
+    var published = Model.Item?.Status == "PUBLISHED";
+    var statusClass = published ? "is-published" : "is-draft";
 }
-<section class="card stack">
-    <p><a href="/admin/cms/album">Về thư viện</a></p>
+
+<section class="crm-page cms-admin-page cms-compose">
+    <header class="cms-compose-head">
+        <div>
+            <p class="cms-compose-eyebrow">Nội dung &amp; dịch vụ công</p>
+            <h1>@(Model.Item?.Title ?? "Album")</h1>
+            <p class="cms-compose-sub">Thêm ảnh, liên kết video và quyền xem tệp</p>
+        </div>
+        <a class="cms-compose-back" href="/admin/cms/album">Về thư viện</a>
+    </header>
+
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
         <p class="alert" role="alert">@Model.ErrorMessage</p>
     }
+
     @if (Model.Item is not null)
     {
-        <h1>@Model.Item.Title</h1>
-        <p>@EducationUi.Status(Model.Item.Kind) · @EducationUi.Status(Model.Item.Status)</p>
-        @if (Model.CanEdit && Model.Item.Kind == "VIDEO_LINK")
-        {
-            <form method="post" asp-page-handler="Link" class="stack">
-                <div><label for="mediaTitle">Tiêu đề video</label><input id="mediaTitle" name="MediaTitle" maxlength="250" /></div>
-                <div><label for="videoUrl">Link https YouTube hoặc Facebook</label><input id="videoUrl" name="VideoUrl" type="url" required /></div>
-                <button type="submit">Thêm video</button>
-            </form>
-        }
-        else if (Model.CanEdit)
-        {
-            <form method="post" asp-page-handler="File" enctype="multipart/form-data" class="stack">
-                <div><label for="mediaTitle">Tiêu đề</label><input id="mediaTitle" name="MediaTitle" maxlength="250" /></div>
-                @if (Model.Item.Kind == "IMAGE")
+        <div class="cms-compose-grid">
+            <div class="cms-compose-main">
+                @if (Model.CanEdit && Model.Item.Kind == "VIDEO_LINK")
                 {
-                    <div><label for="alt">Mô tả ảnh</label><input id="alt" name="Alt" required maxlength="250" /></div>
+                    <section class="cms-compose-card">
+                        <header class="cms-compose-card-head">
+                            <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">visibility</span></span>
+                            <h2>Thêm video</h2>
+                        </header>
+                        <form method="post" asp-page-handler="Link" class="cms-compose-fields">
+                            <div class="cms-compose-field">
+                                <label for="mediaTitle">Tiêu đề video</label>
+                                <input id="mediaTitle" name="MediaTitle" maxlength="250" />
+                            </div>
+                            <div class="cms-compose-field">
+                                <label for="videoUrl">Link https YouTube hoặc Facebook</label>
+                                <input id="videoUrl" name="VideoUrl" type="url" required />
+                            </div>
+                            <button type="submit" class="cms-btn cms-btn-primary">Thêm video</button>
+                        </form>
+                    </section>
                 }
-                <div><label for="upload">@(Model.Item.Kind == "IMAGE" ? "Ảnh JPEG/PNG (tối đa 5 MiB)" : "PDF, Word hoặc Excel (tối đa 20 MiB)")</label><input id="upload" name="Upload" type="file" data-file-preview="@(Model.Item.Kind == "IMAGE" ? "5242880" : "20971520")" accept="@(Model.Item.Kind == "IMAGE" ? ".jpg,.jpeg,.png,image/jpeg,image/png" : ".pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")" required /><small data-file-preview-status aria-live="polite"></small></div>
-                <button type="submit">Thêm tệp</button>
-            </form>
-        }
-        @if (Model.CanEdit && Model.Item.Status != "PUBLISHED")
-        {
-            <form method="post" asp-page-handler="Publish"><button type="submit">Đăng album</button></form>
-        }
-        <ul class="stack">
-            @foreach (var item in Model.Media)
-            {
-                <li>@(item.Title ?? item.AltText ?? item.ExternalUrl ?? "Tệp")</li>
-            }
-        </ul>
+                else if (Model.CanEdit)
+                {
+                    <section class="cms-compose-card">
+                        <header class="cms-compose-card-head">
+                            <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">photo_library</span></span>
+                            <div>
+                                <h2>Thêm tệp</h2>
+                                <small>@(Model.Item.Kind == "IMAGE" ? "JPEG/PNG · tối đa 5 MiB" : "PDF, Word hoặc Excel · tối đa 20 MiB")</small>
+                            </div>
+                        </header>
+                        <form method="post" asp-page-handler="File" enctype="multipart/form-data" class="cms-compose-fields">
+                            <div class="cms-compose-field">
+                                <label for="mediaTitle">Tiêu đề</label>
+                                <input id="mediaTitle" name="MediaTitle" maxlength="250" />
+                            </div>
+                            @if (Model.Item.Kind == "IMAGE")
+                            {
+                                <div class="cms-compose-field">
+                                    <label for="alt">Mô tả ảnh</label>
+                                    <input id="alt" name="Alt" required maxlength="250" />
+                                </div>
+                            }
+                            <div class="cms-compose-field">
+                                <label for="upload">@(Model.Item.Kind == "IMAGE" ? "Ảnh JPEG/PNG (tối đa 5 MiB)" : "PDF, Word hoặc Excel (tối đa 20 MiB)")</label>
+                                <input id="upload" name="Upload" type="file" data-file-preview="@(Model.Item.Kind == "IMAGE" ? "5242880" : "20971520")" accept="@(Model.Item.Kind == "IMAGE" ? ".jpg,.jpeg,.png,image/jpeg,image/png" : ".pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")" required />
+                                <small data-file-preview-status aria-live="polite"></small>
+                            </div>
+                            <div class="cms-compose-field">
+                                <label for="view-mode">Quyền xem tệp công khai</label>
+                                <select id="view-mode" name="ViewMode">
+                                    <option value="AUTO">Tự động</option>
+                                    <option value="INLINE">Cho xem trực tiếp</option>
+                                    <option value="DOWNLOAD_ONLY">Chỉ tải xuống</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="cms-btn cms-btn-primary">Thêm tệp</button>
+                        </form>
+                    </section>
+                }
+
+                <section class="cms-compose-card">
+                    <header class="cms-compose-card-head">
+                        <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">description</span></span>
+                        <h2>Danh sách media</h2>
+                    </header>
+                    @if (Model.Media.Count == 0)
+                    {
+                        <p class="cms-compose-hint">Chưa có tệp hoặc liên kết trong album này.</p>
+                    }
+                    else
+                    {
+                        <ul class="cms-compose-media">
+                            @foreach (var item in Model.Media)
+                            {
+                                <li>
+                                    <span>@(item.Title ?? item.AltText ?? item.ExternalUrl ?? "Tệp")</span>
+                                    @if (item.MimeType is not null) { <small>@item.MimeType · @item.ViewMode</small> }
+                                    @if (Model.CanUpdate && item.MimeType is not null)
+                                    {
+                                        <form method="post" asp-page-handler="ViewMode" asp-route-id="@Model.Item.Id" asp-route-mediaId="@item.Id">
+                                            <select name="mode" aria-label="Quyền xem @item.Title" data-cms-autosubmit>
+                                                <option value="AUTO" selected="@(item.ViewMode == "AUTO")">Tự động</option>
+                                                <option value="INLINE" selected="@(item.ViewMode == "INLINE")" disabled="@(item.MimeType is not ("application/pdf" or "image/jpeg" or "image/png"))">Xem trực tiếp</option>
+                                                <option value="DOWNLOAD_ONLY" selected="@(item.ViewMode == "DOWNLOAD_ONLY")">Chỉ tải</option>
+                                            </select>
+                                        </form>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                </section>
+            </div>
+
+            <aside class="cms-compose-side">
+                <section class="cms-compose-card">
+                    <header class="cms-compose-card-head cms-compose-card-head-plain">
+                        <h2>Trạng thái album</h2>
+                    </header>
+                    <span class="cms-status-badge @statusClass"><i></i>@EducationUi.Status(Model.Item.Status)</span>
+                    <p class="cms-compose-hint">@EducationUi.Status(Model.Item.Kind)</p>
+                    <div class="cms-compose-actions">
+                        @if (Model.CanPublish && !published)
+                        {
+                            <form method="post" asp-page-handler="Publish">
+                                <button type="submit" class="cms-btn cms-btn-primary">Đăng album</button>
+                            </form>
+                        }
+                    </div>
+                </section>
+            </aside>
+        </div>
     }
 </section>
+
+<script src="~/js/admin-cms-list.js" asp-append-version="true" defer></script>

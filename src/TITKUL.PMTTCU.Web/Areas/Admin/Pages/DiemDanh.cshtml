@@ -5,27 +5,38 @@
     ViewData["Title"] = "Điểm danh";
 }
 
-<section class="card stack">
-    <h1>Điểm danh</h1>
+<section class="crm-page">
+    <header class="crm-page-heading">
+        <div>
+            <p class="crm-eyebrow">Đào tạo &amp; người học</p>
+            <h1>Điểm danh</h1>
+            <p class="crm-page-description">Ghi có mặt, vắng, phép. Thanh lưu dính cuối trang.</p>
+        </div>
+    </header>
     @if (Model.Item is not null)
     {
-        <p><a href="/admin/lop-hoc/@Model.Item.ClassId">Về lớp @Model.Item.ClassName</a></p>
-        <p><strong>@Model.Item.SessionTitle</strong> · @Model.Item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM HH:mm")–@Model.Item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm") · @EducationUi.Status(Model.Item.SessionStatus)</p>
-        <p>Có mặt @Model.Item.Present · Vắng @Model.Item.Absent · Phép @Model.Item.Excused</p>
-        <div class="material-card stack">
-            <h2>QR và link (học trực tiếp hoặc Meet)</h2>
-            <p>Học viên quét mã hoặc mở link, nhập SĐT đã đăng ký và mã 6 số.</p>
-            <p>Mã buổi: <strong>@Model.Item.Pin</strong></p>
-            <p class="row-actions">
-                <img src="/admin/diem-danh/@Model.Item.SessionId?handler=Qr" alt="Mã QR điểm danh" width="180" height="180" />
-            </p>
-            <p><a class="button" href="@Model.Item.CheckInUrl">Mở link điểm danh</a></p>
-            <p class="status-note">Cửa sổ tự điểm danh: 15 phút trước giờ học đến 30 phút sau khi kết thúc. Dán link vào chat Meet khi dạy online.</p>
-            @if (!Model.Item.CheckInOpen)
-            {
-                <p class="status-note">Ngoài cửa sổ: học viên chưa tự điểm danh được. Cán bộ vẫn chấm tay sau giờ học.</p>
-            }
+        <div class="crm-heading-actions" style="justify-content:flex-start">
+            <a class="education-cancel-button" href="/admin/lop-hoc/@Model.Item.ClassId">Về lớp @Model.Item.ClassName</a>
         </div>
+        <p><strong>@Model.Item.SessionTitle</strong> · @Model.Item.StartAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM HH:mm")–@Model.Item.EndAt.ToOffset(TimeSpan.FromHours(7)).ToString("HH:mm") · @EducationUi.Status(Model.Item.SessionStatus)</p>
+        <section class="crm-kpi-grid" aria-label="Tóm tắt điểm danh">
+            <article class="crm-kpi"><span>Có mặt</span><strong>@Model.Item.Present</strong></article>
+            <article class="crm-kpi"><span>Vắng</span><strong>@Model.Item.Absent</strong></article>
+            <article class="crm-kpi"><span>Phép</span><strong>@Model.Item.Excused</strong></article>
+        </section>
+        <section class="crm-panel">
+            <header class="crm-panel-heading"><h2>QR và link (học trực tiếp hoặc Meet)</h2></header>
+            <div class="crm-form-grid">
+                <p class="crm-field-wide">Học viên quét mã hoặc mở link, nhập SĐT đã đăng ký và mã 6 số. Mã buổi: <strong>@Model.Item.Pin</strong></p>
+                <p><img src="/admin/diem-danh/@Model.Item.SessionId?handler=Qr" alt="Mã QR điểm danh" width="180" height="180" /></p>
+                <p class="crm-form-actions crm-field-wide"><a class="crm-primary-button" href="@Model.Item.CheckInUrl">Mở link điểm danh</a></p>
+                <p class="crm-field-wide">Cửa sổ tự điểm danh: 15 phút trước giờ học đến 30 phút sau khi kết thúc. Dán link vào chat Meet khi dạy online.</p>
+                @if (!Model.Item.CheckInOpen)
+                {
+                    <p class="crm-field-wide">Ngoài cửa sổ: học viên chưa tự điểm danh được. Cán bộ vẫn chấm tay sau giờ học.</p>
+                }
+            </div>
+        </section>
     }
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
@@ -33,13 +44,16 @@
     }
     @if (Model.Item is not null)
     {
-        <form method="get" action="/admin/diem-danh/@Model.Item.SessionId" class="stack">
-            <div>
-                <label for="q">Tìm học viên</label>
-                <input id="q" name="q" value="@Model.Query" autocomplete="off" />
-            </div>
-            <button type="submit" class="button-quiet">Tìm</button>
-        </form>
+        <section class="crm-toolbar" aria-label="Tìm học viên">
+            <form method="get" action="/admin/diem-danh/@Model.Item.SessionId" class="crm-filter">
+                <label class="crm-search" for="q">
+                    <span aria-hidden="true">⌕</span>
+                    <span class="visually-hidden">Tìm học viên</span>
+                    <input id="q" name="q" value="@Model.Query" autocomplete="off" placeholder="Tìm học viên" />
+                </label>
+                <button class="crm-primary-button" type="submit">Tìm</button>
+            </form>
+        </section>
         @if (Model.Item.CanEdit)
         {
             <p class="row-actions">

@@ -99,7 +99,37 @@ if (coverUpload) {
     const keyField = form?.querySelector('#coverKey');
     const thumbnailKeyField = form?.querySelector('#thumbnailKey');
     const preview = form?.querySelector('[data-cover-preview]');
+    const previewWrap = form?.querySelector('[data-cover-preview-wrap]');
     const status = form?.querySelector('[data-cover-status]');
+    const drop = form?.querySelector('[data-cover-drop]');
+
+    const showCoverPreview = () => {
+        if (preview) preview.hidden = false;
+        if (previewWrap) previewWrap.hidden = false;
+    };
+
+    if (drop) {
+        ['dragenter', 'dragover'].forEach(type => {
+            drop.addEventListener(type, event => {
+                event.preventDefault();
+                if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+                drop.classList.add('is-dragover');
+            });
+        });
+        drop.addEventListener('dragleave', event => {
+            if (!drop.contains(event.relatedTarget)) drop.classList.remove('is-dragover');
+        });
+        drop.addEventListener('drop', event => {
+            event.preventDefault();
+            drop.classList.remove('is-dragover');
+            const file = event.dataTransfer?.files?.[0];
+            if (!file) return;
+            const transfer = new DataTransfer();
+            transfer.items.add(file);
+            coverUpload.files = transfer.files;
+            coverUpload.dispatchEvent(new Event('change'));
+        });
+    }
 
     coverUpload.addEventListener('change', async () => {
         const file = coverUpload.files?.[0];
@@ -108,6 +138,14 @@ if (coverUpload) {
             if (status) status.textContent = 'Chọn ảnh PNG hoặc JPEG không quá 5 MiB.';
             coverUpload.value = '';
             return;
+        }
+
+        if (preview) {
+            if (preview.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl);
+            const localUrl = URL.createObjectURL(file);
+            preview.dataset.objectUrl = localUrl;
+            preview.src = localUrl;
+            showCoverPreview();
         }
 
         let variants;
@@ -134,7 +172,14 @@ if (coverUpload) {
             if (!response.ok || !imageUrl || !result.storageKey) throw new Error(result?.error?.message || 'Không tải được ảnh.');
             if (keyField) keyField.value = result.storageKey;
             if (thumbnailKeyField) thumbnailKeyField.value = result.thumbnailKey || result.storageKey;
-            if (preview) { preview.src = imageUrl; preview.hidden = false; }
+            if (preview) {
+                if (preview.dataset.objectUrl) {
+                    URL.revokeObjectURL(preview.dataset.objectUrl);
+                    delete preview.dataset.objectUrl;
+                }
+                preview.src = imageUrl;
+                showCoverPreview();
+            }
             if (status) status.textContent = `Đã cập nhật ảnh bìa${variants.coverFile.size < file.size ? ` (${formatImageSize(file.size)} → ${formatImageSize(variants.coverFile.size)})` : ''}; thumbnail ${variants.thumbnailFile ? '480 px' : 'dùng chung ảnh bìa'}. Lưu bài viết để áp dụng.`;
         } catch (error) {
             if (status) status.textContent = error instanceof Error ? error.message : 'Không tải được ảnh.';
@@ -146,7 +191,15 @@ if (coverUpload) {
     form?.querySelector('[data-cover-clear]')?.addEventListener('click', () => {
         if (keyField) keyField.value = '';
         if (thumbnailKeyField) thumbnailKeyField.value = '';
-        if (preview) { preview.removeAttribute('src'); preview.hidden = true; }
+        if (preview) {
+            if (preview.dataset.objectUrl) {
+                URL.revokeObjectURL(preview.dataset.objectUrl);
+                delete preview.dataset.objectUrl;
+            }
+            preview.removeAttribute('src');
+            preview.hidden = true;
+        }
+        if (previewWrap) previewWrap.hidden = true;
         if (status) status.textContent = 'Ảnh đại diện sẽ được gỡ khi lưu bài viết.';
     });
 }

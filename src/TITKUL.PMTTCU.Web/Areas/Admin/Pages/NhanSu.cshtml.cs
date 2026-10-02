@@ -1,27 +1,40 @@
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.WebUtilities;
 using TITKUL.PMTTCU.Web.ApiClients;
+using TITKUL.PMTTCU.Web.Areas.Admin;
 using TITKUL.PMTTCU.Web.Observability;
 
 namespace TITKUL.PMTTCU.Web.Areas.Admin.Pages;
 
 public sealed class NhanSuModel : PageModel
 {
+    private static readonly int[] PageSizes = [10, 20, 50];
     private readonly BackendApiClient _api;
 
     public NhanSuModel(BackendApiClient api) => _api = api;
 
     public IReadOnlyList<CollaboratorItem> Items { get; private set; } = [];
     public IReadOnlyList<StaffOption> Staff { get; private set; } = [];
+    public CollaboratorItem? EditingItem { get; private set; }
     public int Total { get; private set; }
     public string? ErrorMessage { get; private set; }
     public string? SuccessMessage { get; private set; }
-    public bool IsEditing => Id.HasValue;
+    public bool ShowModal { get; private set; }
+    public bool ShowImport { get; private set; }
+    public string? Query { get; private set; }
+    public string? Sort { get; private set; }
+    public string Dir { get; private set; } = "asc";
+    public int CurrentPage { get; private set; } = 1;
+    public int PageSize { get; private set; } = 20;
+    public bool FiltersActive => Query is not null;
+    public int PageCount => Math.Max(1, (int)Math.Ceiling(Total / (double)Math.Max(PageSize, 1)));
+    public int FromItem => Total == 0 ? 0 : ((CurrentPage - 1) * PageSize) + 1;
+    public int ToItem => Math.Min(CurrentPage * PageSize, Total);
 
-    [BindProperty(SupportsGet = true)] public string? Q { get; set; }
-    [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
     [BindProperty] public Guid? Id { get; set; }
     [BindProperty] public string FullName { get; set; } = "";
     [BindProperty] public bool Female { get; set; }
@@ -33,7 +46,28 @@ public sealed class NhanSuModel : PageModel
     [BindProperty] public string? Note { get; set; }
     [BindProperty] public IFormFile? ImportFile { get; set; }
 
-    public async Task<IActionResult> OnGetAsync(Guid? id) => await LoadAsync(id);
+    public async Task<IActionResult> OnGetAsync(string? q, string? Q, string? sort, string? dir, int page = 1, int pageSize = 20, Guid? id = null, bool create = false, bool import = false)
+    {
+        var loaded = await LoadAsync(q ?? Q, sort, dir, page, pageSize, id);
+        ShowModal = create || EditingItem is not null;
+        ShowImport = import;
+        return loaded;
+    }
+
+    public string ListUrl(int? page = null, int? pageSize = null, string? q = null, string? sort = null, string? dir = null)
+    {
+        var query = new Dictionary<string, string?>();
+        var nextQ = q ?? Query;
+        var nextSize = pageSize ?? PageSize;
+        var nextPage = page ?? CurrentPage;
+        if (!string.IsNullOrWhiteSpace(nextQ)) query["q"] = nextQ;
+        CmsListSort.Append(query, sort ?? Sort, dir ?? Dir);
+        if (nextSize != 20) query["pageSize"] = nextSize.ToString(CultureInfo.InvariantCulture);
+        if (nextPage > 1) query["page"] = nextPage.ToString(CultureInfo.InvariantCulture);
+        return QueryHelpers.AddQueryString("/admin/nhan-su", query);
+    }
+
+    public string SortUrl(string column) => ListUrl(page: 1, sort: column, dir: CmsListSort.NextDir(Sort, column, Dir));
 
     public async Task<IActionResult> OnPostAsync()
     {
@@ -48,7 +82,8 @@ public sealed class NhanSuModel : PageModel
         if (response is null || !response.IsSuccessStatusCode)
         {
             ErrorMessage = await ReadErrorAsync(response) ?? "Không lưu được hồ sơ. Hãy kiểm tra họ tên và tài khoản liên kết.";
-            return await LoadAsync(Id);
+            ShowModal = true;
+            return await LoadAsync(Query, Sort, Dir, CurrentPage, PageSize, Id);
         }
 
         return Redirect("/admin/nhan-su");
@@ -62,7 +97,8 @@ public sealed class NhanSuModel : PageModel
         if (ImportFile is null || ImportFile.Length == 0)
         {
             ErrorMessage = "Chọn file Excel .xlsx theo biểu mẫu Cộng tác viên, GV.";
-            return await LoadAsync(null);
+            ShowImport = true;
+            return await LoadAsync(Query, Sort, Dir, CurrentPage, PageSize, null);
         }
 
         using var content = new MultipartFormDataContent();
@@ -74,12 +110,13 @@ public sealed class NhanSuModel : PageModel
         if (response is null || !response.IsSuccessStatusCode)
         {
             ErrorMessage = await ReadErrorAsync(response) ?? "Không nhập được file Excel. Hãy dùng biểu mẫu Cộng tác viên, GV.";
-            return await LoadAsync(null);
+            ShowImport = true;
+            return await LoadAsync(Query, Sort, Dir, CurrentPage, PageSize, null);
         }
 
         var imported = await response.Content.ReadFromJsonAsync<ImportResult>();
         SuccessMessage = $"Đã nhập {imported?.Created ?? 0} hồ sơ; bỏ qua {imported?.SkippedBlankRows ?? 0} dòng trống.";
-        return await LoadAsync(null);
+        return await LoadAsync(null, null, null, 1, 20, null);
     }
 
     public async Task<IActionResult> OnGetExportAsync()
@@ -95,17 +132,39 @@ public sealed class NhanSuModel : PageModel
     private bool HasManage() => (HttpContext.Items["StaffProfile"] as StaffProfile)?.Permissions?.Contains("education.manage") == true;
     private string? Token() => Request.Cookies[AdminGateMiddleware.CookieName];
 
-    private async Task<IActionResult> LoadAsync(Guid? id)
+    private async Task<IActionResult> LoadAsync(string? q, string? sort, string? dir, int page, int pageSize, Guid? id)
     {
         if (!HasManage()) return Redirect("/admin/khong-quyen");
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
-        var query = $"/api/v1/admin/collaborators?page={Math.Clamp(PageNumber, 1, 100000)}&pageSize=50";
-        if (!string.IsNullOrWhiteSpace(Q)) query += "&q=" + Uri.EscapeDataString(Q.Trim());
-        var result = await _api.GetJsonAsync<PagedEnvelope<CollaboratorItem>>(query, token);
+        Query = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
+        Sort = CmsListSort.Normalize(sort, "name", "gender", "year", "unit", "position", "phone", "account");
+        Dir = CmsListSort.Dir(dir);
+        PageSize = PageSizes.Contains(pageSize) ? pageSize : 20;
+        CurrentPage = page < 1 ? 1 : page;
+        var pathQuery = new Dictionary<string, string?>
+        {
+            ["page"] = CurrentPage.ToString(CultureInfo.InvariantCulture),
+            ["pageSize"] = PageSize.ToString(CultureInfo.InvariantCulture)
+        };
+        if (Query is not null) pathQuery["q"] = Query;
+        var result = await _api.GetJsonAsync<PagedEnvelope<CollaboratorItem>>(QueryHelpers.AddQueryString("/api/v1/admin/collaborators", pathQuery), token);
         if (result is null) ErrorMessage ??= "Không tải được danh sách cộng tác viên.";
         Items = result?.Items ?? [];
         Total = result?.Total ?? 0;
+        if (Sort is not null)
+        {
+            Items = CmsListSort.Order(Items, Dir, Sort switch
+            {
+                "gender" => Items.OrderBy(item => item.Female),
+                "year" => Items.OrderBy(item => item.BirthYear ?? 0),
+                "unit" => Items.OrderBy(item => item.WorkUnit ?? "", StringComparer.CurrentCultureIgnoreCase),
+                "position" => Items.OrderBy(item => item.Position ?? "", StringComparer.CurrentCultureIgnoreCase),
+                "phone" => Items.OrderBy(item => item.Phone ?? "", StringComparer.OrdinalIgnoreCase),
+                "account" => Items.OrderBy(item => item.LinkedUsername ?? "", StringComparer.OrdinalIgnoreCase),
+                _ => Items.OrderBy(item => item.FullName, StringComparer.CurrentCultureIgnoreCase)
+            });
+        }
         var staff = await _api.GetJsonAsync<ListEnvelope<StaffOption>>("/api/v1/admin/education/staff", token);
         Staff = staff?.Items ?? [];
         if (id is Guid editId)
@@ -113,6 +172,7 @@ public sealed class NhanSuModel : PageModel
             var detail = await _api.GetJsonAsync<ItemEnvelope<CollaboratorItem>>($"/api/v1/admin/collaborators/{editId}", token);
             if (detail?.Item is CollaboratorItem item)
             {
+                EditingItem = item;
                 Id = item.Id;
                 FullName = item.FullName;
                 Female = item.Female;

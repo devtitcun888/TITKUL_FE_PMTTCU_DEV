@@ -2,58 +2,146 @@
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.DonPhepModel
 @{
     ViewData["Title"] = "Đơn xin phép";
+    var showCreate = Model.CanManage && Request.Query.ContainsKey("create");
+    var decideId = Guid.TryParse(Request.Query["decide"], out var parsedDecide) ? parsedDecide : (Guid?)null;
 }
-<section class="card stack">
-    <h1>Đơn xin phép</h1>
-    <p><a href="/admin/lop-hoc/@Model.ClassId">Quay lại lớp</a></p>
-    @if (!string.IsNullOrWhiteSpace(Model.Message)) { <p class="status-note" role="status">@Model.Message</p> }
-    @if (!string.IsNullOrWhiteSpace(Model.Error)) { <p class="alert" role="alert">@Model.Error</p> }
-    @if (Model.CanManage)
-    {
-        <h2>Ghi nhận đơn</h2>
-        @if (Model.Enrollments.Count == 0 || Model.Sessions.Count == 0)
+
+<section class="crm-page">
+    <header class="crm-page-heading">
+        <div>
+            <p class="crm-eyebrow">Đào tạo &amp; người học</p>
+            <h1>Đơn xin phép</h1>
+            <p class="crm-page-description">Ghi nhận và duyệt đơn xin phép theo buổi học.</p>
+        </div>
+        <div class="crm-heading-actions">
+            <a class="education-cancel-button" href="/admin/lop-hoc/@Model.ClassId">Quay lại lớp</a>
+            @if (Model.CanManage)
+            {
+                <a class="crm-primary-button" href="/admin/lop-hoc/@Model.ClassId/don-phep?create=true"><span aria-hidden="true">＋</span> Ghi nhận đơn</a>
+            }
+        </div>
+    </header>
+    @if (!string.IsNullOrWhiteSpace(Model.Message)) { <p class="crm-ok" role="status">@Model.Message</p> }
+    @if (!string.IsNullOrWhiteSpace(Model.Error)) { <p class="crm-alert" role="alert">@Model.Error</p> }
+
+    <section class="crm-table-card" aria-labelledby="leave-table-title">
+        <header class="crm-table-heading">
+            <div>
+                <h2 id="leave-table-title">Danh sách đơn</h2>
+                <p>@Model.Items.Count đơn</p>
+            </div>
+        </header>
+        @if (Model.Items.Count == 0)
         {
-            <p class="empty">Lớp chưa có học viên hoặc buổi học phù hợp.</p>
+            <div class="crm-empty"><strong>Chưa có đơn xin phép</strong><p>Ghi nhận đơn khi lớp đã có học viên và buổi học.</p></div>
         }
         else
         {
-            <form method="post" asp-page-handler="Create" class="stack">
-                <div><label for="enrollment">Học viên</label><select id="enrollment" name="EnrollmentId" required><option value="">Chọn học viên</option>@foreach (var row in Model.Enrollments) { <option value="@row.Id" selected="@(Model.EnrollmentId == row.Id ? "selected" : null)">@row.FullName</option> }</select></div>
-                <div><label for="session">Buổi học</label><select id="session" name="SessionId" required><option value="">Chọn buổi học</option>@foreach (var row in Model.Sessions) { <option value="@row.Id" selected="@(Model.SessionId == row.Id ? "selected" : null)">@row.StartAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") · @row.Title</option> }</select></div>
-                <div><label for="reason">Lý do xin phép</label><textarea id="reason" name="Reason" rows="3" minlength="5" maxlength="500" required>@Model.Reason</textarea></div>
-                <button type="submit">Ghi nhận đơn chờ duyệt</button>
-            </form>
+            <div class="crm-table-scroll">
+                <table class="crm-table">
+                    <thead><tr><th>Học viên / Buổi</th><th>Lý do</th><th>Trạng thái</th><th class="education-actions-cell">Thao tác</th></tr></thead>
+                    <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td><strong>@item.LearnerName</strong><br /><small>@item.SessionTitle</small></td>
+                            <td>
+                                @item.Reason
+                                @if (!string.IsNullOrWhiteSpace(item.DecisionNote))
+                                {
+                                    <p>Ghi chú xử lý: @item.DecisionNote</p>
+                                }
+                            </td>
+                            <td><span class="education-status">@(item.Status switch { "CHO_DUYET" => "Chờ duyệt", "DA_DUYET" => "Đã duyệt", "TU_CHOI" => "Từ chối", _ => item.Status })</span></td>
+                            <td class="education-actions-cell">
+                                @if (item.Status == "CHO_DUYET")
+                                {
+                                    @if (Model.CanManage)
+                                    {
+                                        <a class="education-edit-button" href="/admin/lop-hoc/@Model.ClassId/don-phep?decide=@item.Id">Xử lý</a>
+                                    }
+                                    else { <span>Chỉ xem</span> }
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
         }
-    }
-    <h2>Danh sách đơn</h2>
-    @if (Model.Items.Count == 0) { <p class="empty">Chưa có đơn xin phép.</p> }
-    else
-    {
-        <div class="table-scroll"><table>
-            <thead><tr><th>Học viên / Buổi</th><th>Lý do</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
-            <tbody>@foreach (var item in Model.Items)
-            {
-                <tr>
-                    <td>@item.LearnerName<br /><small>@item.SessionTitle</small></td>
-                    <td>@item.Reason @if (!string.IsNullOrWhiteSpace(item.DecisionNote)) { <p>Ghi chú xử lý: @item.DecisionNote</p> }</td>
-                    <td>@(item.Status switch { "CHO_DUYET" => "Chờ duyệt", "DA_DUYET" => "Đã duyệt", "TU_CHOI" => "Từ chối", _ => item.Status })</td>
-                    <td>
-                        @if (item.Status == "CHO_DUYET")
-                        {
-                            @if (Model.CanManage)
-                            {
-                                <form method="post" asp-page-handler="Decision" class="stack">
-                                    <input type="hidden" name="RequestId" value="@item.Id" />
-                                    <label for="decisionNote-@item.Id">Ghi chú xử lý</label><input id="decisionNote-@item.Id" name="DecisionNote" value="@(Model.RequestId == item.Id ? Model.DecisionNote : "")" maxlength="500" />
-                                    <button type="submit" name="decision" value="APPROVE">Duyệt, ghi Có phép</button>
-                                    <button type="submit" name="decision" value="REJECT">Từ chối</button>
-                                </form>
-                            }
-                            else { <span>Chỉ xem</span> }
-                        }
-                    </td>
-                </tr>
-            }</tbody>
-        </table></div>
-    }
+    </section>
 </section>
+
+@if (showCreate)
+{
+    <dialog class="crm-modal" open data-close-href="/admin/lop-hoc/@Model.ClassId/don-phep" aria-labelledby="leave-create-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Đơn xin phép</p><h2 id="leave-create-title">Ghi nhận đơn</h2></div>
+                <a class="crm-modal-close" href="/admin/lop-hoc/@Model.ClassId/don-phep" aria-label="Đóng">×</a>
+            </header>
+            @if (Model.Enrollments.Count == 0 || Model.Sessions.Count == 0)
+            {
+                <div class="crm-modal-body">
+                    <p class="crm-empty">Lớp chưa có học viên hoặc buổi học phù hợp.</p>
+                    <footer class="crm-modal-actions"><a class="education-cancel-button" href="/admin/lop-hoc/@Model.ClassId/don-phep">Đóng</a></footer>
+                </div>
+            }
+            else
+            {
+                <form method="post" asp-page-handler="Create" class="crm-modal-body">
+                    <label for="enrollment">Học viên
+                        <select id="enrollment" name="EnrollmentId" required>
+                            <option value="">Chọn học viên</option>
+                            @foreach (var row in Model.Enrollments) { <option value="@row.Id" selected="@(Model.EnrollmentId == row.Id ? "selected" : null)">@row.FullName</option> }
+                        </select>
+                    </label>
+                    <label for="session">Buổi học
+                        <select id="session" name="SessionId" required>
+                            <option value="">Chọn buổi học</option>
+                            @foreach (var row in Model.Sessions) { <option value="@row.Id" selected="@(Model.SessionId == row.Id ? "selected" : null)">@row.StartAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") · @row.Title</option> }
+                        </select>
+                    </label>
+                    <label for="reason">Lý do xin phép<textarea id="reason" name="Reason" rows="3" minlength="5" maxlength="500" required>@Model.Reason</textarea></label>
+                    <footer class="crm-modal-actions">
+                        <a class="education-cancel-button" href="/admin/lop-hoc/@Model.ClassId/don-phep">Hủy</a>
+                        <button class="crm-primary-button" type="submit">Ghi nhận đơn chờ duyệt</button>
+                    </footer>
+                </form>
+            }
+        </section>
+    </dialog>
+}
+
+@if (decideId is Guid requestId)
+{
+    var deciding = Model.Items.FirstOrDefault(item => item.Id == requestId);
+    <dialog class="crm-modal" open data-close-href="/admin/lop-hoc/@Model.ClassId/don-phep" aria-labelledby="leave-decide-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Xử lý đơn</p><h2 id="leave-decide-title">Duyệt hoặc từ chối</h2></div>
+                <a class="crm-modal-close" href="/admin/lop-hoc/@Model.ClassId/don-phep" aria-label="Đóng">×</a>
+            </header>
+            @if (deciding is null)
+            {
+                <div class="crm-modal-body"><p class="crm-empty">Không tìm thấy đơn.</p></div>
+            }
+            else
+            {
+                <form method="post" asp-page-handler="Decision" class="crm-modal-body">
+                    <input type="hidden" name="RequestId" value="@deciding.Id" />
+                    <p><strong>@deciding.LearnerName</strong> · @deciding.SessionTitle</p>
+                    <p>@deciding.Reason</p>
+                    <label for="decisionNote">Ghi chú xử lý<input id="decisionNote" name="DecisionNote" value="@Model.DecisionNote" maxlength="500" /></label>
+                    <footer class="crm-modal-actions">
+                        <a class="education-cancel-button" href="/admin/lop-hoc/@Model.ClassId/don-phep">Hủy</a>
+                        <button class="education-cancel-button" type="submit" name="decision" value="REJECT">Từ chối</button>
+                        <button class="crm-primary-button" type="submit" name="decision" value="APPROVE">Duyệt, ghi Có phép</button>
+                    </footer>
+                </form>
+            }
+        </section>
+    </dialog>
+}

@@ -3,48 +3,203 @@
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.LienHeAdminModel
 @{
     ViewData["Title"] = "Phản ánh";
+    var returnUrl = Model.CurrentPathAndQuery;
+    var firstPage = Math.Max(1, Model.CurrentPage - 2);
+    var lastPage = Math.Min(Model.PageCount, Model.CurrentPage + 2);
 }
-<section class="card stack">
-    <h1>Phản ánh</h1>
-    <form class="public-filter" method="get" action="/admin/lien-he">
-        <label for="contact-status">Lọc theo trạng thái</label>
-        <div><select id="contact-status" name="status"><option value="">Tất cả</option><option value="NEW" selected="@(Model.Status == "NEW")">Mới</option><option value="PROCESSING" selected="@(Model.Status == "PROCESSING")">Đang xử lý</option><option value="CLOSED" selected="@(Model.Status == "CLOSED")">Đã đóng</option><option value="SPAM" selected="@(Model.Status == "SPAM")">Spam</option></select><button class="button" type="submit">Lọc</button></div>
-    </form>
-    @if (Model.Items.Count == 0)
-    {
-        <p class="empty">Chưa có phản ánh.</p>
-    }
-    else
-    {
-        <div class="table-scroll">
-            <table>
-                <caption>Danh sách phản ánh</caption>
-                <thead><tr><th scope="col">Người gửi</th><th scope="col">Nội dung</th><th scope="col">Trạng thái</th><th scope="col"></th></tr></thead>
-                <tbody>
-                @foreach (var item in Model.Items)
-                {
-                    <tr>
-                        <td>@item.Name<br />@item.Phone</td>
-                        <td><a asp-page="/LienHeChiTiet" asp-route-id="@item.Id"><strong>@item.Title</strong></a><p>@item.Body</p></td>
-                        <td>@EducationUi.Status(item.Status)</td>
-                        <td>
-                            @if (Model.CanEdit)
-                            {
-                                <form method="post" asp-page-handler="Status" asp-route-id="@item.Id">
-                                    <input type="hidden" name="status" value="PROCESSING" />
-                                    <button type="submit">Đang xử lý</button>
-                                </form>
-                                <form method="post" asp-page-handler="Status" asp-route-id="@item.Id">
-                                    <input type="hidden" name="status" value="CLOSED" />
-                                    <button type="submit">Đóng</button>
-                                </form>
-                            }
-                        </td>
-                    </tr>
-                }
-                </tbody>
-            </table>
+
+<section class="crm-page cms-posts-page cms-list-page">
+
+    <form class="cms-posts-toolbar" method="get" action="/admin/lien-he" data-cms-autofilter data-cols="1">
+        @await Html.PartialAsync("Shared/_CmsSortHidden", (Model.Sort, Model.Dir))
+        <button class="cms-posts-filter-toggle @(Model.FiltersActive ? "has-active-filters" : null)" type="button" aria-label="Bộ lọc" aria-expanded="false" aria-controls="cms-contact-filter-fields" data-cms-filter-toggle>
+            <svg class="cms-posts-filter-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                <path d="M4 5h16l-6.5 7.5v5l-3 1.5v-6.5L4 5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </button>
+        <div class="cms-posts-filter-fields" id="cms-contact-filter-fields">
+            <label class="cms-posts-field">
+                <span>Trạng thái</span>
+                <select name="status" data-cms-filter>
+                    <option value="">Tất cả</option>
+                    <option value="NEW" selected="@(Model.Status == "NEW" ? "selected" : null)">Mới</option>
+                    <option value="PROCESSING" selected="@(Model.Status == "PROCESSING" ? "selected" : null)">Đang xử lý</option>
+                    <option value="CLOSED" selected="@(Model.Status == "CLOSED" ? "selected" : null)">Đã đóng</option>
+                    <option value="SPAM" selected="@(Model.Status == "SPAM" ? "selected" : null)">Spam</option>
+                </select>
+            </label>
+            <div class="cms-posts-toolbar-actions">
+                <a class="cms-posts-reset" href="/admin/lien-he">
+                    <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
+                    Xóa lọc
+                </a>
+            </div>
         </div>
-    }
+    </form>
+
+    <section class="cms-posts-kpis" data-cols="4" aria-label="Thống kê phản ánh">
+        <a class="cms-posts-kpi is-all @(Model.Status is null ? "is-current" : null)" href="@Model.ListUrl(page: 1, status: "")">
+            <span class="cms-posts-kpi-icon" aria-hidden="true"><span class="material-symbols-outlined">mail</span></span>
+            <span>
+                <span class="cms-posts-kpi-label">Tất cả</span>
+                <strong>@Model.TotalAll.ToString("N0")</strong>
+            </span>
+        </a>
+        <a class="cms-posts-kpi is-new @(Model.Status == "NEW" ? "is-current" : null)" href="@Model.ListUrl(page: 1, status: "NEW")">
+            <span class="cms-posts-kpi-icon" aria-hidden="true"><span class="material-symbols-outlined">mail</span></span>
+            <span>
+                <span class="cms-posts-kpi-label">Mới</span>
+                <strong>@Model.TotalNew.ToString("N0")</strong>
+            </span>
+        </a>
+        <a class="cms-posts-kpi is-processing @(Model.Status == "PROCESSING" ? "is-current" : null)" href="@Model.ListUrl(page: 1, status: "PROCESSING")">
+            <span class="cms-posts-kpi-icon" aria-hidden="true"><span class="material-symbols-outlined">tune</span></span>
+            <span>
+                <span class="cms-posts-kpi-label">Đang xử lý</span>
+                <strong>@Model.TotalProcessing.ToString("N0")</strong>
+            </span>
+        </a>
+        <a class="cms-posts-kpi is-closed @(Model.Status == "CLOSED" ? "is-current" : null)" href="@Model.ListUrl(page: 1, status: "CLOSED")">
+            <span class="cms-posts-kpi-icon" aria-hidden="true"><span class="material-symbols-outlined">keep</span></span>
+            <span>
+                <span class="cms-posts-kpi-label">Đã đóng</span>
+                <strong>@Model.TotalClosed.ToString("N0")</strong>
+            </span>
+        </a>
+    </section>
+
+    <section class="cms-posts-list" aria-labelledby="contact-table-title">
+        <header class="cms-posts-list-heading">
+            <div>
+                <h2 id="contact-table-title">Danh sách phản ánh</h2>
+                <p>@Model.Total.ToString("N0") phản ánh</p>
+            </div>
+        </header>
+
+        @if (Model.Items.Count == 0)
+        {
+            <div class="cms-posts-empty">
+                <span class="material-symbols-outlined" aria-hidden="true">mail</span>
+                <strong>@(Model.FiltersActive ? "Không tìm thấy phản ánh phù hợp" : "Chưa có phản ánh")</strong>
+                <p>@(Model.FiltersActive ? "Thử xóa bộ lọc." : "Phiếu mới từ trang liên hệ sẽ hiện ở đây.")</p>
+            </div>
+        }
+        else
+        {
+            <div class="cms-posts-table-scroll">
+                <table class="cms-posts-table">
+                    <thead>
+                        <tr>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "name", Model.Dir)" href="@Model.SortUrl("name")">Người gửi <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "name", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "title", Model.Dir)" href="@Model.SortUrl("title")">Nội dung <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "title", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "status", Model.Dir)" href="@Model.SortUrl("status")">Trạng thái <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "status", Model.Dir)</span></a></th>
+                            <th class="cms-posts-actions-col" scope="col">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        var statusClass = item.Status?.ToLowerInvariant();
+                        <tr>
+                            <td>
+                                <strong>@item.Name</strong>
+                                <div class="cms-posts-stamp">@item.Phone</div>
+                            </td>
+                            <td class="cms-posts-title-cell">
+                                <a asp-page="/LienHeChiTiet" asp-route-id="@item.Id">@item.Title</a>
+                                <div class="cms-posts-stamp">@item.Body</div>
+                            </td>
+                            <td><span class="cms-posts-status is-@statusClass"><i aria-hidden="true"></i>@EducationUi.Status(item.Status ?? "")</span></td>
+                            <td class="cms-posts-actions-col">
+                                <details class="cms-posts-row-menu">
+                                    <summary aria-label="Thao tác @item.Title"><span class="material-symbols-outlined" aria-hidden="true">more_horiz</span></summary>
+                                    <div class="cms-posts-row-panel" role="menu">
+                                        <a role="menuitem" asp-page="/LienHeChiTiet" asp-route-id="@item.Id">Xem</a>
+                                        @if (Model.CanEdit && item.Status != "PROCESSING")
+                                        {
+                                            <button class="cms-posts-menu-btn" type="submit" form="cms-contact-processing-@item.Id" role="menuitem">Đang xử lý</button>
+                                        }
+                                        @if (Model.CanEdit && item.Status != "CLOSED")
+                                        {
+                                            <button class="cms-posts-menu-btn" type="submit" form="cms-contact-closed-@item.Id" role="menuitem">Đóng</button>
+                                        }
+                                    </div>
+                                </details>
+                                @if (Model.CanEdit && item.Status != "PROCESSING")
+                                {
+                                    <form id="cms-contact-processing-@item.Id" method="post" asp-page-handler="Status" hidden>
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <input type="hidden" name="status" value="PROCESSING" />
+                                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                    </form>
+                                }
+                                @if (Model.CanEdit && item.Status != "CLOSED")
+                                {
+                                    <form id="cms-contact-closed-@item.Id" method="post" asp-page-handler="Status" hidden>
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <input type="hidden" name="status" value="CLOSED" />
+                                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <footer class="cms-posts-pager">
+            <p class="cms-posts-pager-summary">
+                @(Model.Total == 0 ? "Không có phản ánh" : $"Hiển thị {Model.FromItem} - {Model.ToItem} của {Model.Total} phản ánh")
+            </p>
+            <div class="cms-posts-pager-controls">
+                <form method="get" action="/admin/lien-he" class="cms-posts-pagesize">
+                    @if (!string.IsNullOrWhiteSpace(Model.Status)) { <input type="hidden" name="status" value="@Model.Status" /> }
+                    @await Html.PartialAsync("Shared/_CmsSortHidden", (Model.Sort, Model.Dir))
+                    <label>
+                        <span class="visually-hidden">Số phản ánh mỗi trang</span>
+                        <select name="pageSize" data-cms-posts-pagesize>
+                            <option value="10" selected="@(Model.PageSize == 10 ? "selected" : null)">10 / trang</option>
+                            <option value="20" selected="@(Model.PageSize == 20 ? "selected" : null)">20 / trang</option>
+                            <option value="50" selected="@(Model.PageSize == 50 ? "selected" : null)">50 / trang</option>
+                        </select>
+                    </label>
+                </form>
+                <nav class="cms-posts-pages" aria-label="Phân trang phản ánh">
+                    @if (Model.CurrentPage > 1)
+                    {
+                        <a class="cms-posts-page-btn" href="@Model.ListUrl(page: Model.CurrentPage - 1)" rel="prev" aria-label="Trang trước"><span class="material-symbols-outlined" aria-hidden="true">chevron_left</span></a>
+                    }
+                    else
+                    {
+                        <span class="cms-posts-page-btn is-disabled" aria-hidden="true"><span class="material-symbols-outlined">chevron_left</span></span>
+                    }
+                    @for (var pageNumber = firstPage; pageNumber <= lastPage; pageNumber++)
+                    {
+                        if (pageNumber == Model.CurrentPage)
+                        {
+                            <span class="cms-posts-page-btn is-current" aria-current="page">@pageNumber</span>
+                        }
+                        else
+                        {
+                            <a class="cms-posts-page-btn" href="@Model.ListUrl(page: pageNumber)">@pageNumber</a>
+                        }
+                    }
+                    @if (Model.CurrentPage < Model.PageCount)
+                    {
+                        <a class="cms-posts-page-btn" href="@Model.ListUrl(page: Model.CurrentPage + 1)" rel="next" aria-label="Trang sau"><span class="material-symbols-outlined" aria-hidden="true">chevron_right</span></a>
+                    }
+                    else
+                    {
+                        <span class="cms-posts-page-btn is-disabled" aria-hidden="true"><span class="material-symbols-outlined">chevron_right</span></span>
+                    }
+                </nav>
+            </div>
+        </footer>
+    </section>
 </section>
-@await Html.PartialAsync("/Pages/Shared/_PublicPager.cshtml", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))
+
+<script src="~/js/admin-cms-list.js" asp-append-version="true" defer></script>

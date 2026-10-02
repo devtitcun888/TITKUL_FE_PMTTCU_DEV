@@ -5,38 +5,51 @@
     ViewData["Title"] = "Hồ sơ học viên";
 }
 
-<section class="card stack">
-    <h1>Hồ sơ học viên</h1>
-    <p><a href="/admin/hoc-vien">Về danh sách</a></p>
+<section class="crm-page">
+    <header class="crm-page-heading">
+        <div>
+            <p class="crm-eyebrow">Đào tạo &amp; người học</p>
+            <h1>Hồ sơ học viên</h1>
+            <p class="crm-page-description">Thông tin cá nhân, lịch sử lớp. CCCD chỉ hiện 4 số cuối.</p>
+        </div>
+        <a class="education-cancel-button" href="/admin/hoc-vien">Về danh sách</a>
+    </header>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <p class="crm-alert" role="alert">@Model.ErrorMessage</p>
     }
     @if (Model.Item is not null)
     {
-        @if (Model.Item.HasPhoto)
-        {
-            <p><img src="/admin/hoc-vien/@Model.Item.Id/anh" alt="Ảnh hồ sơ của @Model.Item.FullName" width="160" height="160" loading="lazy" /></p>
-        }
-        <p><a class="button" href="/admin/hoc-vien/@Model.Item.Id/anh">@(Model.Item.HasPhoto ? "Cập nhật ảnh hồ sơ" : "Thêm ảnh hồ sơ")</a></p>
-        <p><strong>@Model.Item.FullName</strong></p>
-        <p>Điện thoại: @Model.Item.Phone</p>
-        <p>CCCD: @Model.Item.CccdMasked</p>
-        <p>Ngày sinh: @Model.Item.BirthDate.ToString("dd/MM/yyyy") · @Model.Item.Age tuổi · @EducationUi.Status(Model.Item.Gender)</p>
-        <p>Thôn/ấp: @Model.Item.HamletName</p>
-        @if (!string.IsNullOrWhiteSpace(Model.Item.Note))
-        {
-            <p>Ghi chú: @Model.Item.Note</p>
-        }
-        <h2>Lịch sử lớp</h2>
+        <section class="crm-panel">
+            <header class="crm-panel-heading">
+                <div><h2>@Model.Item.FullName</h2></div>
+                <a class="crm-primary-button" href="/admin/hoc-vien/@Model.Item.Id/anh">@(Model.Item.HasPhoto ? "Cập nhật ảnh hồ sơ" : "Thêm ảnh hồ sơ")</a>
+            </header>
+            <div class="crm-form-grid">
+                @if (Model.Item.HasPhoto)
+                {
+                    <p><img src="/admin/hoc-vien/@Model.Item.Id/anh?handler=File" alt="Ảnh hồ sơ của @Model.Item.FullName" width="160" height="160" loading="lazy" /></p>
+                }
+                <p>Điện thoại: @Model.Item.Phone</p>
+                <p>CCCD: @Model.Item.CccdMasked</p>
+                <p>Ngày sinh: @Model.Item.BirthDate.ToString("dd/MM/yyyy") · @Model.Item.Age tuổi · @EducationUi.Status(Model.Item.Gender)</p>
+                <p>Thôn/ấp: @Model.Item.HamletName</p>
+                @if (!string.IsNullOrWhiteSpace(Model.Item.Note))
+                {
+                    <p class="crm-field-wide">Ghi chú: @Model.Item.Note</p>
+                }
+            </div>
+        </section>
+        <section class="crm-table-card">
+        <header class="crm-table-heading"><div><h2>Lịch sử lớp</h2><p>@Model.Classes.Count lớp</p></div></header>
         @if (Model.Classes.Count == 0)
         {
-            <p class="empty">Chưa có lớp.</p>
+            <div class="crm-empty"><strong>Chưa có lớp</strong></div>
         }
         else
         {
-            <div class="table-scroll">
-                <table>
+            <div class="crm-table-scroll">
+                <table class="crm-table">
                     <caption>Các lớp đã đăng ký</caption>
                     <thead>
                         <tr>
@@ -60,5 +73,6 @@
                 </table>
             </div>
         }
+        </section>
     }
 </section>

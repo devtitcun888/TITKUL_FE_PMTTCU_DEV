@@ -2,7 +2,9 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.WebUtilities;
 using TITKUL.PMTTCU.Web.ApiClients;
+using TITKUL.PMTTCU.Web.Areas.Admin;
 using TITKUL.PMTTCU.Web.Observability;
 
 namespace TITKUL.PMTTCU.Web.Areas.Admin.Pages;
@@ -15,6 +17,13 @@ public sealed class XoaMuChuModel : PageModel
     public IReadOnlyList<EntryItem> Entries { get; private set; } = [];
     public string? ErrorMessage { get; private set; }
     public string? SuccessMessage { get; private set; }
+    public bool ShowImport { get; private set; }
+    public bool ShowModal { get; private set; }
+    public string? Query { get; private set; }
+    public string? Sort { get; private set; }
+    public string Dir { get; private set; } = "asc";
+    public bool FiltersActive => Query is not null;
+
     [BindProperty(SupportsGet = true)] public Guid? EntryId { get; set; }
     [BindProperty] public string? SourceSheet { get; set; }
     [BindProperty] public int? Sequence { get; set; }
@@ -35,7 +44,24 @@ public sealed class XoaMuChuModel : PageModel
     [BindProperty] public string? Note { get; set; }
     [BindProperty] public IFormFile? ImportFile { get; set; }
 
-    public Task<IActionResult> OnGetAsync(Guid? entryId) => LoadAsync(entryId);
+    public async Task<IActionResult> OnGetAsync(string? q, string? sort, string? dir, Guid? entryId, bool create = false, bool import = false)
+    {
+        var page = await LoadAsync(q, sort, dir, entryId);
+        ShowImport = import;
+        ShowModal = EntryId.HasValue || create;
+        return page;
+    }
+
+    public string ListUrl(string? q = null, string? sort = null, string? dir = null)
+    {
+        var query = new Dictionary<string, string?>();
+        var nextQ = q ?? Query;
+        if (!string.IsNullOrWhiteSpace(nextQ)) query["q"] = nextQ;
+        CmsListSort.Append(query, sort ?? Sort, dir ?? Dir);
+        return QueryHelpers.AddQueryString("/admin/xoa-mu-chu", query);
+    }
+
+    public string SortUrl(string column) => ListUrl(sort: column, dir: CmsListSort.NextDir(Sort, column, Dir));
 
     public async Task<IActionResult> OnPostImportAsync()
     {
@@ -45,7 +71,8 @@ public sealed class XoaMuChuModel : PageModel
         if (ImportFile is null || ImportFile.Length == 0)
         {
             ErrorMessage = "Chọn workbook Excel sổ theo dõi xóa mù chữ (.xlsx).";
-            return await LoadAsync(null);
+            ShowImport = true;
+            return await LoadAsync(Query, Sort, Dir, null);
         }
         using var content = new MultipartFormDataContent();
         await using var stream = ImportFile.OpenReadStream();
@@ -56,11 +83,12 @@ public sealed class XoaMuChuModel : PageModel
         if (response is null || !response.IsSuccessStatusCode)
         {
             ErrorMessage = await ReadErrorAsync(response) ?? "Không nhập được workbook.";
-            return await LoadAsync(null);
+            ShowImport = true;
+            return await LoadAsync(Query, Sort, Dir, null);
         }
         var result = await response.Content.ReadFromJsonAsync<ImportResult>();
         SuccessMessage = $"Đã nhập {result?.Created ?? 0} dòng; bỏ qua {result?.SkippedBlankRows ?? 0} dòng trống.";
-        return await LoadAsync(null);
+        return await LoadAsync(null, null, null, null);
     }
 
     public async Task<IActionResult> OnPostSaveEntryAsync()
@@ -78,7 +106,8 @@ public sealed class XoaMuChuModel : PageModel
         if (response is null || !response.IsSuccessStatusCode)
         {
             ErrorMessage = await ReadErrorAsync(response) ?? "Không lưu được dòng theo dõi.";
-            return await LoadAsync(EntryId);
+            ShowModal = true;
+            return await LoadAsync(Query, Sort, Dir, EntryId);
         }
         return Redirect("/admin/xoa-mu-chu");
     }
@@ -92,7 +121,7 @@ public sealed class XoaMuChuModel : PageModel
         if (response is null || !response.IsSuccessStatusCode)
         {
             ErrorMessage = await ReadErrorAsync(response) ?? "Không xóa được dòng dữ liệu.";
-            return await LoadAsync(null);
+            return await LoadAsync(Query, Sort, Dir, null);
         }
         return Redirect("/admin/xoa-mu-chu");
     }
@@ -109,14 +138,39 @@ public sealed class XoaMuChuModel : PageModel
     private bool CanManage() => (HttpContext.Items["StaffProfile"] as StaffProfile)?.Permissions?.Contains("education.manage") == true;
     private string? Token() => Request.Cookies[AdminGateMiddleware.CookieName];
 
-    private async Task<IActionResult> LoadAsync(Guid? entryId)
+    private async Task<IActionResult> LoadAsync(string? q, string? sort, string? dir, Guid? entryId)
     {
         if (!CanManage()) return Redirect("/admin/khong-quyen");
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
+        Query = string.IsNullOrWhiteSpace(q) ? null : q.Trim();
+        Sort = CmsListSort.Normalize(sort, "seq", "name", "female", "occupation", "sheet");
+        Dir = CmsListSort.Dir(dir);
         var response = await _api.GetJsonAsync<ListEnvelope<EntryItem>>("/api/v1/admin/literacy-progress", token);
-        Entries = response?.Items ?? [];
-        if (entryId is Guid id && Entries.FirstOrDefault(row => row.Id == id) is { } item) LoadEntry(item);
+        var all = response?.Items ?? [];
+        if (response is null && string.IsNullOrEmpty(ErrorMessage)) ErrorMessage = "Không tải được sổ theo dõi xóa mù chữ.";
+        IEnumerable<EntryItem> filtered = all;
+        if (Query is not null)
+        {
+            filtered = filtered.Where(item =>
+                ($"{item.FamilyName} {item.GivenName}").Contains(Query, StringComparison.CurrentCultureIgnoreCase)
+                || (item.Occupation?.Contains(Query, StringComparison.CurrentCultureIgnoreCase) ?? false)
+                || (item.Address?.Contains(Query, StringComparison.CurrentCultureIgnoreCase) ?? false)
+                || (item.Position?.Contains(Query, StringComparison.CurrentCultureIgnoreCase) ?? false));
+        }
+        Entries = filtered.ToArray();
+        if (Sort is not null)
+        {
+            Entries = CmsListSort.Order(Entries, Dir, Sort switch
+            {
+                "name" => Entries.OrderBy(item => item.FamilyName ?? "", StringComparer.CurrentCultureIgnoreCase).ThenBy(item => item.GivenName ?? "", StringComparer.CurrentCultureIgnoreCase),
+                "female" => Entries.OrderBy(item => item.Female),
+                "occupation" => Entries.OrderBy(item => item.Occupation ?? "", StringComparer.CurrentCultureIgnoreCase),
+                "sheet" => Entries.OrderBy(item => item.SourceSheet, StringComparer.OrdinalIgnoreCase),
+                _ => Entries.OrderBy(item => item.Sequence)
+            });
+        }
+        if (entryId is Guid id && all.FirstOrDefault(row => row.Id == id) is { } item) LoadEntry(item);
         return Page();
     }
 

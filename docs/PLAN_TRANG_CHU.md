@@ -35,3 +35,11 @@
 ## Phạm vi tiếp theo đề xuất
 
 Sau khi duyệt trang chủ, tiếp tục chuẩn hóa các trang danh sách (`Tin tức`, `Sự kiện`, `Học liệu`, `Thư viện`) theo cùng card, badge, filter và detail pattern.
+
+
+
+VER 02_10_2026
+TASK 01. Xử lý ĐỔI banner trên head thành ảnh 
+![alt text](image.png)
+
+Ảnh này: ![alt text](banner_xa_tan_tru_trung_tam_hoc_tap_so_1160x136.png) thay nội dung bằng ảnh này luôn, ảnh này đã có nội dung thiết kế

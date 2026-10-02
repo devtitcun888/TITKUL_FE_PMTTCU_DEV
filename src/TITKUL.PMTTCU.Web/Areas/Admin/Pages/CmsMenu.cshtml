@@ -1,0 +1,176 @@
+@page "/admin/cms/menu"
+@model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsMenuModel
+@{
+    ViewData["Title"] = "Menu công khai";
+}
+
+<section class="crm-page cms-admin-page cms-compose">
+    <header class="cms-compose-head">
+        <div>
+            <p class="cms-compose-eyebrow">Nội dung &amp; dịch vụ công</p>
+            <h1>Menu điều hướng</h1>
+            <p class="cms-compose-sub">Sắp xếp mục bằng số thứ tự. Nhãn và đường dẫn được giới hạn vào danh sách an toàn.</p>
+        </div>
+        <span class="cms-status-badge is-published"><i></i>Menu công khai v@(Model.PublishedVersion)</span>
+    </header>
+
+    @if (Model.ErrorMessage is not null) { <p class="alert" role="alert">@Model.ErrorMessage</p> }
+    @if (Model.SuccessMessage is not null) { <p class="crm-ok" role="status">@Model.SuccessMessage</p> }
+
+    @if (Model.Items.Count == 0)
+    {
+        <p class="empty">Không tải được cấu hình menu.</p>
+    }
+    else
+    {
+        <div class="cms-compose-grid">
+            <div class="cms-compose-main">
+                <form method="post" asp-page-handler="SaveDraft" class="cms-compose-card">
+                    <input type="hidden" name="ExpectedDraftVersion" value="@Model.ExpectedDraftVersion" />
+                    <header class="cms-compose-card-head">
+                        <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">menu</span></span>
+                        <h2>Các mục menu công khai</h2>
+                    </header>
+                    <div class="cms-posts-table-scroll">
+                        <table class="cms-posts-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Nhóm</th>
+                                    <th scope="col">Nhãn</th>
+                                    <th scope="col">Đường dẫn</th>
+                                    <th scope="col">Thứ tự</th>
+                                    <th scope="col">Hiện</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @for (var index = 0; index < Model.Items.Count; index++)
+                            {
+                                var item = Model.Items[index];
+                                <tr>
+                                    <td>
+                                        <input type="hidden" name="Items[@index].Key" value="@item.Key" />
+                                        <input type="hidden" name="Items[@index].Icon" value="@item.Icon" />
+                                        @if (item.Path is null || item.ParentKey == "__cta")
+                                        {
+                                            <strong>@(item.ParentKey == "__cta" ? "Nút đăng ký" : item.Path is null ? "Nhóm menu" : "Mục chính")</strong>
+                                            <input type="hidden" name="Items[@index].ParentKey" value="@item.ParentKey" />
+                                        }
+                                        else
+                                        {
+                                            <label class="sr-only" for="parent-@index">Nhóm của @item.Label</label>
+                                            <select id="parent-@index" name="Items[@index].ParentKey">
+                                                <option value="" selected="@(item.ParentKey is null)">Mục chính</option>
+                                                @foreach (var parent in CmsMenuModel.Parents)
+                                                {
+                                                    <option value="@parent" selected="@(item.ParentKey == parent)">@parent</option>
+                                                }
+                                            </select>
+                                        }
+                                    </td>
+                                    <td><label class="sr-only" for="label-@index">Nhãn @item.Key</label><input id="label-@index" name="Items[@index].Label" value="@item.Label" maxlength="60" required /></td>
+                                    <td><label class="sr-only" for="path-@index">Đường dẫn @item.Key</label><select id="path-@index" name="Items[@index].Path"><option value="">Nhóm thả xuống</option>@foreach (var path in CmsMenuModel.Paths) { <option value="@path" selected="@(item.Path == path)">@path</option> }</select></td>
+                                    <td><label class="sr-only" for="sort-@index">Thứ tự @item.Key</label><input id="sort-@index" type="number" min="0" max="1000" name="Items[@index].Sort" value="@item.Sort" /></td>
+                                    <td><input asp-for="Items[index].Visible" aria-label="Hiện @item.Label" /></td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (Model.CanEdit)
+                    {
+                        <div class="cms-compose-actions">
+                            <button class="cms-btn cms-btn-primary" type="submit">Lưu bản nháp</button>
+                        </div>
+                    }
+                </form>
+
+                @if (Model.History.Count > 0)
+                {
+                    <section class="cms-compose-card">
+                        <header class="cms-compose-card-head">
+                            <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">keep</span></span>
+                            <h2>Phiên bản đã công bố</h2>
+                        </header>
+                        <div class="cms-posts-table-scroll">
+                            <table class="cms-posts-table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Phiên bản</th>
+                                        <th scope="col">Thời điểm</th>
+                                        <th class="cms-posts-actions-col" scope="col">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                @foreach (var entry in Model.History)
+                                {
+                                    <tr>
+                                        <td>v@(entry.Version)</td>
+                                        <td class="cms-posts-stamp">@entry.PublishedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td class="cms-posts-actions-col">
+                                            @if (Model.CanEdit)
+                                            {
+                                                <form method="post" asp-page-handler="Restore">
+                                                    <input type="hidden" name="version" value="@entry.Version" />
+                                                    <input type="hidden" name="ExpectedDraftVersion" value="@Model.ExpectedDraftVersion" />
+                                                    <button class="cms-btn cms-btn-outline" type="submit">Chép vào bản nháp</button>
+                                                </form>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                }
+            </div>
+
+            <aside class="cms-compose-side">
+                <section class="cms-compose-card">
+                    <header class="cms-compose-card-head">
+                        <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">visibility</span></span>
+                        <h2>Xem trước bản nháp</h2>
+                    </header>
+                    <nav aria-label="Xem trước menu công khai">
+                        <ul class="cms-compose-menu-preview">
+                            @foreach (var item in Model.Items.Where(item => item.Visible && item.ParentKey is null).OrderBy(item => item.Sort))
+                            {
+                                var children = Model.Items.Where(child => child.Visible && child.ParentKey == item.Key).OrderBy(child => child.Sort).ToArray();
+                                <li>
+                                    <strong>@item.Label</strong>
+                                    @if (children.Length > 0)
+                                    {
+                                        <ul>
+                                            @foreach (var child in children)
+                                            {
+                                                <li>@child.Label <small>@child.Path</small></li>
+                                            }
+                                        </ul>
+                                    }
+                                    else if (item.Path is not null)
+                                    {
+                                        <small>@item.Path</small>
+                                    }
+                                </li>
+                            }
+                            @foreach (var cta in Model.Items.Where(item => item.Visible && item.ParentKey == "__cta"))
+                            {
+                                <li><strong>@cta.Label</strong> <small>@cta.Path</small></li>
+                            }
+                        </ul>
+                    </nav>
+                    @if (Model.CanEdit)
+                    {
+                        <div class="cms-compose-actions">
+                            <form method="post" asp-page-handler="Publish">
+                                <input type="hidden" name="ExpectedDraftVersion" value="@Model.ExpectedDraftVersion" />
+                                <button class="cms-btn cms-btn-primary" type="submit">Công bố bản nháp</button>
+                            </form>
+                            <p class="cms-compose-hint">Menu công khai chỉ thay đổi sau khi công bố.</p>
+                        </div>
+                    }
+                </section>
+            </aside>
+        </div>
+    }
+</section>

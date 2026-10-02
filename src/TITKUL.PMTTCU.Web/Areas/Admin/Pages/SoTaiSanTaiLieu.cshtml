@@ -1,72 +1,375 @@
 @page "/admin/so-tai-san-tai-lieu"
+@using TITKUL.PMTTCU.Web.Areas.Admin
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.SoTaiSanTaiLieuModel
 @{
     ViewData["Title"] = "Sổ tài sản, tài liệu và mượn–trả";
 }
-<section class="card stack admin-education-page">
-    <h1>Sổ tài sản, tài liệu và mượn–trả</h1>
-    <p>Quản lý theo các cột trong biểu mẫu khách hàng gửi. Thành tiền được tính từ đơn giá × số lượng; ngày trả và thông tin ký nhận được ghi khi có dữ liệu.</p>
-    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <p class="alert" role="alert">@Model.ErrorMessage</p> }
-    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage)) { <p class="status-note" role="status">@Model.SuccessMessage</p> }
-    <div class="row-actions"><a class="button button-quiet" href="/admin/so-tai-san-tai-lieu?handler=Export">Xuất cả ba sổ ra Excel</a></div>
 
-    <section class="card stack">
-        <h2>Sổ tài sản</h2>
-        <form method="post" enctype="multipart/form-data" asp-page-handler="ImportAssets" class="row-actions"><label for="assetFile">Nhập workbook Sổ tài sản</label><input id="assetFile" name="ImportFile" type="file" accept=".xlsx" required /><button type="submit">Nhập sổ tài sản</button></form>
-        <details class="stack" open="@(Model.AssetId.HasValue ? "open" : null)"><summary>@(Model.AssetId.HasValue ? "Sửa tài sản" : "Thêm tài sản")</summary>
-            <form method="post" asp-page-handler="SaveAsset" class="stack">
-                @if (Model.AssetId is Guid assetId) { <input type="hidden" name="AssetId" value="@assetId" /> }
-                <div class="row-actions">
-                    <div><label for="assetSequence">STT</label><input id="assetSequence" name="Sequence" type="number" min="0" value="@(Model.AssetId.HasValue ? Model.Sequence : null)" /></div>
-                    <div><label for="assetName">Tên tài sản</label><input id="assetName" name="Name" value="@(Model.AssetId.HasValue ? Model.Name : null)" maxlength="300" /></div>
-                    <div><label for="brand">Nhãn hiệu</label><input id="brand" name="Brand" value="@Model.Brand" maxlength="180" /></div>
-                    <div><label for="country">Nước sản xuất</label><input id="country" name="Country" value="@Model.Country" maxlength="180" /></div>
-                    <div><label for="assetPrice">Đơn giá</label><input id="assetPrice" name="UnitPrice" type="number" min="0" step="0.01" value="@(Model.AssetId.HasValue ? Model.UnitPrice : null)" /></div>
-                    <div><label for="assetQuantity">Số lượng</label><input id="assetQuantity" name="Quantity" type="number" min="0" value="@Model.AssetId.HasValue ? Model.Quantity : null" /></div>
-                </div>
-                <div class="row-actions"><div><label for="assetSupplier">Nguồn cung cấp</label><input id="assetSupplier" name="Supplier" value="@(Model.AssetId.HasValue ? Model.Supplier : null)" maxlength="240" /></div><div><label for="assetNote">Ghi chú</label><input id="assetNote" name="Note" value="@(Model.AssetId.HasValue ? Model.Note : null)" /></div></div>
-                <button type="submit">@(Model.AssetId.HasValue ? "Lưu tài sản" : "Thêm tài sản")</button>
-            </form>
-        </details>
-        <div class="table-scroll"><table><caption>@Model.Assets.Count dòng sổ tài sản</caption><thead><tr><th>STT</th><th>Tên tài sản</th><th>Nhãn hiệu</th><th>Nước sản xuất</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th><th>Nguồn cung cấp</th><th>Ghi chú</th><th>Thao tác</th></tr></thead><tbody>
-            @if (Model.Assets.Count == 0) { <tr><td colspan="10">Chưa có tài sản.</td></tr> }
-            @foreach (var x in Model.Assets) { <tr><td>@x.Sequence</td><td>@x.Name</td><td>@x.Brand</td><td>@x.Country</td><td>@x.UnitPrice</td><td>@x.Quantity</td><td>@x.TotalAmount</td><td>@x.Supplier</td><td>@x.Note</td><td class="row-actions"><a href="/admin/so-tai-san-tai-lieu?assetId=@x.Id">Sửa</a><form method="post" asp-page-handler="DeleteAsset"><input type="hidden" name="assetId" value="@x.Id" /><button class="button-quiet" type="submit">Xóa</button></form></td></tr> }
-        </tbody></table></div>
+<section class="crm-page cms-posts-page cms-list-page cms-list-stack">
+
+    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage)) { <p class="crm-ok" role="status">@Model.SuccessMessage</p> }
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <p class="crm-alert" role="alert">@Model.ErrorMessage</p> }
+
+    <form class="cms-posts-toolbar" method="get" action="/admin/so-tai-san-tai-lieu" role="search" data-cms-autofilter data-cols="2">
+        @await Html.PartialAsync("Shared/_CmsSortHidden", (Model.Sort, Model.Dir))
+        @if (!string.IsNullOrWhiteSpace(Model.CatalogSort))
+        {
+            <input type="hidden" name="csort" value="@Model.CatalogSort" />
+            @if (Model.CatalogDir == "desc") { <input type="hidden" name="cdir" value="desc" /> }
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.LoanSort))
+        {
+            <input type="hidden" name="lsort" value="@Model.LoanSort" />
+            @if (Model.LoanDir == "desc") { <input type="hidden" name="ldir" value="desc" /> }
+        }
+        <button class="cms-posts-filter-toggle @(Model.FiltersActive ? "has-active-filters" : null)" type="button" aria-label="Bộ lọc" aria-expanded="false" aria-controls="edu-ledger-filter-fields" data-cms-filter-toggle>
+            <svg class="cms-posts-filter-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                <path d="M4 5h16l-6.5 7.5v5l-3 1.5v-6.5L4 5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </button>
+        <div class="cms-posts-filter-fields" id="edu-ledger-filter-fields">
+            <label class="cms-posts-field">
+                <span>Từ khóa</span>
+                <span class="cms-posts-search">
+                    <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                    <input name="q" type="search" value="@Model.Query" placeholder="Tên tài sản, tài liệu, người mượn" />
+                </span>
+            </label>
+            <div class="cms-posts-toolbar-actions">
+                <a class="cms-posts-reset" href="/admin/so-tai-san-tai-lieu">
+                    <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
+                    Xóa lọc
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <section class="cms-posts-list" aria-labelledby="asset-table-title">
+        <header class="cms-posts-list-heading">
+            <div>
+                <h2 id="asset-table-title">Sổ tài sản</h2>
+                <p>@Model.Assets.Count.ToString("N0") dòng</p>
+            </div>
+            <div class="cms-posts-list-actions">
+                <a class="cms-posts-ghost" href="/admin/so-tai-san-tai-lieu?handler=Export"><span class="material-symbols-outlined" aria-hidden="true">download</span> Xuất Excel</a>
+                <a class="cms-posts-ghost" href="/admin/so-tai-san-tai-lieu?import=asset"><span class="material-symbols-outlined" aria-hidden="true">cloud_upload</span> Nhập Excel</a>
+                <a class="crm-primary-button cms-posts-create" href="/admin/so-tai-san-tai-lieu?create=asset"><span class="material-symbols-outlined" aria-hidden="true">add</span> Thêm tài sản</a>
+            </div>
+        </header>
+        @if (Model.Assets.Count == 0)
+        {
+            <div class="cms-posts-empty">
+                <span class="material-symbols-outlined" aria-hidden="true">inventory_2</span>
+                <strong>@(Model.FiltersActive ? "Không có tài sản khớp bộ lọc" : "Chưa có tài sản")</strong>
+                <p>@(Model.FiltersActive ? "Thử xóa bộ lọc hoặc đổi từ khóa." : "Thêm dòng hoặc nhập workbook.")</p>
+            </div>
+        }
+        else
+        {
+            <div class="cms-posts-table-scroll">
+                <table class="cms-posts-table cms-posts-table-wide">
+                    <thead>
+                        <tr>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "seq", Model.Dir)" href="@Model.SortUrl("seq")">STT <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "seq", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "name", Model.Dir)" href="@Model.SortUrl("name")">Tên tài sản <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "name", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "brand", Model.Dir)" href="@Model.SortUrl("brand")">Nhãn hiệu <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "brand", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "country", Model.Dir)" href="@Model.SortUrl("country")">Nước sản xuất <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "country", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "price", Model.Dir)" href="@Model.SortUrl("price")">Đơn giá <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "price", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "qty", Model.Dir)" href="@Model.SortUrl("qty")">Số lượng <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "qty", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "total", Model.Dir)" href="@Model.SortUrl("total")">Thành tiền <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "total", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "supplier", Model.Dir)" href="@Model.SortUrl("supplier")">Nguồn cung cấp <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "supplier", Model.Dir)</span></a></th>
+                            <th scope="col">Ghi chú</th>
+                            <th class="cms-posts-actions-col" scope="col">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var x in Model.Assets)
+                    {
+                        <tr>
+                            <td>@x.Sequence</td>
+                            <td class="cms-posts-title-cell"><strong>@(x.Name ?? "—")</strong></td>
+                            <td>@(x.Brand ?? "—")</td>
+                            <td>@(x.Country ?? "—")</td>
+                            <td>@x.UnitPrice</td>
+                            <td>@x.Quantity</td>
+                            <td>@x.TotalAmount</td>
+                            <td>@(x.Supplier ?? "—")</td>
+                            <td>@(x.Note ?? "—")</td>
+                            <td class="cms-posts-actions-col">
+                                <details class="cms-posts-row-menu">
+                                    <summary aria-label="Thao tác @x.Name"><span class="material-symbols-outlined" aria-hidden="true">more_horiz</span></summary>
+                                    <div class="cms-posts-row-panel" role="menu">
+                                        <a role="menuitem" href="/admin/so-tai-san-tai-lieu?assetId=@x.Id">Sửa</a>
+                                        <button class="cms-posts-menu-btn" type="submit" form="asset-delete-@x.Id" role="menuitem">Xóa</button>
+                                    </div>
+                                </details>
+                                <form id="asset-delete-@x.Id" method="post" asp-page-handler="DeleteAsset" hidden onsubmit="return confirm('Xóa dòng tài sản này?');">
+                                    <input type="hidden" name="assetId" value="@x.Id" />
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
     </section>
 
-    <section class="card stack">
-        <h2>Danh mục tài liệu, sách, báo và đồ dùng dạy học</h2>
-        <form method="post" enctype="multipart/form-data" asp-page-handler="ImportCatalog" class="row-actions"><label for="catalogFile">Nhập workbook Tài liệu, mượn tài liệu</label><input id="catalogFile" name="ImportFile" type="file" accept=".xlsx" required /><button type="submit">Nhập danh mục</button></form>
-        <details class="stack" open="@(Model.CatalogId.HasValue ? "open" : null)"><summary>@(Model.CatalogId.HasValue ? "Sửa tài liệu" : "Thêm tài liệu")</summary>
-            <form method="post" asp-page-handler="SaveCatalog" class="stack">
-                @if (Model.CatalogId is Guid catalogId) { <input type="hidden" name="CatalogId" value="@catalogId" /> }
-                <div class="row-actions"><div><label for="catalogSequence">STT</label><input id="catalogSequence" name="Sequence" type="number" min="0" value="@(Model.CatalogId.HasValue ? Model.Sequence : null)" /></div><div><label for="receivedOn">Ngày nhận</label><input id="receivedOn" name="ReceivedOn" type="date" value="@(Model.CatalogId.HasValue ? Model.ReceivedOn?.ToString("yyyy-MM-dd") : null)" /></div><div><label for="catalogName">Tài liệu, sách, báo, tài sản, đồ dùng dạy học</label><input id="catalogName" name="Name" value="@(Model.CatalogId.HasValue ? Model.Name : null)" maxlength="500" /></div><div><label for="catalogPrice">Đơn giá</label><input id="catalogPrice" name="UnitPrice" type="number" min="0" step="0.01" value="@(Model.CatalogId.HasValue ? Model.UnitPrice : null)" /></div><div><label for="catalogQuantity">Số lượng</label><input id="catalogQuantity" name="Quantity" type="number" min="0" value="@(Model.CatalogId.HasValue ? Model.Quantity : null)" /></div></div>
-                <div class="row-actions"><div><label for="catalogSupplier">Nguồn cấp</label><input id="catalogSupplier" name="Supplier" value="@(Model.CatalogId.HasValue ? Model.Supplier : null)" maxlength="240" /></div><div><label for="catalogNote">Ghi chú</label><input id="catalogNote" name="Note" value="@(Model.CatalogId.HasValue ? Model.Note : null)" /></div></div>
-                <button type="submit">@(Model.CatalogId.HasValue ? "Lưu tài liệu" : "Thêm tài liệu")</button>
-            </form>
-        </details>
-        <div class="table-scroll"><table><caption>@Model.Catalog.Count dòng danh mục</caption><thead><tr><th>STT</th><th>Ngày nhận</th><th>Tài liệu/sách/báo/tài sản/đồ dùng</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th><th>Nguồn cấp</th><th>Ghi chú</th><th>Thao tác</th></tr></thead><tbody>
-            @if (Model.Catalog.Count == 0) { <tr><td colspan="9">Chưa có danh mục.</td></tr> }
-            @foreach (var x in Model.Catalog) { <tr><td>@x.Sequence</td><td>@x.ReceivedOn</td><td>@x.Name</td><td>@x.UnitPrice</td><td>@x.Quantity</td><td>@x.TotalAmount</td><td>@x.Supplier</td><td>@x.Note</td><td class="row-actions"><a href="/admin/so-tai-san-tai-lieu?catalogId=@x.Id">Sửa</a><form method="post" asp-page-handler="DeleteCatalog"><input type="hidden" name="catalogId" value="@x.Id" /><button class="button-quiet" type="submit">Xóa</button></form></td></tr> }
-        </tbody></table></div>
+    <section class="cms-posts-list" aria-labelledby="catalog-table-title">
+        <header class="cms-posts-list-heading">
+            <div>
+                <h2 id="catalog-table-title">Danh mục tài liệu, sách, báo và đồ dùng dạy học</h2>
+                <p>@Model.Catalog.Count.ToString("N0") dòng</p>
+            </div>
+            <div class="cms-posts-list-actions">
+                <a class="cms-posts-ghost" href="/admin/so-tai-san-tai-lieu?import=catalog"><span class="material-symbols-outlined" aria-hidden="true">cloud_upload</span> Nhập Excel</a>
+                <a class="crm-primary-button cms-posts-create" href="/admin/so-tai-san-tai-lieu?create=catalog"><span class="material-symbols-outlined" aria-hidden="true">add</span> Thêm tài liệu</a>
+            </div>
+        </header>
+        @if (Model.Catalog.Count == 0)
+        {
+            <div class="cms-posts-empty">
+                <span class="material-symbols-outlined" aria-hidden="true">menu_book</span>
+                <strong>@(Model.FiltersActive ? "Không có tài liệu khớp bộ lọc" : "Chưa có danh mục")</strong>
+                <p>@(Model.FiltersActive ? "Thử xóa bộ lọc hoặc đổi từ khóa." : "Thêm dòng hoặc nhập workbook.")</p>
+            </div>
+        }
+        else
+        {
+            <div class="cms-posts-table-scroll">
+                <table class="cms-posts-table cms-posts-table-wide">
+                    <thead>
+                        <tr>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.CatalogSort, "seq", Model.CatalogDir)" href="@Model.CatalogSortUrl("seq")">STT <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.CatalogSort, "seq", Model.CatalogDir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.CatalogSort, "received", Model.CatalogDir)" href="@Model.CatalogSortUrl("received")">Ngày nhận <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.CatalogSort, "received", Model.CatalogDir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.CatalogSort, "name", Model.CatalogDir)" href="@Model.CatalogSortUrl("name")">Tài liệu/sách/báo/tài sản/đồ dùng <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.CatalogSort, "name", Model.CatalogDir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.CatalogSort, "price", Model.CatalogDir)" href="@Model.CatalogSortUrl("price")">Đơn giá <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.CatalogSort, "price", Model.CatalogDir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.CatalogSort, "qty", Model.CatalogDir)" href="@Model.CatalogSortUrl("qty")">Số lượng <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.CatalogSort, "qty", Model.CatalogDir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.CatalogSort, "total", Model.CatalogDir)" href="@Model.CatalogSortUrl("total")">Thành tiền <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.CatalogSort, "total", Model.CatalogDir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.CatalogSort, "supplier", Model.CatalogDir)" href="@Model.CatalogSortUrl("supplier")">Nguồn cấp <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.CatalogSort, "supplier", Model.CatalogDir)</span></a></th>
+                            <th scope="col">Ghi chú</th>
+                            <th class="cms-posts-actions-col" scope="col">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var x in Model.Catalog)
+                    {
+                        <tr>
+                            <td>@x.Sequence</td>
+                            <td>@x.ReceivedOn</td>
+                            <td class="cms-posts-title-cell"><strong>@(x.Name ?? "—")</strong></td>
+                            <td>@x.UnitPrice</td>
+                            <td>@x.Quantity</td>
+                            <td>@x.TotalAmount</td>
+                            <td>@(x.Supplier ?? "—")</td>
+                            <td>@(x.Note ?? "—")</td>
+                            <td class="cms-posts-actions-col">
+                                <details class="cms-posts-row-menu">
+                                    <summary aria-label="Thao tác @x.Name"><span class="material-symbols-outlined" aria-hidden="true">more_horiz</span></summary>
+                                    <div class="cms-posts-row-panel" role="menu">
+                                        <a role="menuitem" href="/admin/so-tai-san-tai-lieu?catalogId=@x.Id">Sửa</a>
+                                        <button class="cms-posts-menu-btn" type="submit" form="catalog-delete-@x.Id" role="menuitem">Xóa</button>
+                                    </div>
+                                </details>
+                                <form id="catalog-delete-@x.Id" method="post" asp-page-handler="DeleteCatalog" hidden onsubmit="return confirm('Xóa dòng danh mục này?');">
+                                    <input type="hidden" name="catalogId" value="@x.Id" />
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
     </section>
 
-    <section class="card stack">
-        <h2>Theo dõi mượn và trả</h2>
-        <p>Tình trạng và ký mượn/trả được lưu như nội dung ghi sổ trong biểu mẫu.</p>
-        <form method="post" enctype="multipart/form-data" asp-page-handler="ImportLoans" class="row-actions"><label for="loanFile">Nhập workbook (sheet MƯỢN)</label><input id="loanFile" name="ImportFile" type="file" accept=".xlsx" required /><button type="submit">Nhập mượn–trả</button></form>
-        <details class="stack" open="@(Model.LoanId.HasValue ? "open" : null)"><summary>@(Model.LoanId.HasValue ? "Sửa dòng mượn–trả" : "Thêm dòng mượn–trả")</summary>
-            <form method="post" asp-page-handler="SaveLoan" class="stack">
-                @if (Model.LoanId is Guid loanId) { <input type="hidden" name="LoanId" value="@loanId" /> }
-                <div class="row-actions"><div><label for="loanSequence">STT</label><input id="loanSequence" name="Sequence" type="number" min="0" value="@(Model.LoanId.HasValue ? Model.Sequence : null)" /></div><div><label for="borrowerName">Họ tên người mượn</label><input id="borrowerName" name="BorrowerName" value="@Model.BorrowerName" maxlength="240" /></div><div><label for="materialName">Tên tài liệu, sách, ...</label><input id="materialName" name="MaterialName" value="@Model.MaterialName" maxlength="500" /></div><div><label for="borrowedOn">Ngày mượn</label><input id="borrowedOn" name="BorrowedOn" type="date" value="@Model.BorrowedOn?.ToString("yyyy-MM-dd")" /></div></div>
-                <div class="row-actions"><div><label for="borrowCondition">Tình trạng lúc mượn</label><input id="borrowCondition" name="BorrowCondition" value="@Model.BorrowCondition" maxlength="240" /></div><div><label for="borrowedQuantity">Số lượng mượn</label><input id="borrowedQuantity" name="BorrowedQuantity" type="number" min="0" value="@Model.BorrowedQuantity" /></div><div><label for="borrowSignature">Ký mượn</label><input id="borrowSignature" name="BorrowSignature" value="@Model.BorrowSignature" maxlength="240" /></div></div>
-                <div class="row-actions"><div><label for="returnedOn">Ngày trả</label><input id="returnedOn" name="ReturnedOn" type="date" value="@Model.ReturnedOn?.ToString("yyyy-MM-dd")" /></div><div><label for="returnCondition">Tình trạng lúc trả</label><input id="returnCondition" name="ReturnCondition" value="@Model.ReturnCondition" maxlength="240" /></div><div><label for="returnedQuantity">Số lượng trả</label><input id="returnedQuantity" name="ReturnedQuantity" type="number" min="0" value="@Model.ReturnedQuantity" /></div><div><label for="returnSignature">Ký trả</label><input id="returnSignature" name="ReturnSignature" value="@Model.ReturnSignature" maxlength="240" /></div></div>
-                <button type="submit">@(Model.LoanId.HasValue ? "Lưu dòng" : "Thêm dòng")</button>
-            </form>
-        </details>
-        <div class="table-scroll"><table><caption>@Model.Loans.Count dòng mượn–trả</caption><thead><tr><th>STT</th><th>Họ tên người mượn</th><th>Tên tài liệu</th><th>Ngày mượn</th><th>Tình trạng mượn</th><th>Số lượng mượn</th><th>Ký mượn</th><th>Ngày trả</th><th>Tình trạng trả</th><th>Số lượng trả</th><th>Ký trả</th><th>Thao tác</th></tr></thead><tbody>
-            @if (Model.Loans.Count == 0) { <tr><td colspan="12">Chưa có giao dịch mượn–trả.</td></tr> }
-            @foreach (var x in Model.Loans) { <tr><td>@x.Sequence</td><td>@x.BorrowerName</td><td>@x.MaterialName</td><td>@x.BorrowedOn</td><td>@x.BorrowCondition</td><td>@x.BorrowedQuantity</td><td>@x.BorrowSignature</td><td>@x.ReturnedOn</td><td>@x.ReturnCondition</td><td>@x.ReturnedQuantity</td><td>@x.ReturnSignature</td><td class="row-actions"><a href="/admin/so-tai-san-tai-lieu?loanId=@x.Id">Sửa</a><form method="post" asp-page-handler="DeleteLoan"><input type="hidden" name="loanId" value="@x.Id" /><button class="button-quiet" type="submit">Xóa</button></form></td></tr> }
-        </tbody></table></div>
+    <section class="cms-posts-list" aria-labelledby="loan-table-title">
+        <header class="cms-posts-list-heading">
+            <div>
+                <h2 id="loan-table-title">Theo dõi mượn và trả</h2>
+                <p>@Model.Loans.Count.ToString("N0") dòng · tình trạng và ký mượn/trả lưu như nội dung ghi sổ</p>
+            </div>
+            <div class="cms-posts-list-actions">
+                <a class="cms-posts-ghost" href="/admin/so-tai-san-tai-lieu?import=loan"><span class="material-symbols-outlined" aria-hidden="true">cloud_upload</span> Nhập Excel</a>
+                <a class="crm-primary-button cms-posts-create" href="/admin/so-tai-san-tai-lieu?create=loan"><span class="material-symbols-outlined" aria-hidden="true">add</span> Thêm dòng</a>
+            </div>
+        </header>
+        @if (Model.Loans.Count == 0)
+        {
+            <div class="cms-posts-empty">
+                <span class="material-symbols-outlined" aria-hidden="true">swap_vert</span>
+                <strong>@(Model.FiltersActive ? "Không có giao dịch khớp bộ lọc" : "Chưa có giao dịch mượn–trả")</strong>
+                <p>@(Model.FiltersActive ? "Thử xóa bộ lọc hoặc đổi từ khóa." : "Thêm dòng hoặc nhập workbook.")</p>
+            </div>
+        }
+        else
+        {
+            <div class="cms-posts-table-scroll">
+                <table class="cms-posts-table cms-posts-table-wide">
+                    <thead>
+                        <tr>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.LoanSort, "seq", Model.LoanDir)" href="@Model.LoanSortUrl("seq")">STT <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.LoanSort, "seq", Model.LoanDir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.LoanSort, "borrower", Model.LoanDir)" href="@Model.LoanSortUrl("borrower")">Họ tên người mượn <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.LoanSort, "borrower", Model.LoanDir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.LoanSort, "material", Model.LoanDir)" href="@Model.LoanSortUrl("material")">Tên tài liệu <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.LoanSort, "material", Model.LoanDir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.LoanSort, "borrowed", Model.LoanDir)" href="@Model.LoanSortUrl("borrowed")">Ngày mượn <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.LoanSort, "borrowed", Model.LoanDir)</span></a></th>
+                            <th scope="col">Tình trạng mượn</th>
+                            <th scope="col">Số lượng mượn</th>
+                            <th scope="col">Ký mượn</th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.LoanSort, "returned", Model.LoanDir)" href="@Model.LoanSortUrl("returned")">Ngày trả <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.LoanSort, "returned", Model.LoanDir)</span></a></th>
+                            <th scope="col">Tình trạng trả</th>
+                            <th scope="col">Số lượng trả</th>
+                            <th scope="col">Ký trả</th>
+                            <th class="cms-posts-actions-col" scope="col">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var x in Model.Loans)
+                    {
+                        <tr>
+                            <td>@x.Sequence</td>
+                            <td class="cms-posts-title-cell"><strong>@(x.BorrowerName ?? "—")</strong></td>
+                            <td>@(x.MaterialName ?? "—")</td>
+                            <td>@x.BorrowedOn</td>
+                            <td>@(x.BorrowCondition ?? "—")</td>
+                            <td>@x.BorrowedQuantity</td>
+                            <td>@(x.BorrowSignature ?? "—")</td>
+                            <td>@x.ReturnedOn</td>
+                            <td>@(x.ReturnCondition ?? "—")</td>
+                            <td>@x.ReturnedQuantity</td>
+                            <td>@(x.ReturnSignature ?? "—")</td>
+                            <td class="cms-posts-actions-col">
+                                <details class="cms-posts-row-menu">
+                                    <summary aria-label="Thao tác @x.BorrowerName"><span class="material-symbols-outlined" aria-hidden="true">more_horiz</span></summary>
+                                    <div class="cms-posts-row-panel" role="menu">
+                                        <a role="menuitem" href="/admin/so-tai-san-tai-lieu?loanId=@x.Id">Sửa</a>
+                                        <button class="cms-posts-menu-btn" type="submit" form="loan-delete-@x.Id" role="menuitem">Xóa</button>
+                                    </div>
+                                </details>
+                                <form id="loan-delete-@x.Id" method="post" asp-page-handler="DeleteLoan" hidden onsubmit="return confirm('Xóa dòng mượn–trả này?');">
+                                    <input type="hidden" name="loanId" value="@x.Id" />
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
     </section>
 </section>
+
+@if (Model.ImportKind is "asset" or "catalog" or "loan")
+{
+    var importHandler = Model.ImportKind switch { "catalog" => "ImportCatalog", "loan" => "ImportLoans", _ => "ImportAssets" };
+    var importTitle = Model.ImportKind switch { "catalog" => "Nhập danh mục tài liệu", "loan" => "Nhập mượn–trả", _ => "Nhập sổ tài sản" };
+    <dialog class="crm-modal" open data-close-href="/admin/so-tai-san-tai-lieu" aria-labelledby="ledger-import-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Nhập liệu</p><h2 id="ledger-import-title">@importTitle</h2></div>
+                <a class="crm-modal-close" href="/admin/so-tai-san-tai-lieu" aria-label="Đóng">×</a>
+            </header>
+            <form method="post" enctype="multipart/form-data" asp-page-handler="@importHandler" class="crm-modal-body">
+                <label for="importFile">Workbook .xlsx<input id="importFile" name="ImportFile" type="file" accept=".xlsx" required /></label>
+                <footer class="crm-modal-actions">
+                    <a class="education-cancel-button" href="/admin/so-tai-san-tai-lieu">Hủy</a>
+                    <button class="crm-primary-button" type="submit">Nhập dữ liệu</button>
+                </footer>
+            </form>
+        </section>
+    </dialog>
+}
+
+@if (Model.ShowAsset)
+{
+    <dialog class="crm-modal" open data-close-href="/admin/so-tai-san-tai-lieu" aria-labelledby="asset-modal-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel crm-modal-wide">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Sổ tài sản</p><h2 id="asset-modal-title">@(Model.AssetId.HasValue ? "Sửa tài sản" : "Thêm tài sản")</h2></div>
+                <a class="crm-modal-close" href="/admin/so-tai-san-tai-lieu" aria-label="Đóng">×</a>
+            </header>
+            <form method="post" asp-page-handler="SaveAsset" class="crm-modal-body">
+                @if (Model.AssetId is Guid assetId) { <input type="hidden" name="AssetId" value="@assetId" /> }
+                <div class="crm-form-grid" style="padding:0">
+                    <label for="assetSequence">STT<input id="assetSequence" name="Sequence" type="number" min="0" value="@(Model.AssetId.HasValue ? Model.Sequence : null)" /></label>
+                    <label for="assetName">Tên tài sản<input id="assetName" name="Name" value="@(Model.AssetId.HasValue ? Model.Name : null)" maxlength="300" /></label>
+                    <label for="brand">Nhãn hiệu<input id="brand" name="Brand" value="@Model.Brand" maxlength="180" /></label>
+                    <label for="country">Nước sản xuất<input id="country" name="Country" value="@Model.Country" maxlength="180" /></label>
+                    <label for="assetPrice">Đơn giá<input id="assetPrice" name="UnitPrice" type="number" min="0" step="0.01" value="@(Model.AssetId.HasValue ? Model.UnitPrice : null)" /></label>
+                    <label for="assetQuantity">Số lượng<input id="assetQuantity" name="Quantity" type="number" min="0" value="@(Model.AssetId.HasValue ? Model.Quantity : null)" /></label>
+                    <label for="assetSupplier">Nguồn cung cấp<input id="assetSupplier" name="Supplier" value="@(Model.AssetId.HasValue ? Model.Supplier : null)" maxlength="240" /></label>
+                    <label for="assetNote">Ghi chú<input id="assetNote" name="Note" value="@(Model.AssetId.HasValue ? Model.Note : null)" /></label>
+                </div>
+                <footer class="crm-modal-actions">
+                    <a class="education-cancel-button" href="/admin/so-tai-san-tai-lieu">Hủy</a>
+                    <button class="crm-primary-button" type="submit">@(Model.AssetId.HasValue ? "Lưu tài sản" : "Thêm tài sản")</button>
+                </footer>
+            </form>
+        </section>
+    </dialog>
+}
+
+@if (Model.ShowCatalog)
+{
+    <dialog class="crm-modal" open data-close-href="/admin/so-tai-san-tai-lieu" aria-labelledby="catalog-modal-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel crm-modal-wide">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Danh mục tài liệu</p><h2 id="catalog-modal-title">@(Model.CatalogId.HasValue ? "Sửa tài liệu" : "Thêm tài liệu")</h2></div>
+                <a class="crm-modal-close" href="/admin/so-tai-san-tai-lieu" aria-label="Đóng">×</a>
+            </header>
+            <form method="post" asp-page-handler="SaveCatalog" class="crm-modal-body">
+                @if (Model.CatalogId is Guid catalogId) { <input type="hidden" name="CatalogId" value="@catalogId" /> }
+                <div class="crm-form-grid" style="padding:0">
+                    <label for="catalogSequence">STT<input id="catalogSequence" name="Sequence" type="number" min="0" value="@(Model.CatalogId.HasValue ? Model.Sequence : null)" /></label>
+                    <label for="receivedOn">Ngày nhận<input id="receivedOn" name="ReceivedOn" type="date" value="@(Model.CatalogId.HasValue ? Model.ReceivedOn?.ToString("yyyy-MM-dd") : null)" /></label>
+                    <label class="crm-field-wide" for="catalogName">Tài liệu, sách, báo, tài sản, đồ dùng dạy học<input id="catalogName" name="Name" value="@(Model.CatalogId.HasValue ? Model.Name : null)" maxlength="500" /></label>
+                    <label for="catalogPrice">Đơn giá<input id="catalogPrice" name="UnitPrice" type="number" min="0" step="0.01" value="@(Model.CatalogId.HasValue ? Model.UnitPrice : null)" /></label>
+                    <label for="catalogQuantity">Số lượng<input id="catalogQuantity" name="Quantity" type="number" min="0" value="@(Model.CatalogId.HasValue ? Model.Quantity : null)" /></label>
+                    <label for="catalogSupplier">Nguồn cấp<input id="catalogSupplier" name="Supplier" value="@(Model.CatalogId.HasValue ? Model.Supplier : null)" maxlength="240" /></label>
+                    <label for="catalogNote">Ghi chú<input id="catalogNote" name="Note" value="@(Model.CatalogId.HasValue ? Model.Note : null)" /></label>
+                </div>
+                <footer class="crm-modal-actions">
+                    <a class="education-cancel-button" href="/admin/so-tai-san-tai-lieu">Hủy</a>
+                    <button class="crm-primary-button" type="submit">@(Model.CatalogId.HasValue ? "Lưu tài liệu" : "Thêm tài liệu")</button>
+                </footer>
+            </form>
+        </section>
+    </dialog>
+}
+
+@if (Model.ShowLoan)
+{
+    <dialog class="crm-modal" open data-close-href="/admin/so-tai-san-tai-lieu" aria-labelledby="loan-modal-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel crm-modal-wide">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Mượn–trả</p><h2 id="loan-modal-title">@(Model.LoanId.HasValue ? "Sửa dòng mượn–trả" : "Thêm dòng mượn–trả")</h2></div>
+                <a class="crm-modal-close" href="/admin/so-tai-san-tai-lieu" aria-label="Đóng">×</a>
+            </header>
+            <form method="post" asp-page-handler="SaveLoan" class="crm-modal-body">
+                @if (Model.LoanId is Guid loanId) { <input type="hidden" name="LoanId" value="@loanId" /> }
+                <div class="crm-form-grid" style="padding:0">
+                    <label for="loanSequence">STT<input id="loanSequence" name="Sequence" type="number" min="0" value="@(Model.LoanId.HasValue ? Model.Sequence : null)" /></label>
+                    <label for="borrowerName">Họ tên người mượn<input id="borrowerName" name="BorrowerName" value="@Model.BorrowerName" maxlength="240" /></label>
+                    <label class="crm-field-wide" for="materialName">Tên tài liệu, sách, ...<input id="materialName" name="MaterialName" value="@Model.MaterialName" maxlength="500" /></label>
+                    <label for="borrowedOn">Ngày mượn<input id="borrowedOn" name="BorrowedOn" type="date" value="@Model.BorrowedOn?.ToString("yyyy-MM-dd")" /></label>
+                    <label for="borrowCondition">Tình trạng lúc mượn<input id="borrowCondition" name="BorrowCondition" value="@Model.BorrowCondition" maxlength="240" /></label>
+                    <label for="borrowedQuantity">Số lượng mượn<input id="borrowedQuantity" name="BorrowedQuantity" type="number" min="0" value="@Model.BorrowedQuantity" /></label>
+                    <label for="borrowSignature">Ký mượn<input id="borrowSignature" name="BorrowSignature" value="@Model.BorrowSignature" maxlength="240" /></label>
+                    <label for="returnedOn">Ngày trả<input id="returnedOn" name="ReturnedOn" type="date" value="@Model.ReturnedOn?.ToString("yyyy-MM-dd")" /></label>
+                    <label for="returnCondition">Tình trạng lúc trả<input id="returnCondition" name="ReturnCondition" value="@Model.ReturnCondition" maxlength="240" /></label>
+                    <label for="returnedQuantity">Số lượng trả<input id="returnedQuantity" name="ReturnedQuantity" type="number" min="0" value="@Model.ReturnedQuantity" /></label>
+                    <label for="returnSignature">Ký trả<input id="returnSignature" name="ReturnSignature" value="@Model.ReturnSignature" maxlength="240" /></label>
+                </div>
+                <footer class="crm-modal-actions">
+                    <a class="education-cancel-button" href="/admin/so-tai-san-tai-lieu">Hủy</a>
+                    <button class="crm-primary-button" type="submit">@(Model.LoanId.HasValue ? "Lưu dòng" : "Thêm dòng")</button>
+                </footer>
+            </form>
+        </section>
+    </dialog>
+}
+
+<script src="~/js/admin-cms-list.js" asp-append-version="true" defer></script>

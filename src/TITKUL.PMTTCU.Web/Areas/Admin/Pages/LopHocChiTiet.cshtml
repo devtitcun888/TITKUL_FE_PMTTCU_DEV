@@ -3,39 +3,53 @@
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.LopHocChiTietModel
 @{
     ViewData["Title"] = "Chi tiết lớp";
+    var showSession = Request.Query.ContainsKey("session");
+    var showMaterial = Request.Query.ContainsKey("material");
 }
 
-<section class="card stack">
-    <h1>Chi tiết lớp</h1>
-    <p class="row-actions">
-        <a href="/admin/lop-hoc">Về danh sách</a>
-        <a href="/admin/lop-hoc/@Model.Item?.Id/chung-nhan">Chứng nhận</a>
-        <a href="/admin/lop-hoc/@Model.Item?.Id/don-phep">Đơn xin phép</a>
-    </p>
+<section class="crm-page">
+    <header class="crm-page-heading">
+        <div>
+            <p class="crm-eyebrow">Đào tạo &amp; người học</p>
+            <h1>Chi tiết lớp</h1>
+            <p class="crm-page-description">Hồ sơ lớp, QR đăng ký, buổi học và học viên.</p>
+        </div>
+        <div class="crm-heading-actions">
+            <a class="education-cancel-button" href="/admin/lop-hoc">Về danh sách</a>
+            <a class="education-cancel-button" href="/admin/lop-hoc/@Model.Item?.Id/chung-nhan">Chứng nhận</a>
+            <a class="education-cancel-button" href="/admin/lop-hoc/@Model.Item?.Id/don-phep">Đơn xin phép</a>
+            @if (Model.CanEdit)
+            {
+                <a class="crm-primary-button" href="/admin/lop-hoc/@Model.Item?.Id?session=true"><span aria-hidden="true">＋</span> Thêm buổi</a>
+            }
+        </div>
+    </header>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <p class="crm-alert" role="alert">@Model.ErrorMessage</p>
     }
     @if (Model.Item is not null)
     {
-        <p><strong>Trạng thái hiện tại:</strong> @EducationUi.Status(Model.Item.Status)</p>
+        <p class="crm-ok">Trạng thái hiện tại: <strong>@EducationUi.Status(Model.Item.Status)</strong></p>
         @if (Model.CanManage && !string.IsNullOrEmpty(Model.QrUrl))
         {
-            <div class="stack">
-                <h2>QR đăng ký</h2>
-                <p>Quét mã mở <code>@Model.QrUrl</code></p>
-                <img src="/admin/lop-hoc/@Model.Item.Id?handler=Qr" alt="Mã QR đăng ký lớp @Model.Item.Code" width="180" height="180" />
-                <p class="row-actions">
-                    <a class="button" href="/admin/lop-hoc/@Model.Item.Id?handler=Qr">Tải PNG</a>
-                    <a href="/dang-ky/@Model.Item.Code">Mở form công khai</a>
-                    <button type="button" class="button" data-copy-url="/dang-ky/@Model.Item.Code">Sao chép liên kết đăng ký</button>
-                </p>
-                <p data-copy-feedback role="status" aria-live="polite"></p>
-            </div>
+            <section class="crm-panel">
+                <header class="crm-panel-heading"><h2>QR đăng ký</h2></header>
+                <div class="crm-form-grid">
+                    <p class="crm-field-wide">Quét mã mở <code>@Model.QrUrl</code></p>
+                    <p><img src="/admin/lop-hoc/@Model.Item.Id?handler=Qr" alt="Mã QR đăng ký lớp @Model.Item.Code" width="180" height="180" /></p>
+                    <p class="crm-form-actions crm-field-wide">
+                        <a class="education-cancel-button" href="/admin/lop-hoc/@Model.Item.Id?handler=Qr">Tải PNG</a>
+                        <a class="education-cancel-button" href="/dang-ky/@Model.Item.Code">Mở form công khai</a>
+                        <button type="button" class="crm-primary-button" data-copy-url="/dang-ky/@Model.Item.Code">Sao chép liên kết đăng ký</button>
+                    </p>
+                    <p class="crm-field-wide" data-copy-feedback role="status" aria-live="polite"></p>
+                </div>
+            </section>
         }
         @if (Model.CanEdit)
         {
-            <form method="post" class="stack">
+            <form method="post" class="crm-panel crm-form-grid">
                 <div>
                     <label for="programId">Chương trình</label>
                     <select id="programId" name="ProgramId" required>
@@ -86,7 +100,7 @@
                         <option value="false" selected="@(!Model.Public ? "selected" : null)">Không</option>
                     </select>
                 </div>
-                <button type="submit">Lưu thông tin lớp</button>
+                <div class="crm-form-actions"><button class="crm-primary-button" type="submit">Lưu thông tin lớp</button></div>
             </form>
         }
         else
@@ -197,15 +211,18 @@
             </form>
         }
 
-        <h2>Buổi học</h2>
+        <section class="crm-table-card" aria-labelledby="session-table-title">
+        <header class="crm-table-heading">
+            <div><h2 id="session-table-title">Buổi học</h2><p>@Model.Sessions.Count buổi</p></div>
+        </header>
         @if (Model.Sessions.Count == 0)
         {
-            <p class="empty">Chưa có buổi học.</p>
+            <div class="crm-empty"><strong>Chưa có buổi học</strong></div>
         }
         else
         {
-            <div class="table-scroll">
-                <table>
+            <div class="crm-table-scroll">
+                <table class="crm-table">
                     <caption>Thời khóa biểu lớp</caption>
                     <thead>
                         <tr>
@@ -240,56 +257,20 @@
                 </table>
             </div>
         }
-        @if (Model.CanEdit)
-        {
-            <form method="post" asp-page-handler="Session" class="stack">
-                <div>
-                    <label for="sessionTitle">Tên buổi</label>
-                    <input id="sessionTitle" name="SessionTitle" value="@Model.SessionTitle" required maxlength="250" />
-                </div>
-                <div>
-                    <label for="sessionRoomId">Phòng</label>
-                    <select id="sessionRoomId" name="SessionRoomId">
-                        <option value="">Không gán phòng</option>
-                        @foreach (var room in Model.Rooms)
-                        {
-                            <option value="@room.Id">@room.Code — @room.Name</option>
-                        }
-                    </select>
-                </div>
-                <div>
-                    <label for="sessionStart">Bắt đầu</label>
-                    <input id="sessionStart" name="SessionStart" type="datetime-local" value="@Model.SessionStart" required />
-                </div>
-                <div>
-                    <label for="sessionEnd">Kết thúc</label>
-                    <input id="sessionEnd" name="SessionEnd" type="datetime-local" value="@Model.SessionEnd" required />
-                </div>
-                <div>
-                    <label for="sessionMode">Hình thức</label>
-                    <select id="sessionMode" name="SessionMode">
-                        <option value="OFFLINE" selected="@(Model.SessionMode == "OFFLINE" ? "selected" : null)">Trực tiếp</option>
-                        <option value="ONLINE" selected="@(Model.SessionMode == "ONLINE" ? "selected" : null)">Trực tuyến</option>
-                        <option value="HYBRID" selected="@(Model.SessionMode == "HYBRID" ? "selected" : null)">Kết hợp</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="meetingUrl">Liên kết Meet/Zoom (HTTPS)</label>
-                    <input id="meetingUrl" name="MeetingUrl" value="@Model.MeetingUrl" maxlength="1000" />
-                </div>
-                <button type="submit">Thêm buổi học</button>
-            </form>
-        }
+        </section>
 
-        <h2>Danh sách đăng ký</h2>
+        <section class="crm-table-card" aria-labelledby="enroll-table-title">
+        <header class="crm-table-heading">
+            <div><h2 id="enroll-table-title">Danh sách đăng ký</h2><p>@Model.Enrollments.Count học viên</p></div>
+        </header>
         @if (Model.Enrollments.Count == 0)
         {
-            <p class="empty">Chưa có đăng ký.</p>
+            <div class="crm-empty"><strong>Chưa có đăng ký</strong></div>
         }
         else
         {
-            <div class="table-scroll">
-                <table>
+            <div class="crm-table-scroll">
+                <table class="crm-table">
                     <caption>Học viên đã đăng ký</caption>
                     <thead>
                         <tr>
@@ -315,49 +296,99 @@
                 </table>
             </div>
         }
+        </section>
 
-        <h2>Học liệu</h2>
-        @if (Model.Materials.Count == 0)
-        {
-            <p class="empty">Chưa có học liệu.</p>
-        }
-        else
-        {
-            <div class="material-grid">
-                @foreach (var material in Model.Materials)
+        <section class="crm-panel">
+            <header class="crm-panel-heading">
+                <div><h2>Học liệu</h2></div>
+                @if (Model.CanMaterial)
                 {
-                    <article class="material-card">
-                        <h3>@material.Title</h3>
-                        <p>@(material.Public ? "Công khai" : "Nội bộ") · @material.FileName</p>
-                        <p><a class="button" href="/admin/lop-hoc/@Model.Item.Id?handler=MaterialFile&amp;materialId=@material.Id">Tải tệp</a></p>
-                    </article>
+                    <a class="crm-primary-button" href="/admin/lop-hoc/@Model.Item.Id?material=true"><span aria-hidden="true">＋</span> Thêm học liệu</a>
                 }
-            </div>
-        }
-        @if (Model.CanMaterial)
-        {
-            <form method="post" asp-page-handler="Material" enctype="multipart/form-data" class="stack">
-                <div>
-                    <label for="materialTitle">Tiêu đề học liệu</label>
-                    <input id="materialTitle" name="MaterialTitle" value="@Model.MaterialTitle" required maxlength="250" />
+            </header>
+            @if (Model.Materials.Count == 0)
+            {
+                <div class="crm-empty"><strong>Chưa có học liệu</strong></div>
+            }
+            else
+            {
+                <div class="material-grid" style="padding:16px">
+                    @foreach (var material in Model.Materials)
+                    {
+                        <article class="material-card">
+                            <h3>@material.Title</h3>
+                            <p>@(material.Public ? "Công khai" : "Nội bộ") · @material.FileName</p>
+                            <p><a class="education-cancel-button" href="/admin/lop-hoc/@Model.Item.Id?handler=MaterialFile&amp;materialId=@material.Id">Tải tệp</a></p>
+                        </article>
+                    }
                 </div>
-                <div>
-                    <label for="materialDescription">Mô tả</label>
-                    <input id="materialDescription" name="MaterialDescription" value="@Model.MaterialDescription" maxlength="1000" />
-                </div>
-                <div>
-                    <label for="materialFile">Tệp PDF hoặc ảnh</label>
-                    <input id="materialFile" name="MaterialFile" type="file" data-file-preview="20971520" data-image-max="5242880" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" required />
-                    <small>Ảnh tối đa 5 MiB; PDF tối đa 20 MiB.</small><small data-file-preview-status aria-live="polite"></small>
-                </div>
-                <div>
-                    <label>
-                        <input type="checkbox" name="MaterialPublic" value="true" checked="@(Model.MaterialPublic ? "checked" : null)" />
-                        Công khai trên trang lớp
-                    </label>
-                </div>
-                <button type="submit">Thêm học liệu</button>
-            </form>
-        }
+            }
+        </section>
     }
 </section>
+
+@if (showSession && Model.Item is not null && Model.CanEdit)
+{
+    <dialog class="crm-modal" open data-close-href="/admin/lop-hoc/@Model.Item.Id" aria-labelledby="session-modal-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Thời khóa biểu</p><h2 id="session-modal-title">Thêm buổi học</h2></div>
+                <a class="crm-modal-close" href="/admin/lop-hoc/@Model.Item.Id" aria-label="Đóng">×</a>
+            </header>
+            <form method="post" asp-page-handler="Session" class="crm-modal-body">
+                <label for="sessionTitle">Tên buổi<input id="sessionTitle" name="SessionTitle" value="@Model.SessionTitle" required maxlength="250" /></label>
+                <label for="sessionRoomId">Phòng
+                    <select id="sessionRoomId" name="SessionRoomId">
+                        <option value="">Không gán phòng</option>
+                        @foreach (var room in Model.Rooms) { <option value="@room.Id">@room.Code — @room.Name</option> }
+                    </select>
+                </label>
+                <label for="sessionStart">Bắt đầu<input id="sessionStart" name="SessionStart" type="datetime-local" value="@Model.SessionStart" required /></label>
+                <label for="sessionEnd">Kết thúc<input id="sessionEnd" name="SessionEnd" type="datetime-local" value="@Model.SessionEnd" required /></label>
+                <label for="sessionMode">Hình thức
+                    <select id="sessionMode" name="SessionMode">
+                        <option value="OFFLINE" selected="@(Model.SessionMode == "OFFLINE" ? "selected" : null)">Trực tiếp</option>
+                        <option value="ONLINE" selected="@(Model.SessionMode == "ONLINE" ? "selected" : null)">Trực tuyến</option>
+                        <option value="HYBRID" selected="@(Model.SessionMode == "HYBRID" ? "selected" : null)">Kết hợp</option>
+                    </select>
+                </label>
+                <label for="meetingUrl">Liên kết Meet/Zoom (HTTPS)<input id="meetingUrl" name="MeetingUrl" value="@Model.MeetingUrl" maxlength="1000" /></label>
+                <footer class="crm-modal-actions">
+                    <a class="education-cancel-button" href="/admin/lop-hoc/@Model.Item.Id">Hủy</a>
+                    <button class="crm-primary-button" type="submit">Thêm buổi học</button>
+                </footer>
+            </form>
+        </section>
+    </dialog>
+}
+
+@if (showMaterial && Model.Item is not null && Model.CanMaterial)
+{
+    <dialog class="crm-modal" open data-close-href="/admin/lop-hoc/@Model.Item.Id" aria-labelledby="material-modal-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Học liệu</p><h2 id="material-modal-title">Thêm học liệu</h2></div>
+                <a class="crm-modal-close" href="/admin/lop-hoc/@Model.Item.Id" aria-label="Đóng">×</a>
+            </header>
+            <form method="post" asp-page-handler="Material" enctype="multipart/form-data" class="crm-modal-body">
+                <label for="materialTitle">Tiêu đề học liệu<input id="materialTitle" name="MaterialTitle" value="@Model.MaterialTitle" required maxlength="250" /></label>
+                <label for="materialDescription">Mô tả<input id="materialDescription" name="MaterialDescription" value="@Model.MaterialDescription" maxlength="1000" /></label>
+                <label for="materialFile">Tệp PDF hoặc ảnh
+                    <input id="materialFile" name="MaterialFile" type="file" data-file-preview="20971520" data-image-max="5242880" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" required />
+                    <small>Ảnh tối đa 5 MiB; PDF tối đa 20 MiB.</small>
+                    <small data-file-preview-status aria-live="polite"></small>
+                </label>
+                <label>
+                    <input type="checkbox" name="MaterialPublic" value="true" checked="@(Model.MaterialPublic ? "checked" : null)" />
+                    Công khai trên trang lớp
+                </label>
+                <footer class="crm-modal-actions">
+                    <a class="education-cancel-button" href="/admin/lop-hoc/@Model.Item.Id">Hủy</a>
+                    <button class="crm-primary-button" type="submit">Thêm học liệu</button>
+                </footer>
+            </form>
+        </section>
+    </dialog>
+}

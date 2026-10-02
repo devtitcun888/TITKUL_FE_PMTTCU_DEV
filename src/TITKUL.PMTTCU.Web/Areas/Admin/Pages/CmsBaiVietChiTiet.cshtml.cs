@@ -20,6 +20,11 @@ public class CmsBaiVietChiTietModel : PageModel
     public string? PreviewHtml { get; private set; }
     public string? CoverUrl { get; private set; }
     public string? ThumbnailUrl { get; private set; }
+    [BindProperty(SupportsGet = true)] public string KindFilter { get; set; } = "TIN_TUC";
+    public string KindTitle => KindFilter switch { "HUONG_DAN_SO" => "Bình dân học vụ số", "CHUONG_TRINH_HOC" => "Chương trình học", _ => "Tin tức - sự kiện" };
+    public bool CanPublish { get; private set; }
+    public string? SelectedCategoryName => Categories.FirstOrDefault(item => item.Id == CategoryId)?.Name;
+    public string StatusLabel => string.IsNullOrWhiteSpace(Status) ? "Bài mới" : EducationUi.Status(Status);
 
     [BindProperty] public Guid CategoryId { get; set; }
     [BindProperty] public string Title { get; set; } = "";
@@ -33,10 +38,11 @@ public class CmsBaiVietChiTietModel : PageModel
     [BindProperty] public bool Pinned { get; set; }
     [BindProperty] public string? ScheduleAt { get; set; }
 
-    public async Task<IActionResult> OnGetAsync(Guid? id, bool preview = false)
+    public async Task<IActionResult> OnGetAsync(Guid? id, string? kind, bool preview = false)
     {
         if (!HasView()) return Redirect("/admin/khong-quyen");
         Preview = preview && id.HasValue;
+        KindFilter = NormalizeKind(kind);
         return await LoadAsync(id);
     }
 
@@ -56,7 +62,7 @@ public class CmsBaiVietChiTietModel : PageModel
         }
 
         var saved = await response.Content.ReadFromJsonAsync<ItemEnvelope<Saved>>();
-        return Redirect("/admin/cms/bai-viet/sua/" + saved!.Item!.Id);
+        return Redirect("/admin/cms/bai-viet/sua/" + saved!.Item!.Id + "?kind=" + Uri.EscapeDataString(KindFilter));
     }
 
     public async Task<IActionResult> OnPostPublishAsync(Guid id)
@@ -98,14 +104,16 @@ public class CmsBaiVietChiTietModel : PageModel
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
         CanEdit = id.HasValue ? Has("cms.update") : Has("cms.create");
-        var cats = await _api.GetJsonAsync<ListEnvelope<CategoryItem>>("/api/v1/admin/categories", token);
-        Categories = cats?.Items ?? [];
+        CanPublish = Has("cms.publish");
+        PostDetail? loaded = null;
         if (id is Guid existing)
         {
             PostId = existing;
             var body = await _api.GetJsonAsync<ItemEnvelope<PostDetail>>("/api/v1/admin/posts/" + existing, token);
             if (body?.Item is { } item)
             {
+                loaded = item;
+                KindFilter = NormalizeKind(item.CategoryKind);
                 if (!preserveForm)
                 {
                     CategoryId = item.CategoryId;
@@ -129,15 +137,21 @@ public class CmsBaiVietChiTietModel : PageModel
             else ErrorMessage ??= "Không tìm thấy bài viết.";
         }
 
+        var cats = await _api.GetJsonAsync<ListEnvelope<CategoryItem>>("/api/v1/admin/categories?kind=" + Uri.EscapeDataString(KindFilter), token);
+        Categories = cats?.Items ?? [];
+        if (!id.HasValue && CategoryId == Guid.Empty && Categories.Count > 0) CategoryId = Categories[0].Id;
+        if (id.HasValue && !preserveForm && loaded is not null) CategoryId = loaded.CategoryId;
+
         return Page();
     }
 
-    private bool HasView() => Has("cms.view") || Has("cms.create") || Has("cms.update");
+    private bool HasView() => Has("cms.view") || Has("cms.create") || Has("cms.update") || Has("cms.publish") || Has("cms.delete");
+    private static string NormalizeKind(string? kind) => kind is "HUONG_DAN_SO" or "CHUONG_TRINH_HOC" ? kind : "TIN_TUC";
     private bool Has(string permission) => (HttpContext.Items["StaffProfile"] as StaffProfile)?.Permissions?.Contains(permission) == true;
     private string? Token() => Request.Cookies[AdminGateMiddleware.CookieName];
 
     public sealed record CategoryItem(Guid Id, string Name);
-    public sealed record PostDetail(Guid Id, Guid CategoryId, string Title, string Slug, string? Summary, string Html, string? CoverKey, string Status, bool Pinned, string? SeoTitle, string? SeoDescription, DateTimeOffset? PublishedAt, string? ThumbnailKey = null);
+    public sealed record PostDetail(Guid Id, Guid CategoryId, string Title, string Slug, string? Summary, string Html, string? CoverKey, string Status, bool Pinned, string? SeoTitle, string? SeoDescription, DateTimeOffset? PublishedAt, string? ThumbnailKey = null, string CategoryKind = "TIN_TUC");
     public sealed record Saved(Guid Id);
     private sealed record ItemEnvelope<T>(T? Item, string? PreviewHtml, string? CoverUrl, string? ThumbnailUrl);
     private sealed record ListEnvelope<T>(IReadOnlyList<T>? Items);

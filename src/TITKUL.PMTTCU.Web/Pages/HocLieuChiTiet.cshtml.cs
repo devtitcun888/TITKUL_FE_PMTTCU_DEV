@@ -37,11 +37,27 @@ public class HocLieuChiTietModel : PageModel
     public async Task<IActionResult> OnGetTaiAsync(string slug, Guid id)
     {
         var file = await _api.GetFileResultAsync("/api/v1/public/files/media/" + id);
-        if (!file.IsSuccess) return file.IsNotFound ? NotFound() : StatusCode(503);
-        return File(file.Bytes!, file.ContentType ?? "application/octet-stream", file.FileName ?? "hoc-lieu");
+        return HostFile.Download(file, "hoc-lieu");
     }
 
-    public sealed record MediaItem(string Kind, string? Title, Guid? FileId, string? MimeType = null, long? Size = null);
+    public async Task<IActionResult> OnGetXemAsync(string slug, Guid id)
+    {
+        var detail = await _api.GetPublicJsonResultAsync<DetailEnvelope>("/api/v1/public/albums/" + Uri.EscapeDataString(slug));
+        var item = detail.Value?.Media?.FirstOrDefault(file => file.FileId == id);
+        if (item is null || !string.Equals(item.MimeType, "application/pdf", StringComparison.OrdinalIgnoreCase) || item.ViewMode == "DOWNLOAD_ONLY") return NotFound();
+        if (HostFile.RedirectIfPublic(item.FileUrl) is { } jump) return jump;
+        var file = await _api.GetFileResultAsync("/api/v1/public/files/media/" + id + "?inline=true");
+        if (HostFile.RedirectIfPublic(file.RedirectUrl) is { } redirect) return redirect;
+        if (!file.IsSuccess) return file.IsNotFound ? NotFound() : StatusCode(503);
+        var bytes = file.Bytes!;
+        if (bytes.Length < 5 || bytes[0] != 0x25 || bytes[1] != 0x50 || bytes[2] != 0x44 || bytes[3] != 0x46 || bytes[4] != 0x2D) return StatusCode(415);
+        Response.Headers["Content-Disposition"] = "inline";
+        Response.Headers["X-Content-Type-Options"] = "nosniff";
+        Response.Headers["Cache-Control"] = "private, no-store";
+        return new FileContentResult(bytes, "application/pdf") { EnableRangeProcessing = true };
+    }
+
+    public sealed record MediaItem(string Kind, string? Title, Guid? FileId, string? MimeType = null, long? Size = null, string ViewMode = "AUTO", string? FileUrl = null);
     public sealed record AlbumHead(string Title, string Slug, string Kind, string? Summary);
     private sealed record DetailEnvelope(AlbumHead? Item, IReadOnlyList<MediaItem>? Media);
 

@@ -5,8 +5,11 @@
     ViewData["Description"] = "Gửi yêu cầu hủy đăng ký lớp học cộng đồng trước ngày khai giảng.";
     ViewData["Robots"] = "noindex, nofollow, noarchive";
 }
-<section class="card stack">
-    <h1>Hủy đăng ký lớp</h1>
+<section class="card stack public-detail-page">
+    <header class="public-detail-heading">
+        <p class="public-detail-eyebrow">Đăng ký học</p>
+        <h1>Hủy đăng ký lớp</h1>
+    </header>
     <p>Chỉ hủy được đăng ký đang chờ và trước ngày khai giảng. Cần mã đăng ký cùng số điện thoại đã dùng khi đăng ký.</p>
     @if (!string.IsNullOrWhiteSpace(Model.Message)) { <p class="status-note" role="status">@Model.Message</p> }
     @if (!string.IsNullOrWhiteSpace(Model.Error)) { <p class="alert" role="alert">@Model.Error</p> }

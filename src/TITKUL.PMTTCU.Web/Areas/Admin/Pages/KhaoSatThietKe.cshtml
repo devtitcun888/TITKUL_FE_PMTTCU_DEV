@@ -4,8 +4,15 @@
 @{
     ViewData["Title"] = Model.Survey?.Title ?? "Thiết kế khảo sát";
 }
-<section class="card stack">
-    <p><a href="/admin/khao-sat">Về danh sách</a></p>
+<section class="crm-page">
+    <header class="crm-page-heading">
+        <div>
+            <p class="crm-eyebrow">Khảo sát &amp; báo cáo</p>
+            <h1>@(Model.Survey?.Title ?? "Thiết kế khảo sát")</h1>
+            <p class="crm-page-description">Tối đa 30 câu. Sau khi có phiếu trả lời, cấu trúc bị khóa.</p>
+        </div>
+        <a class="education-cancel-button" href="/admin/khao-sat">Về danh sách</a>
+    </header>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage)) { <p class="alert" role="alert">@Model.ErrorMessage</p> }
     @if (Model.Survey is not null)
     {

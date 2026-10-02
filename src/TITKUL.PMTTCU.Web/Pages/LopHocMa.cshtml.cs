@@ -54,8 +54,7 @@ public class LopHocMaModel : PageModel
     public async Task<IActionResult> OnGetHocLieuAsync(string ma, Guid id)
     {
         var file = await _api.GetFileResultAsync($"/api/v1/public/materials/{id}/file");
-        if (!file.IsSuccess) return file.IsNotFound ? NotFound() : StatusCode(503);
-        return File(file.Bytes!, file.ContentType ?? "application/octet-stream", file.FileName ?? "hoc-lieu");
+        return HostFile.Download(file, "hoc-lieu");
     }
 
     public async Task<IActionResult> OnGetCalendarAsync(string ma)
@@ -133,7 +132,7 @@ public class LopHocMaModel : PageModel
     public sealed record PublicSession(string Title, DateTimeOffset StartAt, DateTimeOffset EndAt, string Mode, string Status, string? Location = null);
     public sealed record PublicClass(string Code, string Name, string ProgramName, string? Description, DateOnly StartDate, DateOnly EndDate, int Capacity, int Remaining, string Status, bool CanRegister, string? ClosedReason, IReadOnlyList<PublicSession>? Sessions, DateTimeOffset? RegistrationOpensAt = null, DateTimeOffset? RegistrationClosesAt = null);
     public sealed record JoinStatus(bool CanJoin, string? Url, string? SessionTitle, DateTimeOffset? StartAt, DateTimeOffset? EndAt, string? Reason);
-    public sealed record PublicMaterial(Guid Id, string Title, string? Description, string FileName, string MimeType, long Size);
+    public sealed record PublicMaterial(Guid Id, string Title, string? Description, string FileName, string MimeType, long Size, string? FileUrl = null);
     private sealed record ItemEnvelope<T>(T? Item);
     private sealed record ListEnvelope<T>(IReadOnlyList<T>? Items);
 }

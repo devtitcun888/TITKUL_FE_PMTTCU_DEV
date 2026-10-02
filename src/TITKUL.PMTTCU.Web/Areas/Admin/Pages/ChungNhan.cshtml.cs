@@ -155,9 +155,8 @@ public class ChungNhanModel : PageModel
         if (!HasView()) return Redirect("/admin/khong-quyen");
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
-        var file = await _api.GetFileAsync($"/api/v1/admin/certificates/{certificateId}/pdf", token);
-        if (file.Bytes is null) return NotFound();
-        return File(file.Bytes, "application/pdf", file.FileName ?? "chung-nhan.pdf");
+        var file = await _api.GetFileResultAsync($"/api/v1/admin/certificates/{certificateId}/pdf", token);
+        return HostFile.Download(file, "chung-nhan.pdf", "application/pdf");
     }
 
     private async Task<IActionResult> LoadAsync(Guid id)

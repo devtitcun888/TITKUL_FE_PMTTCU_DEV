@@ -1,76 +1,186 @@
 @page "/admin/cau-lac-bo"
+@using TITKUL.PMTTCU.Web.Areas.Admin
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CauLacBoModel
 @{
     ViewData["Title"] = "Câu lạc bộ";
 }
 
-<section class="card stack admin-education-page education-legacy-page">
-    <h1>Quản lý câu lạc bộ</h1>
-    <p>Quản lý thông tin, địa điểm, lịch sinh hoạt và trạng thái hoạt động.</p>
-    @if (!string.IsNullOrEmpty(Model.SuccessMessage)) { <p class="status-note" role="status">@Model.SuccessMessage</p> }
-    @if (!string.IsNullOrEmpty(Model.ErrorMessage)) { <p class="alert" role="alert">@Model.ErrorMessage</p> }
+<section class="crm-page cms-posts-page cms-list-page">
 
-    @if (Model.CanManage)
-    {
-        <details>
-            <summary>Tạo câu lạc bộ</summary>
-            <form method="post" asp-page-handler="Create" class="stack">
-                <p class="status-note">Mã câu lạc bộ sẽ do hệ thống tự cấp sau khi tạo.</p>
-                <div><label for="name">Tên câu lạc bộ</label><input id="name" name="Name" required maxlength="250" /></div>
-                <div><label for="description">Mô tả</label><textarea id="description" name="Description" rows="3"></textarea></div>
-                <div><label for="location">Địa điểm</label><input id="location" name="Location" maxlength="300" /></div>
-                <div><label for="regularSchedule">Lịch sinh hoạt định kỳ</label><input id="regularSchedule" name="RegularSchedule" maxlength="300" placeholder="Ví dụ: Sáng thứ Bảy tuần thứ hai hàng tháng" /></div>
-                <div><label for="status">Trạng thái</label><select id="status" name="Status"><option value="ACTIVE">Đang hoạt động</option><option value="INACTIVE">Tạm ngưng</option></select></div>
-                <button type="submit">Tạo câu lạc bộ</button>
-            </form>
-        </details>
-    }
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage)) { <p class="crm-ok" role="status">@Model.SuccessMessage</p> }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage)) { <p class="crm-alert" role="alert">@Model.ErrorMessage</p> }
 
-    <form method="get" action="/admin/cau-lac-bo" class="public-filter" role="search">
-        <label for="club-query">Tìm câu lạc bộ</label>
-        <div>
-            <input id="club-query" type="search" name="q" value="@Model.Query" placeholder="Mã, tên hoặc địa điểm" />
-            <select name="status" aria-label="Lọc trạng thái">
-                <option value="">Tất cả trạng thái</option>
-                <option value="ACTIVE" selected="@(Model.StatusFilter == "ACTIVE")">Đang hoạt động</option>
-                <option value="INACTIVE" selected="@(Model.StatusFilter == "INACTIVE")">Tạm ngưng</option>
-            </select>
-            <button type="submit">Lọc</button>
+    <form class="cms-posts-toolbar" method="get" action="/admin/cau-lac-bo" role="search" data-cms-autofilter data-cols="2">
+        @await Html.PartialAsync("Shared/_CmsSortHidden", (Model.Sort, Model.Dir))
+        <button class="cms-posts-filter-toggle @(Model.FiltersActive ? "has-active-filters" : null)" type="button" aria-label="Bộ lọc" aria-expanded="false" aria-controls="edu-club-filter-fields" data-cms-filter-toggle>
+            <svg class="cms-posts-filter-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                <path d="M4 5h16l-6.5 7.5v5l-3 1.5v-6.5L4 5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </button>
+        <div class="cms-posts-filter-fields" id="edu-club-filter-fields">
+            <label class="cms-posts-field">
+                <span>Từ khóa</span>
+                <span class="cms-posts-search">
+                    <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                    <input name="q" type="search" value="@Model.Query" placeholder="Mã, tên hoặc địa điểm" />
+                </span>
+            </label>
+            <label class="cms-posts-field">
+                <span>Trạng thái</span>
+                <select name="status" data-cms-filter>
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="ACTIVE" selected="@(Model.StatusFilter == "ACTIVE" ? "selected" : null)">Đang hoạt động</option>
+                    <option value="INACTIVE" selected="@(Model.StatusFilter == "INACTIVE" ? "selected" : null)">Tạm ngưng</option>
+                </select>
+            </label>
+            <div class="cms-posts-toolbar-actions">
+                <a class="cms-posts-reset" href="/admin/cau-lac-bo">
+                    <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
+                    Xóa lọc
+                </a>
+            </div>
         </div>
     </form>
 
-    @if (Model.Items.Count == 0)
-    {
-        <p class="empty">Chưa có câu lạc bộ phù hợp.</p>
-    }
-    else
-    {
-        <div class="stack">
-            @foreach (var club in Model.Items)
-            {
-                <details class="card">
-                    <summary>@club.Name · @club.Code · @(club.Status == "ACTIVE" ? "Đang hoạt động" : "Tạm ngưng")</summary>
-                    <dl class="definition-list">
-                        <dt>Địa điểm</dt><dd>@(club.Location ?? "Chưa cập nhật")</dd>
-                        <dt>Lịch sinh hoạt</dt><dd>@(club.RegularSchedule ?? "Chưa cập nhật")</dd>
-                        <dt>Mô tả</dt><dd>@(club.Description ?? "Chưa có mô tả")</dd>
-                    </dl>
-                    <p><a class="button" href="/admin/cau-lac-bo/@club.Id">Lịch sinh hoạt và người phụ trách</a></p>
-                    @if (Model.CanManage)
+    <section class="cms-posts-kpis" data-cols="3" aria-label="Thống kê câu lạc bộ">
+        <a class="cms-posts-kpi is-all @(Model.StatusFilter is null ? "is-current" : null)" href="@Model.ListUrl(status: "")">
+            <span class="cms-posts-kpi-icon" aria-hidden="true"><span class="material-symbols-outlined">groups</span></span>
+            <span><span class="cms-posts-kpi-label">Tất cả</span><strong>@Model.TotalAll.ToString("N0")</strong></span>
+        </a>
+        <a class="cms-posts-kpi is-published @(Model.StatusFilter == "ACTIVE" ? "is-current" : null)" href="@Model.ListUrl(status: "ACTIVE")">
+            <span class="cms-posts-kpi-icon" aria-hidden="true"><span class="cms-posts-dot"></span></span>
+            <span><span class="cms-posts-kpi-label">Đang hoạt động</span><strong>@Model.TotalActive.ToString("N0")</strong></span>
+        </a>
+        <a class="cms-posts-kpi is-cancelled @(Model.StatusFilter == "INACTIVE" ? "is-current" : null)" href="@Model.ListUrl(status: "INACTIVE")">
+            <span class="cms-posts-kpi-icon" aria-hidden="true"><span class="material-symbols-outlined">keep</span></span>
+            <span><span class="cms-posts-kpi-label">Tạm ngưng</span><strong>@Model.TotalInactive.ToString("N0")</strong></span>
+        </a>
+    </section>
+
+    <section class="cms-posts-list" aria-labelledby="club-table-title">
+        <header class="cms-posts-list-heading">
+            <div>
+                <h2 id="club-table-title">Danh sách câu lạc bộ</h2>
+                <p>@Model.Items.Count.ToString("N0") câu lạc bộ</p>
+            </div>
+            <div class="cms-posts-list-actions">
+                @if (Model.CanManage)
+                {
+                    <a class="crm-primary-button cms-posts-create" href="/admin/cau-lac-bo?create=true"><span class="material-symbols-outlined" aria-hidden="true">add</span> Tạo câu lạc bộ</a>
+                }
+            </div>
+        </header>
+        @if (Model.Items.Count == 0)
+        {
+            <div class="cms-posts-empty">
+                <span class="material-symbols-outlined" aria-hidden="true">groups</span>
+                <strong>@(Model.FiltersActive ? "Không tìm thấy câu lạc bộ phù hợp" : "Chưa có câu lạc bộ")</strong>
+                <p>@(Model.FiltersActive ? "Thử xóa bộ lọc hoặc đổi từ khóa." : "Tạo câu lạc bộ đầu tiên để quản lý lịch sinh hoạt.")</p>
+            </div>
+        }
+        else
+        {
+            <div class="cms-posts-table-scroll">
+                <table class="cms-posts-table">
+                    <thead>
+                        <tr>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "code", Model.Dir)" href="@Model.SortUrl("code")">Mã <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "code", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "name", Model.Dir)" href="@Model.SortUrl("name")">Tên <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "name", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "location", Model.Dir)" href="@Model.SortUrl("location")">Địa điểm <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "location", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "schedule", Model.Dir)" href="@Model.SortUrl("schedule")">Lịch sinh hoạt <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "schedule", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "status", Model.Dir)" href="@Model.SortUrl("status")">Trạng thái <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "status", Model.Dir)</span></a></th>
+                            <th class="cms-posts-actions-col" scope="col">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var club in Model.Items)
                     {
-                        <form method="post" asp-page-handler="Update" class="stack">
-                            <input type="hidden" name="id" value="@club.Id" />
-                            <div><strong>Mã câu lạc bộ:</strong> <code>@club.Code</code> · Mã được giữ cố định.</div>
-                            <div><label for="name-@club.Id">Tên</label><input id="name-@club.Id" name="name" value="@club.Name" required maxlength="250" /></div>
-                            <div><label for="description-@club.Id">Mô tả</label><textarea id="description-@club.Id" name="description" rows="3">@club.Description</textarea></div>
-                            <div><label for="location-@club.Id">Địa điểm</label><input id="location-@club.Id" name="location" value="@club.Location" maxlength="300" /></div>
-                            <div><label for="schedule-@club.Id">Lịch định kỳ</label><input id="schedule-@club.Id" name="regularSchedule" value="@club.RegularSchedule" maxlength="300" /></div>
-                            <div><label for="status-@club.Id">Trạng thái</label><select id="status-@club.Id" name="status"><option value="ACTIVE" selected="@(club.Status == "ACTIVE")">Đang hoạt động</option><option value="INACTIVE" selected="@(club.Status == "INACTIVE")">Tạm ngưng</option></select></div>
-                            <button type="submit">Lưu thay đổi</button>
-                        </form>
+                        var statusClass = club.Status == "ACTIVE" ? "published" : "cancelled";
+                        <tr>
+                            <td><span class="cms-posts-category">@club.Code</span></td>
+                            <td class="cms-posts-title-cell"><strong>@club.Name</strong></td>
+                            <td>@(club.Location ?? "—")</td>
+                            <td>@(club.RegularSchedule ?? "—")</td>
+                            <td><span class="cms-posts-status is-@statusClass"><i aria-hidden="true"></i>@(club.Status == "ACTIVE" ? "Đang hoạt động" : "Tạm ngưng")</span></td>
+                            <td class="cms-posts-actions-col">
+                                <details class="cms-posts-row-menu">
+                                    <summary aria-label="Thao tác @club.Name"><span class="material-symbols-outlined" aria-hidden="true">more_horiz</span></summary>
+                                    <div class="cms-posts-row-panel" role="menu">
+                                        <a role="menuitem" href="/admin/cau-lac-bo/@club.Id">Lịch &amp; phụ trách</a>
+                                        @if (Model.CanManage)
+                                        {
+                                            <a role="menuitem" href="/admin/cau-lac-bo?edit=@club.Id">Sửa</a>
+                                        }
+                                    </div>
+                                </details>
+                            </td>
+                        </tr>
                     }
-                </details>
-            }
-        </div>
-    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
 </section>
+
+@if (Model.ShowModal && Model.CanManage)
+{
+    var isEdit = Model.EditingItem is not null;
+    var editing = Model.EditingItem;
+    <dialog class="crm-modal" open data-close-href="/admin/cau-lac-bo" aria-labelledby="club-modal-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Câu lạc bộ</p><h2 id="club-modal-title">@(isEdit ? "Cập nhật câu lạc bộ" : "Tạo câu lạc bộ")</h2></div>
+                <a class="crm-modal-close" href="/admin/cau-lac-bo" aria-label="Đóng">×</a>
+            </header>
+            @if (isEdit && editing is not null)
+            {
+                <form method="post" asp-page-handler="Update" class="crm-modal-body">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@editing.Id" />
+                    <p class="education-field-hint">Mã <code class="crm-code">@editing.Code</code> được giữ cố định.</p>
+                    <div class="education-form-field"><label for="name">Tên <span>*</span></label><input id="name" name="name" value="@editing.Name" required maxlength="250" /></div>
+                    <div class="education-form-field"><label for="description">Mô tả</label><textarea id="description" name="description" rows="3">@editing.Description</textarea></div>
+                    <div class="education-form-field"><label for="location">Địa điểm</label><input id="location" name="location" value="@editing.Location" maxlength="300" /></div>
+                    <div class="education-form-field"><label for="regularSchedule">Lịch định kỳ</label><input id="regularSchedule" name="regularSchedule" value="@editing.RegularSchedule" maxlength="300" /></div>
+                    <div class="education-form-field">
+                        <label for="status">Trạng thái</label>
+                        <select id="status" name="status">
+                            <option value="ACTIVE" selected="@(editing.Status == "ACTIVE" ? "selected" : null)">Đang hoạt động</option>
+                            <option value="INACTIVE" selected="@(editing.Status == "INACTIVE" ? "selected" : null)">Tạm ngưng</option>
+                        </select>
+                    </div>
+                    <footer class="crm-modal-actions">
+                        <a class="education-cancel-button" href="/admin/cau-lac-bo">Hủy</a>
+                        <button class="crm-primary-button" type="submit">Lưu thay đổi</button>
+                    </footer>
+                </form>
+            }
+            else
+            {
+                <form method="post" asp-page-handler="Create" class="crm-modal-body">
+                    @Html.AntiForgeryToken()
+                    <p class="education-field-hint">Mã câu lạc bộ do hệ thống tự cấp sau khi tạo.</p>
+                    <div class="education-form-field"><label for="name">Tên câu lạc bộ <span>*</span></label><input id="name" name="Name" value="@Model.Name" required maxlength="250" /></div>
+                    <div class="education-form-field"><label for="description">Mô tả</label><textarea id="description" name="Description" rows="3">@Model.Description</textarea></div>
+                    <div class="education-form-field"><label for="location">Địa điểm</label><input id="location" name="Location" value="@Model.Location" maxlength="300" /></div>
+                    <div class="education-form-field"><label for="regularSchedule">Lịch sinh hoạt định kỳ</label><input id="regularSchedule" name="RegularSchedule" value="@Model.RegularSchedule" maxlength="300" placeholder="Ví dụ: Sáng thứ Bảy tuần thứ hai hàng tháng" /></div>
+                    <div class="education-form-field">
+                        <label for="status">Trạng thái</label>
+                        <select id="status" name="Status">
+                            <option value="ACTIVE" selected="@(Model.Status == "ACTIVE" ? "selected" : null)">Đang hoạt động</option>
+                            <option value="INACTIVE" selected="@(Model.Status == "INACTIVE" ? "selected" : null)">Tạm ngưng</option>
+                        </select>
+                    </div>
+                    <footer class="crm-modal-actions">
+                        <a class="education-cancel-button" href="/admin/cau-lac-bo">Hủy</a>
+                        <button class="crm-primary-button" type="submit">Tạo câu lạc bộ</button>
+                    </footer>
+                </form>
+            }
+        </section>
+    </dialog>
+}
+
+<script src="~/js/admin-cms-list.js" asp-append-version="true" defer></script>

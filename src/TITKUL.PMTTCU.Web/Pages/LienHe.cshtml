@@ -4,7 +4,8 @@
     ViewData["Title"] = "Liên hệ";
 }
 <section class="stack">
-    <section class="card stack">
+    <section class="card stack public-detail-page">
+        <p class="public-detail-eyebrow">Trung tâm</p>
         <h1>Liên hệ</h1>
         @if (Model.ConfigurationUnavailable) { <p class="alert" role="alert">Chưa thể tải thông tin liên hệ. Vui lòng thử lại sau.</p> }
         @if (!string.IsNullOrWhiteSpace(Model.Name)) { <p>@Model.Name</p> }
@@ -14,21 +15,9 @@
         @if (!string.IsNullOrWhiteSpace(Model.MapsUrl))
         {
             <p><a class="button button-quiet" href="@Model.MapsLinkUrl" target="_blank" rel="noopener noreferrer">Mở địa chỉ trong ứng dụng bản đồ ↗</a></p>
-            @if (Model.MapsEmbedUrl is not null)
-            {
-                <iframe title="Bản đồ" src="@Model.MapsEmbedUrl" width="100%" height="280" style="border:0;max-width:100%" loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
-            }
-            else
-            {
-                <p class="muted">Bản đồ nhúng chưa được cấu hình; mở liên kết để xem đường đi.</p>
-            }
-        }
-        else
-        {
-            <p class="empty">Bản đồ chưa được cấu hình.</p>
         }
     </section>
-    <section class="card stack">
+    <section class="card stack public-detail-page">
         <h2>Gửi phản ánh</h2>
         @if (!string.IsNullOrEmpty(Model.Message)) { <p role="status">@Model.Message</p> }
         @if (!string.IsNullOrWhiteSpace(Model.TrackingCode))
@@ -49,6 +38,32 @@
             <div><label for="body">Nội dung</label><textarea id="body" name="Body" rows="5" required maxlength="4000">@Model.Body</textarea></div>
             <button type="submit">Gửi</button>
         </form>
+        }
+    </section>
+    <section class="card stack public-detail-page portal-home-map" aria-labelledby="contact-map-title">
+        <h2 id="contact-map-title">Bản đồ</h2>
+        @if (Model.MapsEmbedUrl is not null)
+        {
+            <div class="portal-map-frame">
+                <iframe title="Bản đồ Trung tâm, xã Tân Trụ, tỉnh Tây Ninh" src="@Model.MapsEmbedUrl" width="600" height="360" loading="eager" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.Address))
+            {
+                <p class="portal-home-map-address">@Model.Address</p>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.MapsUrl))
+            {
+                <p><a class="button button-quiet" href="@Model.MapsLinkUrl" target="_blank" rel="noopener noreferrer">Mở địa chỉ trong ứng dụng bản đồ ↗</a></p>
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(Model.MapsUrl))
+        {
+            <p class="muted">Bản đồ nhúng chưa được cấu hình; mở liên kết để xem đường đi.</p>
+            <p><a class="button button-quiet" href="@Model.MapsLinkUrl" target="_blank" rel="noopener noreferrer">Mở địa chỉ trong ứng dụng bản đồ ↗</a></p>
+        }
+        else
+        {
+            <p class="empty">Bản đồ chưa được cấu hình.</p>
         }
     </section>
 </section>

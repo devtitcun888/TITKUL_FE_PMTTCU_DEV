@@ -5,8 +5,8 @@
     ViewData["Title"] = Model.Item?.Name ?? "Lớp học";
 }
 
-<section class="card stack">
-    <p><a href="/lop-hoc">Các lớp đang mở</a></p>
+<section class="card stack public-detail-page">
+    <p class="public-detail-back"><a href="/lop-hoc"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span> Các lớp đang mở</a></p>
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
         <h1>@(Model.ResourceNotFound ? "Không tìm thấy lớp học" : "Chưa tải được thông tin lớp")</h1>
@@ -91,7 +91,7 @@
                         {
                             <p>@material.Description</p>
                         }
-                        <p><a class="button" href="/lop-hoc/@Uri.EscapeDataString(Model.Item.Code)?handler=HocLieu&amp;id=@material.Id">Tải @material.FileName</a></p>
+                        <p><a class="button" href="@HostFile.Href(material.FileUrl, "/lop-hoc/" + Uri.EscapeDataString(Model.Item.Code) + "?handler=HocLieu&id=" + material.Id)">Tải @material.FileName</a></p>
                     </article>
                 }
             </div>

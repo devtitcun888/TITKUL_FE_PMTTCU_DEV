@@ -14,10 +14,13 @@ public class CmsAlbumChiTietModel : PageModel
     public IReadOnlyList<MediaItem> Media { get; private set; } = [];
     public string? ErrorMessage { get; private set; }
     public bool CanEdit { get; private set; }
+    public bool CanUpdate { get; private set; }
+    public bool CanPublish { get; private set; }
     [BindProperty] public string? MediaTitle { get; set; }
     [BindProperty] public string? Alt { get; set; }
     [BindProperty] public string? VideoUrl { get; set; }
     [BindProperty] public IFormFile? Upload { get; set; }
+    [BindProperty] public string ViewMode { get; set; } = "AUTO";
 
     public async Task<IActionResult> OnGetAsync(Guid id)
     {
@@ -45,6 +48,7 @@ public class CmsAlbumChiTietModel : PageModel
         using var content = new MultipartFormDataContent();
         if (!string.IsNullOrWhiteSpace(MediaTitle)) content.Add(new StringContent(MediaTitle), "title");
         if (!string.IsNullOrWhiteSpace(Alt)) content.Add(new StringContent(Alt), "alt");
+        content.Add(new StringContent(ViewMode), "viewMode");
         await using var stream = Upload.OpenReadStream();
         using var file = new StreamContent(stream);
         file.Headers.ContentType = new MediaTypeHeaderValue(string.IsNullOrWhiteSpace(Upload.ContentType) ? "application/octet-stream" : Upload.ContentType);
@@ -73,11 +77,23 @@ public class CmsAlbumChiTietModel : PageModel
         return Redirect("/admin/cms/album/" + id);
     }
 
+    public async Task<IActionResult> OnPostViewModeAsync(Guid id, Guid mediaId, string mode)
+    {
+        if (!Has("cms.update")) return Redirect("/admin/khong-quyen");
+        var token = Token();
+        if (token is null) return Redirect("/admin/dang-nhap");
+        var response = await _api.SendJsonAsync(HttpMethod.Post, $"/api/v1/admin/media/{mediaId}/view-mode", token, new { mode });
+        if (response is null || !response.IsSuccessStatusCode) ErrorMessage = "Không cập nhật được chế độ xem. Chỉ PDF/JPEG/PNG hỗ trợ xem trực tiếp.";
+        return await LoadAsync(id);
+    }
+
     private async Task<IActionResult> LoadAsync(Guid id)
     {
         var token = Token();
         if (token is null) return Redirect("/admin/dang-nhap");
         CanEdit = Has("cms.create");
+        CanUpdate = Has("cms.update");
+        CanPublish = Has("cms.publish");
         var body = await _api.GetJsonAsync<DetailEnvelope>("/api/v1/admin/albums/" + id, token);
         Item = body?.Item;
         Media = body?.Media ?? [];
@@ -85,11 +101,11 @@ public class CmsAlbumChiTietModel : PageModel
         return Page();
     }
 
-    private bool HasView() => Has("cms.view") || Has("cms.create");
+    private bool HasView() => Has("cms.view") || Has("cms.create") || Has("cms.update") || Has("cms.publish") || Has("cms.delete");
     private bool Has(string permission) => (HttpContext.Items["StaffProfile"] as StaffProfile)?.Permissions?.Contains(permission) == true;
     private string? Token() => Request.Cookies[AdminGateMiddleware.CookieName];
 
     public sealed record AlbumItem(Guid Id, string Title, string Slug, string Kind, string Status);
-    public sealed record MediaItem(Guid Id, string Kind, string? Title, string? AltText, string? ExternalUrl);
+    public sealed record MediaItem(Guid Id, string Kind, string? Title, string? AltText, string? ExternalUrl, string? MimeType = null, string ViewMode = "AUTO");
     private sealed record DetailEnvelope(AlbumItem? Item, IReadOnlyList<MediaItem>? Media);
 }

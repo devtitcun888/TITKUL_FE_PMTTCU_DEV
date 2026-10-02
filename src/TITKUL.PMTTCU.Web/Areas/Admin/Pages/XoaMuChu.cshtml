@@ -1,60 +1,182 @@
 @page "/admin/xoa-mu-chu"
+@using TITKUL.PMTTCU.Web.Areas.Admin
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.XoaMuChuModel
 @{
     ViewData["Title"] = "Sổ theo dõi xóa mù chữ";
 }
-<section class="card stack admin-education-page">
-    <h1>Sổ theo dõi xóa mù chữ</h1>
-    <p>Ghi nhận người học và năm đạt các cấp độ đúng theo biểu mẫu. Không yêu cầu xác minh hay minh chứng.</p>
-    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <p class="alert" role="alert">@Model.ErrorMessage</p> }
-    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage)) { <p class="status-note" role="status">@Model.SuccessMessage</p> }
-    <section class="card stack">
-        <div class="row-actions"><h2>Nhập từ biểu mẫu</h2><a class="button button-quiet" href="/admin/xoa-mu-chu?handler=Export">Xuất Excel</a></div>
-        <form method="post" enctype="multipart/form-data" asp-page-handler="Import" class="row-actions">
-            <label for="importFile">Workbook .xlsx</label><input id="importFile" name="ImportFile" type="file" accept=".xlsx" required /><button type="submit">Nhập dữ liệu</button>
-        </form>
+
+<section class="crm-page cms-posts-page cms-list-page">
+
+    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage)) { <p class="crm-ok" role="status">@Model.SuccessMessage</p> }
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <p class="crm-alert" role="alert">@Model.ErrorMessage</p> }
+
+    <form class="cms-posts-toolbar" method="get" action="/admin/xoa-mu-chu" role="search" data-cms-autofilter data-cols="2">
+        @await Html.PartialAsync("Shared/_CmsSortHidden", (Model.Sort, Model.Dir))
+        <button class="cms-posts-filter-toggle @(Model.FiltersActive ? "has-active-filters" : null)" type="button" aria-label="Bộ lọc" aria-expanded="false" aria-controls="edu-literacy-filter-fields" data-cms-filter-toggle>
+            <svg class="cms-posts-filter-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                <path d="M4 5h16l-6.5 7.5v5l-3 1.5v-6.5L4 5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </button>
+        <div class="cms-posts-filter-fields" id="edu-literacy-filter-fields">
+            <label class="cms-posts-field">
+                <span>Từ khóa</span>
+                <span class="cms-posts-search">
+                    <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                    <input name="q" type="search" value="@Model.Query" placeholder="Họ tên, nghề nghiệp, địa chỉ" />
+                </span>
+            </label>
+            <div class="cms-posts-toolbar-actions">
+                <a class="cms-posts-reset" href="/admin/xoa-mu-chu">
+                    <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
+                    Xóa lọc
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <section class="cms-posts-list" aria-labelledby="literacy-table-title">
+        <header class="cms-posts-list-heading">
+            <div>
+                <h2 id="literacy-table-title">Sổ theo dõi</h2>
+                <p>@Model.Entries.Count.ToString("N0") dòng</p>
+            </div>
+            <div class="cms-posts-list-actions">
+                <a class="cms-posts-ghost" href="/admin/xoa-mu-chu?handler=Export"><span class="material-symbols-outlined" aria-hidden="true">download</span> Xuất Excel</a>
+                <a class="cms-posts-ghost" href="/admin/xoa-mu-chu?import=true"><span class="material-symbols-outlined" aria-hidden="true">cloud_upload</span> Nhập Excel</a>
+                <a class="crm-primary-button cms-posts-create" href="/admin/xoa-mu-chu?create=true"><span class="material-symbols-outlined" aria-hidden="true">add</span> Thêm dòng</a>
+            </div>
+        </header>
+        @if (Model.Entries.Count == 0)
+        {
+            <div class="cms-posts-empty">
+                <span class="material-symbols-outlined" aria-hidden="true">menu_book</span>
+                <strong>@(Model.FiltersActive ? "Không có dòng khớp bộ lọc" : "Chưa có dòng theo dõi")</strong>
+                <p>@(Model.FiltersActive ? "Thử xóa bộ lọc hoặc đổi từ khóa." : "Nhập workbook hoặc thêm dòng thủ công.")</p>
+            </div>
+        }
+        else
+        {
+            <div class="cms-posts-table-scroll">
+                <table class="cms-posts-table cms-posts-table-wide">
+                    <thead>
+                        <tr>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "sheet", Model.Dir)" href="@Model.SortUrl("sheet")">Sheet <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "sheet", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "seq", Model.Dir)" href="@Model.SortUrl("seq")">STT <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "seq", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "name", Model.Dir)" href="@Model.SortUrl("name")">Họ và tên <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "name", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "female", Model.Dir)" href="@Model.SortUrl("female")">Nữ <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "female", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "occupation", Model.Dir)" href="@Model.SortUrl("occupation")">Nghề nghiệp <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "occupation", Model.Dir)</span></a></th>
+                            <th scope="col">Chức vụ</th>
+                            <th scope="col">Địa chỉ</th>
+                            <th scope="col">Mù chữ</th>
+                            <th scope="col">Lớp 1</th>
+                            <th scope="col">Lớp 2</th>
+                            <th scope="col">Lớp 3</th>
+                            <th scope="col">Biết chữ</th>
+                            <th scope="col">Lớp 4</th>
+                            <th scope="col">Lớp 5</th>
+                            <th scope="col">HTCTTH</th>
+                            <th scope="col">Ghi chú</th>
+                            <th class="cms-posts-actions-col" scope="col">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.Entries)
+                    {
+                        <tr>
+                            <td>@item.SourceSheet</td>
+                            <td>@item.Sequence</td>
+                            <td class="cms-posts-title-cell"><strong>@item.FamilyName @item.GivenName</strong></td>
+                            <td>@(item.Female ? "X" : "")</td>
+                            <td>@(item.Occupation ?? "—")</td>
+                            <td>@(item.Position ?? "—")</td>
+                            <td>@(item.Address ?? "—")</td>
+                            <td>@item.IlliterateYear</td>
+                            <td>@item.Grade1Year</td>
+                            <td>@item.Grade2Year</td>
+                            <td>@item.Grade3Year</td>
+                            <td>@item.LiterateYear</td>
+                            <td>@item.Grade4Year</td>
+                            <td>@item.Grade5Year</td>
+                            <td>@item.PrimaryCompleteYear</td>
+                            <td>@(item.Note ?? "—")</td>
+                            <td class="cms-posts-actions-col">
+                                <details class="cms-posts-row-menu">
+                                    <summary aria-label="Thao tác @item.FamilyName @item.GivenName"><span class="material-symbols-outlined" aria-hidden="true">more_horiz</span></summary>
+                                    <div class="cms-posts-row-panel" role="menu">
+                                        <a role="menuitem" href="/admin/xoa-mu-chu?entryId=@item.Id">Sửa</a>
+                                        <button class="cms-posts-menu-btn" type="submit" form="literacy-delete-@item.Id" role="menuitem">Xóa</button>
+                                    </div>
+                                </details>
+                                <form id="literacy-delete-@item.Id" method="post" asp-page-handler="DeleteEntry" hidden onsubmit="return confirm('Xóa dòng này?');">
+                                    <input type="hidden" name="entryId" value="@item.Id" />
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
     </section>
-    <details class="card stack" open="@(Model.EntryId.HasValue ? "open" : null)">
-        <summary>@(Model.EntryId.HasValue ? "Sửa dòng theo dõi" : "Thêm dòng thủ công")</summary>
-        <form method="post" asp-page-handler="SaveEntry" class="stack">
-            @if (Model.EntryId is Guid entryId) { <input type="hidden" name="EntryId" value="@entryId" /> }
-            <div class="row-actions">
-                <div><label for="sourceSheet">Sheet nguồn</label><input id="sourceSheet" name="SourceSheet" value="@Model.SourceSheet" maxlength="100" /></div>
-                <div><label for="sequence">STT</label><input id="sequence" name="Sequence" type="number" min="0" value="@Model.Sequence" /></div>
-                <div><label for="familyName">Họ và</label><input id="familyName" name="FamilyName" value="@Model.FamilyName" maxlength="180" /></div>
-                <div><label for="givenName">Tên</label><input id="givenName" name="GivenName" value="@Model.GivenName" maxlength="180" /></div>
-                <div><label for="female">Nữ</label><select id="female" name="Female"><option value="false" selected="@(!Model.Female ? "selected" : null)">Không</option><option value="true" selected="@(Model.Female ? "selected" : null)">Có</option></select></div>
-            </div>
-            <div class="row-actions">
-                <div><label for="occupation">Nghề nghiệp</label><input id="occupation" name="Occupation" value="@Model.Occupation" maxlength="240" /></div>
-                <div><label for="position">Chức vụ</label><input id="position" name="Position" value="@Model.Position" maxlength="180" /></div>
-                <div><label for="address">Địa chỉ</label><input id="address" name="Address" value="@Model.Address" maxlength="500" /></div>
-            </div>
-            <fieldset class="stack"><legend>Năm đạt trình độ học vấn</legend>
-                <div class="row-actions">
-                    <div><label for="illiterateYear">Mù chữ</label><input id="illiterateYear" name="IlliterateYear" type="number" value="@Model.IlliterateYear" /></div>
-                    <div><label for="grade1Year">Lớp 1</label><input id="grade1Year" name="Grade1Year" type="number" value="@Model.Grade1Year" /></div>
-                    <div><label for="grade2Year">Lớp 2</label><input id="grade2Year" name="Grade2Year" type="number" value="@Model.Grade2Year" /></div>
-                    <div><label for="grade3Year">Lớp 3</label><input id="grade3Year" name="Grade3Year" type="number" value="@Model.Grade3Year" /></div>
-                    <div><label for="literateYear">Biết chữ</label><input id="literateYear" name="LiterateYear" type="number" value="@Model.LiterateYear" /></div>
-                    <div><label for="grade4Year">Lớp 4</label><input id="grade4Year" name="Grade4Year" type="number" value="@Model.Grade4Year" /></div>
-                    <div><label for="grade5Year">Lớp 5</label><input id="grade5Year" name="Grade5Year" type="number" value="@Model.Grade5Year" /></div>
-                    <div><label for="primaryCompleteYear">HTCTTH</label><input id="primaryCompleteYear" name="PrimaryCompleteYear" type="number" value="@Model.PrimaryCompleteYear" /></div>
-                </div>
-            </fieldset>
-            <div><label for="note">Ghi chú</label><input id="note" name="Note" value="@Model.Note" /></div>
-            <button type="submit">@(Model.EntryId.HasValue ? "Lưu dòng" : "Thêm dòng")</button>
-        </form>
-    </details>
-    <div class="table-scroll"><table>
-        <caption>@Model.Entries.Count dòng sổ theo dõi</caption>
-        <thead><tr><th>Sheet</th><th>STT</th><th>Họ và tên</th><th>Nữ</th><th>Nghề nghiệp</th><th>Chức vụ</th><th>Địa chỉ</th><th>Mù chữ</th><th>Lớp 1</th><th>Lớp 2</th><th>Lớp 3</th><th>Biết chữ</th><th>Lớp 4</th><th>Lớp 5</th><th>HTCTTH</th><th>Ghi chú</th><th>Thao tác</th></tr></thead>
-        <tbody>
-            @if (Model.Entries.Count == 0) { <tr><td colspan="17">Chưa có dòng theo dõi.</td></tr> }
-            @foreach (var item in Model.Entries)
-            {
-                <tr><td>@item.SourceSheet</td><td>@item.Sequence</td><td>@item.FamilyName @item.GivenName</td><td>@(item.Female ? "X" : "")</td><td>@item.Occupation</td><td>@item.Position</td><td>@item.Address</td><td>@item.IlliterateYear</td><td>@item.Grade1Year</td><td>@item.Grade2Year</td><td>@item.Grade3Year</td><td>@item.LiterateYear</td><td>@item.Grade4Year</td><td>@item.Grade5Year</td><td>@item.PrimaryCompleteYear</td><td>@item.Note</td><td class="row-actions"><a href="/admin/xoa-mu-chu?entryId=@item.Id">Sửa</a><form method="post" asp-page-handler="DeleteEntry"><input type="hidden" name="entryId" value="@item.Id" /><button type="submit" class="button-quiet">Xóa</button></form></td></tr>
-            }
-        </tbody>
-    </table></div>
 </section>
+
+@if (Model.ShowImport)
+{
+    <dialog class="crm-modal" open data-close-href="/admin/xoa-mu-chu" aria-labelledby="literacy-import-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Nhập liệu</p><h2 id="literacy-import-title">Nhập từ biểu mẫu</h2></div>
+                <a class="crm-modal-close" href="/admin/xoa-mu-chu" aria-label="Đóng">×</a>
+            </header>
+            <form method="post" enctype="multipart/form-data" asp-page-handler="Import" class="crm-modal-body">
+                <label for="importFile">Workbook .xlsx<input id="importFile" name="ImportFile" type="file" accept=".xlsx" required /></label>
+                <footer class="crm-modal-actions">
+                    <a class="education-cancel-button" href="/admin/xoa-mu-chu">Hủy</a>
+                    <button class="crm-primary-button" type="submit">Nhập dữ liệu</button>
+                </footer>
+            </form>
+        </section>
+    </dialog>
+}
+
+@if (Model.ShowModal)
+{
+    <dialog class="crm-modal" open data-close-href="/admin/xoa-mu-chu" aria-labelledby="literacy-modal-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel crm-modal-wide">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Sổ theo dõi</p><h2 id="literacy-modal-title">@(Model.EntryId.HasValue ? "Sửa dòng theo dõi" : "Thêm dòng thủ công")</h2></div>
+                <a class="crm-modal-close" href="/admin/xoa-mu-chu" aria-label="Đóng">×</a>
+            </header>
+            <form method="post" asp-page-handler="SaveEntry" class="crm-modal-body">
+                @if (Model.EntryId is Guid entryId) { <input type="hidden" name="EntryId" value="@entryId" /> }
+                <div class="crm-form-grid" style="padding:0">
+                    <label for="sourceSheet">Sheet nguồn<input id="sourceSheet" name="SourceSheet" value="@Model.SourceSheet" maxlength="100" /></label>
+                    <label for="sequence">STT<input id="sequence" name="Sequence" type="number" min="0" value="@Model.Sequence" /></label>
+                    <label for="familyName">Họ và<input id="familyName" name="FamilyName" value="@Model.FamilyName" maxlength="180" /></label>
+                    <label for="givenName">Tên<input id="givenName" name="GivenName" value="@Model.GivenName" maxlength="180" /></label>
+                    <label for="female">Nữ<select id="female" name="Female"><option value="false" selected="@(!Model.Female ? "selected" : null)">Không</option><option value="true" selected="@(Model.Female ? "selected" : null)">Có</option></select></label>
+                    <label for="occupation">Nghề nghiệp<input id="occupation" name="Occupation" value="@Model.Occupation" maxlength="240" /></label>
+                    <label for="position">Chức vụ<input id="position" name="Position" value="@Model.Position" maxlength="180" /></label>
+                    <label class="crm-field-wide" for="address">Địa chỉ<input id="address" name="Address" value="@Model.Address" maxlength="500" /></label>
+                    <label for="illiterateYear">Năm mù chữ<input id="illiterateYear" name="IlliterateYear" type="number" value="@Model.IlliterateYear" /></label>
+                    <label for="grade1Year">Lớp 1<input id="grade1Year" name="Grade1Year" type="number" value="@Model.Grade1Year" /></label>
+                    <label for="grade2Year">Lớp 2<input id="grade2Year" name="Grade2Year" type="number" value="@Model.Grade2Year" /></label>
+                    <label for="grade3Year">Lớp 3<input id="grade3Year" name="Grade3Year" type="number" value="@Model.Grade3Year" /></label>
+                    <label for="literateYear">Biết chữ<input id="literateYear" name="LiterateYear" type="number" value="@Model.LiterateYear" /></label>
+                    <label for="grade4Year">Lớp 4<input id="grade4Year" name="Grade4Year" type="number" value="@Model.Grade4Year" /></label>
+                    <label for="grade5Year">Lớp 5<input id="grade5Year" name="Grade5Year" type="number" value="@Model.Grade5Year" /></label>
+                    <label for="primaryCompleteYear">HTCTTH<input id="primaryCompleteYear" name="PrimaryCompleteYear" type="number" value="@Model.PrimaryCompleteYear" /></label>
+                    <label class="crm-field-wide" for="note">Ghi chú<input id="note" name="Note" value="@Model.Note" /></label>
+                </div>
+                <footer class="crm-modal-actions">
+                    <a class="education-cancel-button" href="/admin/xoa-mu-chu">Hủy</a>
+                    <button class="crm-primary-button" type="submit">@(Model.EntryId.HasValue ? "Lưu dòng" : "Thêm dòng")</button>
+                </footer>
+            </form>
+        </section>
+    </dialog>
+}
+
+<script src="~/js/admin-cms-list.js" asp-append-version="true" defer></script>

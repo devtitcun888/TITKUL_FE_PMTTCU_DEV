@@ -50,15 +50,18 @@ public sealed class HealthEndpointTests : IClassFixture<WebApplicationFactory<Pr
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var html = await response.Content.ReadAsStringAsync();
         var text = System.Net.WebUtility.HtmlDecode(html);
-        Assert.Contains("THÔNG TIN CHÍNH THỨC", text, StringComparison.Ordinal);
         Assert.Contains("Thông tin nổi bật", text, StringComparison.Ordinal);
         Assert.Contains("Thông báo", text, StringComparison.Ordinal);
         Assert.Contains("Văn bản", text, StringComparison.Ordinal);
         Assert.Contains("Lớp học đang mở", text, StringComparison.Ordinal);
         Assert.Contains("Tin mới nhất", text, StringComparison.Ordinal);
-        Assert.Contains("Hoạt động sắp tới", text, StringComparison.Ordinal);
+        Assert.Contains("Lịch buổi học và sự kiện", text, StringComparison.Ordinal);
         Assert.Contains("Học liệu số", text, StringComparison.Ordinal);
         Assert.Contains("Đi tới nội dung", text, StringComparison.Ordinal);
+        var csp = response.Headers.GetValues("Content-Security-Policy").Single();
+        Assert.Contains("img-src 'self' data: blob: https://repos-document.titkul.edu.vn", csp, StringComparison.Ordinal);
+        Assert.Contains("frame-src 'self' https://repos-document.titkul.edu.vn", csp, StringComparison.Ordinal);
+        Assert.Contains("media-src 'self' https://repos-document.titkul.edu.vn", csp, StringComparison.Ordinal);
     }
 
     [Fact]

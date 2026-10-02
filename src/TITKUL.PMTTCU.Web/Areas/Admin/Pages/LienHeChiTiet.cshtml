@@ -1,33 +1,101 @@
 @page "/admin/lien-he/{id:guid}"
+@using TITKUL.PMTTCU.Web.Areas.Admin
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.LienHeChiTietModel
 @{
     ViewData["Title"] = "Trao đổi phản ánh";
+    var status = Model.Thread?.Item.Status;
+    var statusClass = status?.ToLowerInvariant() switch
+    {
+        "new" => "is-new",
+        "processing" => "is-processing",
+        "closed" => "is-closed",
+        _ => "is-draft"
+    };
 }
-<section class="card stack">
-    <p><a href="/admin/lien-he">← Danh sách phản ánh</a></p>
+
+<section class="crm-page cms-admin-page cms-compose">
+    <header class="cms-compose-head">
+        <div>
+            <p class="cms-compose-eyebrow">Nội dung &amp; dịch vụ công</p>
+            <h1>Trao đổi phản ánh</h1>
+            <p class="cms-compose-sub">Xem nội dung và cập nhật trạng thái xử lý.</p>
+        </div>
+        <a class="cms-compose-back" href="/admin/lien-he">Danh sách phản ánh</a>
+    </header>
+
     @if (!string.IsNullOrWhiteSpace(Model.Error))
     {
         <p class="alert" role="alert">@Model.Error</p>
     }
+
     @if (Model.Thread is not null)
     {
-        <h1>@Model.Thread.Item.Title</h1>
-        <p><strong>@Model.Thread.Item.Name</strong> · @Model.Thread.Item.Phone · @Model.Thread.Item.Status</p>
-        <ol class="contact-thread">
-        @foreach (var message in Model.Thread.Messages)
-        {
-            <li>
-                <p><strong>@(message.Sender == "STAFF" ? "Trung tâm" : "Người gửi")</strong> · @message.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
-                <p>@message.Body</p>
-            </li>
-        }
-        </ol>
-        @if (Model.CanEdit)
-        {
-            <form method="post" class="stack">
-                <div><label for="body">Phản hồi người gửi</label><textarea id="body" asp-for="Body" rows="5" minlength="3" maxlength="4000" required></textarea></div>
-                <button class="button" type="submit">Gửi phản hồi</button>
-            </form>
-        }
+        <div class="cms-compose-grid">
+            <div class="cms-compose-main">
+                <section class="cms-compose-card">
+                    <header class="cms-compose-card-head">
+                        <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">mail</span></span>
+                        <div>
+                            <h2>@Model.Thread.Item.Title</h2>
+                            <small>@Model.Thread.Item.Name · @Model.Thread.Item.Phone</small>
+                        </div>
+                    </header>
+                    <ol class="cms-compose-thread">
+                    @foreach (var message in Model.Thread.Messages)
+                    {
+                        <li>
+                            <p><strong>@(message.Sender == "STAFF" ? "Trung tâm" : "Người gửi")</strong> · @message.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                            <p>@message.Body</p>
+                        </li>
+                    }
+                    </ol>
+                </section>
+
+                @if (Model.CanEdit)
+                {
+                    <section class="cms-compose-card">
+                        <header class="cms-compose-card-head">
+                            <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">campaign</span></span>
+                            <h2>Phản hồi</h2>
+                        </header>
+                        <form method="post" class="cms-compose-fields">
+                            <div class="cms-compose-field">
+                                <label for="body">Phản hồi người gửi</label>
+                                <textarea id="body" asp-for="Body" rows="5" minlength="3" maxlength="4000" required></textarea>
+                            </div>
+                            <button class="cms-btn cms-btn-primary" type="submit">Gửi phản hồi</button>
+                        </form>
+                    </section>
+                }
+            </div>
+
+            <aside class="cms-compose-side">
+                <section class="cms-compose-card">
+                    <header class="cms-compose-card-head cms-compose-card-head-plain">
+                        <h2>Trạng thái</h2>
+                    </header>
+                    <span class="cms-status-badge @statusClass"><i></i>@EducationUi.Status(status ?? "")</span>
+                    @if (Model.CanEdit)
+                    {
+                        <div class="cms-compose-actions">
+                            @if (status != "PROCESSING")
+                            {
+                                <form method="post" asp-page-handler="Status">
+                                    <input type="hidden" name="status" value="PROCESSING" />
+                                    <button class="cms-btn cms-btn-outline" type="submit">Đang xử lý</button>
+                                </form>
+                            }
+                            @if (status != "CLOSED")
+                            {
+                                <form method="post" asp-page-handler="Status">
+                                    <input type="hidden" name="status" value="CLOSED" />
+                                    <button class="cms-btn cms-btn-primary" type="submit">Đóng</button>
+                                </form>
+                            }
+                        </div>
+                    }
+                </section>
+            </aside>
+        </div>
     }
 </section>

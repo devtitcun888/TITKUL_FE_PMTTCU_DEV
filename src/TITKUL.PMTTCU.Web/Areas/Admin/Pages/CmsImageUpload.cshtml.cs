@@ -34,7 +34,25 @@ public sealed class CmsImageUploadModel(BackendApiClient api) : PageModel
         }
         using var response = await api.PostMultipartAsync("/api/v1/admin/cms-images", token, content);
         if (response is null || !response.IsSuccessStatusCode)
-            return BadRequest(new { error = new { message = "Ảnh không hợp lệ hoặc máy chủ không thể lưu ảnh." } });
+        {
+            var remoteMessage = "Ảnh không hợp lệ hoặc máy chủ không thể lưu ảnh.";
+            if (response is not null)
+            {
+                try
+                {
+                    using var errorBody = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+                    if (errorBody.RootElement.TryGetProperty("message", out var messageNode))
+                    {
+                        var text = messageNode.GetString();
+                        if (!string.IsNullOrWhiteSpace(text)) remoteMessage = text;
+                    }
+                }
+                catch (JsonException)
+                {
+                }
+            }
+            return BadRequest(new { error = new { message = remoteMessage } });
+        }
 
         using var body = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
         var imageUrl = body.RootElement.TryGetProperty("imageUrl", out var url) ? url.GetString() : null;

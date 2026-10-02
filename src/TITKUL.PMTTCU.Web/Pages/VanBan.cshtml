@@ -27,7 +27,7 @@
                 var expired = item.ExpiresOn is DateOnly expiresOn && expiresOn < today;
                 var notYetEffective = item.EffectiveFrom is DateOnly effectiveFrom && effectiveFrom > today;
                 <li>
-                    <strong>@item.Title</strong>
+                    <strong><a class="public-document-title" href="/van-ban/@item.Id">@item.Title</a></strong>
                     @if (!string.IsNullOrWhiteSpace(item.Symbol)) { <span> · Số ký hiệu: @item.Symbol</span> }
                     @if (!string.IsNullOrWhiteSpace(item.Issuer)) { <span> · Cơ quan ban hành: @item.Issuer</span> }
                     @if (item.IssuedOn is DateOnly issuedOn) { <span> · Ngày ban hành: @issuedOn.ToString("dd/MM/yyyy")</span> }
@@ -36,7 +36,14 @@
                     {
                         <p class="status-note">Thời hạn: @(item.EffectiveFrom?.ToString("dd/MM/yyyy") ?? "chưa ghi ngày bắt đầu") – @(item.ExpiresOn?.ToString("dd/MM/yyyy") ?? "không giới hạn") · @(expired ? "Đã hết hiệu lực" : notYetEffective ? "Chưa đến ngày hiệu lực" : "Trong thời hạn")</p>
                     }
-                    <p><a class="button" href="/van-ban?handler=Tai&amp;id=@item.Id">Tải @item.FileName</a></p>
+                    <p class="row-actions">
+                        @if (!expired && !notYetEffective)
+                        {
+                            <a class="button" href="/van-ban/@item.Id">Chi tiết và xem tệp</a>
+                            <a class="button-quiet" href="@HostFile.Href(item.FileUrl, "/van-ban?handler=Tai&id=" + item.Id)">Tải @item.FileName</a>
+                        }
+                        else { <span class="muted">Tệp ngoài thời hạn hiệu lực, hiện không thể xem hoặc tải.</span> }
+                    </p>
                 </li>
             }
         </ul>

@@ -3,61 +3,226 @@
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsVanBanModel
 @{
     ViewData["Title"] = "Văn bản";
+    var showModal = Model.CanEdit && (Request.Query.ContainsKey("create") || Request.HasFormContentType && Request.Form.Files.Count > 0);
+    var returnUrl = Model.CurrentPathAndQuery;
+    var firstPage = Math.Max(1, Model.CurrentPage - 2);
+    var lastPage = Math.Min(Model.PageCount, Model.CurrentPage + 2);
 }
-<section class="card stack">
-    <h1>Văn bản</h1>
+
+<section class="crm-page cms-posts-page cms-list-page">
+
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <p class="crm-alert" role="alert">@Model.ErrorMessage</p>
     }
-    @if (Model.CanEdit)
-    {
-        <form method="post" enctype="multipart/form-data" class="stack">
-            <div><label for="title">Tiêu đề</label><input id="title" name="Title" required maxlength="300" /></div>
-            <div><label for="symbol">Số ký hiệu</label><input id="symbol" name="Symbol" maxlength="100" /></div>
-            <div><label for="issuer">Cơ quan ban hành</label><input id="issuer" name="Issuer" maxlength="200" /></div>
-            <div><label for="issued-on">Ngày ban hành</label><input id="issued-on" name="IssuedOn" type="date" /></div>
-            <div><label for="field">Lĩnh vực</label><input id="field" name="Field" maxlength="120" /></div>
-            <div><label for="effective-from">Có hiệu lực từ</label><input id="effective-from" name="EffectiveFrom" type="date" /></div>
-            <div><label for="expires-on">Có hiệu lực đến</label><input id="expires-on" name="ExpiresOn" type="date" /></div>
-            <div><label for="upload">Tệp PDF, Word, Excel (tối đa 20 MiB)</label><input id="upload" name="Upload" type="file" data-file-preview="20971520" accept=".pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required /><small data-file-preview-status aria-live="polite"></small></div>
-            <button type="submit">Lưu nháp</button>
-        </form>
-    }
-    <form class="public-filter" method="get" action="/admin/cms/van-ban" role="search">
-        <label for="admin-document-query">Tìm và lọc văn bản</label>
-        <div><input id="admin-document-query" name="q" type="search" value="@Model.Query" placeholder="Số ký hiệu, tên hoặc lĩnh vực" /><input name="field" value="@Model.FieldFilter" aria-label="Lĩnh vực chính xác" placeholder="Lĩnh vực chính xác" /><button class="button" type="submit">Lọc</button></div>
-    </form>
-    @if (Model.Items.Count == 0)
-    {
-        <p class="empty">Chưa có văn bản.</p>
-    }
-    else
-    {
-        <div class="table-scroll">
-            <table>
-                <caption>Danh sách văn bản</caption>
-                <thead><tr><th scope="col">Văn bản</th><th scope="col">Ngày ban hành</th><th scope="col">Thời hạn</th><th scope="col">Lĩnh vực</th><th scope="col">Trạng thái</th><th scope="col"></th></tr></thead>
-                <tbody>
-                @foreach (var item in Model.Items)
-                {
-                    <tr>
-                        <td><strong>@item.Title</strong>@if (!string.IsNullOrWhiteSpace(item.Symbol)) { <small class="muted"> · @item.Symbol</small> }@if (!string.IsNullOrWhiteSpace(item.Issuer)) { <small class="muted"> · @item.Issuer</small> }</td>
-                        <td>@(item.IssuedOn?.ToString("dd/MM/yyyy") ?? "—")</td>
-                        <td>@(item.EffectiveFrom?.ToString("dd/MM/yyyy") ?? "—") – @(item.ExpiresOn?.ToString("dd/MM/yyyy") ?? "không giới hạn")</td>
-                        <td>@item.Field</td>
-                        <td>@EducationUi.Status(item.Status)</td>
-                        <td>
-                            @if (Model.CanEdit && item.Status != "PUBLISHED")
-                            {
-                                <form method="post" asp-page-handler="Publish" asp-route-id="@item.Id"><button type="submit">Đăng</button></form>
-                            }
-                        </td>
-                    </tr>
-                }
-                </tbody>
-            </table>
+
+    <form class="cms-posts-toolbar" method="get" action="/admin/cms/van-ban" role="search" data-cms-autofilter data-cols="2">
+        @await Html.PartialAsync("Shared/_CmsSortHidden", (Model.Sort, Model.Dir))
+        <button class="cms-posts-filter-toggle @(Model.FiltersActive ? "has-active-filters" : null)" type="button" aria-label="Bộ lọc" aria-expanded="false" aria-controls="cms-document-filter-fields" data-cms-filter-toggle>
+            <svg class="cms-posts-filter-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                <path d="M4 5h16l-6.5 7.5v5l-3 1.5v-6.5L4 5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </button>
+        <div class="cms-posts-filter-fields" id="cms-document-filter-fields">
+            <label class="cms-posts-field">
+                <span>Từ khóa</span>
+                <span class="cms-posts-search">
+                    <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                    <input id="admin-document-query" name="q" type="search" value="@Model.Query" placeholder="Số ký hiệu, tên hoặc lĩnh vực" />
+                </span>
+            </label>
+            <label class="cms-posts-field">
+                <span>Lĩnh vực</span>
+                <input id="field-filter" name="field" type="search" value="@Model.FieldFilter" placeholder="Lĩnh vực chính xác" />
+            </label>
+            <div class="cms-posts-toolbar-actions">
+                <a class="cms-posts-reset" href="/admin/cms/van-ban">
+                    <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
+                    Xóa lọc
+                </a>
+            </div>
         </div>
-    }
+    </form>
+
+    <section class="cms-posts-list" aria-labelledby="document-table-title">
+        <header class="cms-posts-list-heading">
+            <div>
+                <h2 id="document-table-title">Danh sách văn bản</h2>
+                <p>@Model.Total.ToString("N0") văn bản</p>
+            </div>
+            <div class="cms-posts-list-actions">
+                @if (Model.CanEdit)
+                {
+                    <a class="crm-primary-button cms-posts-create" href="/admin/cms/van-ban?create=true"><span class="material-symbols-outlined" aria-hidden="true">add</span> Tải văn bản</a>
+                }
+            </div>
+        </header>
+
+        @if (Model.Items.Count == 0)
+        {
+            <div class="cms-posts-empty">
+                <span class="material-symbols-outlined" aria-hidden="true">description</span>
+                <strong>@(Model.FiltersActive ? "Không tìm thấy văn bản phù hợp" : "Chưa có văn bản")</strong>
+                <p>@(Model.FiltersActive ? "Thử xóa bộ lọc hoặc đổi từ khóa." : "Tải tệp và lưu nháp, rồi đăng khi sẵn sàng.")</p>
+            </div>
+        }
+        else
+        {
+            <div class="cms-posts-table-scroll">
+                <table class="cms-posts-table">
+                    <thead>
+                        <tr>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "title", Model.Dir)" href="@Model.SortUrl("title")">Văn bản <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "title", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "issued", Model.Dir)" href="@Model.SortUrl("issued")">Ngày ban hành <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "issued", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "expires", Model.Dir)" href="@Model.SortUrl("expires")">Thời hạn <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "expires", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "field", Model.Dir)" href="@Model.SortUrl("field")">Lĩnh vực <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "field", Model.Dir)</span></a></th>
+                            <th scope="col">Xem/tải</th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.Sort, "status", Model.Dir)" href="@Model.SortUrl("status")">Trạng thái <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.Sort, "status", Model.Dir)</span></a></th>
+                            <th class="cms-posts-actions-col" scope="col">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        var statusClass = item.Status?.ToLowerInvariant();
+                        <tr>
+                            <td class="cms-posts-title-cell">
+                                <strong>@item.Title</strong>
+                                @if (!string.IsNullOrWhiteSpace(item.Symbol)) { <small> · @item.Symbol</small> }
+                                @if (!string.IsNullOrWhiteSpace(item.Issuer)) { <small> · @item.Issuer</small> }
+                            </td>
+                            <td class="cms-posts-stamp">@(item.IssuedOn?.ToString("dd/MM/yyyy") ?? "—")</td>
+                            <td class="cms-posts-stamp">@(item.EffectiveFrom?.ToString("dd/MM/yyyy") ?? "—") – @(item.ExpiresOn?.ToString("dd/MM/yyyy") ?? "không giới hạn")</td>
+                            <td><span class="cms-posts-category">@item.Field</span></td>
+                            <td>
+                                @if (Model.CanUpdate)
+                                {
+                                    <form method="post" asp-page-handler="ViewMode" asp-route-id="@item.Id">
+                                        @Html.AntiForgeryToken()
+                                        <select name="mode" aria-label="Quyền xem @item.Title" data-cms-autosubmit>
+                                            <option value="AUTO" selected="@(item.ViewMode == "AUTO")">Tự động</option>
+                                            <option value="INLINE" selected="@(item.ViewMode == "INLINE")" disabled="@(item.MimeType != "application/pdf")">Cho xem trực tiếp</option>
+                                            <option value="DOWNLOAD_ONLY" selected="@(item.ViewMode == "DOWNLOAD_ONLY")">Chỉ tải</option>
+                                        </select>
+                                    </form>
+                                }
+                                else { <span>@item.ViewMode</span> }
+                            </td>
+                            <td>
+                                <span class="cms-posts-status is-@statusClass"><i aria-hidden="true"></i>@EducationUi.Status(item.Status ?? "")</span>
+                            </td>
+                            <td class="cms-posts-actions-col">
+                                @if (Model.CanPublish && item.Status != "PUBLISHED")
+                                {
+                                    <details class="cms-posts-row-menu">
+                                        <summary aria-label="Thao tác @item.Title"><span class="material-symbols-outlined" aria-hidden="true">more_horiz</span></summary>
+                                        <div class="cms-posts-row-panel" role="menu">
+                                            <button class="cms-posts-menu-btn" type="submit" form="cms-document-publish-@item.Id" role="menuitem">Đăng</button>
+                                        </div>
+                                    </details>
+                                    <form id="cms-document-publish-@item.Id" method="post" asp-page-handler="Publish" hidden>
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <footer class="cms-posts-pager">
+            <p class="cms-posts-pager-summary">
+                @(Model.Total == 0 ? "Không có văn bản" : $"Hiển thị {Model.FromItem} - {Model.ToItem} của {Model.Total} văn bản")
+            </p>
+            <div class="cms-posts-pager-controls">
+                <form method="get" action="/admin/cms/van-ban" class="cms-posts-pagesize">
+                    @if (!string.IsNullOrWhiteSpace(Model.Query)) { <input type="hidden" name="q" value="@Model.Query" /> }
+                    @if (!string.IsNullOrWhiteSpace(Model.FieldFilter)) { <input type="hidden" name="field" value="@Model.FieldFilter" /> }
+                    @await Html.PartialAsync("Shared/_CmsSortHidden", (Model.Sort, Model.Dir))
+                    <label>
+                        <span class="visually-hidden">Số văn bản mỗi trang</span>
+                        <select name="pageSize" data-cms-posts-pagesize>
+                            <option value="10" selected="@(Model.PageSize == 10 ? "selected" : null)">10 / trang</option>
+                            <option value="20" selected="@(Model.PageSize == 20 ? "selected" : null)">20 / trang</option>
+                            <option value="50" selected="@(Model.PageSize == 50 ? "selected" : null)">50 / trang</option>
+                        </select>
+                    </label>
+                </form>
+                <nav class="cms-posts-pages" aria-label="Phân trang văn bản">
+                    @if (Model.CurrentPage > 1)
+                    {
+                        <a class="cms-posts-page-btn" href="@Model.ListUrl(page: Model.CurrentPage - 1)" rel="prev" aria-label="Trang trước"><span class="material-symbols-outlined" aria-hidden="true">chevron_left</span></a>
+                    }
+                    else
+                    {
+                        <span class="cms-posts-page-btn is-disabled" aria-hidden="true"><span class="material-symbols-outlined">chevron_left</span></span>
+                    }
+                    @for (var pageNumber = firstPage; pageNumber <= lastPage; pageNumber++)
+                    {
+                        if (pageNumber == Model.CurrentPage)
+                        {
+                            <span class="cms-posts-page-btn is-current" aria-current="page">@pageNumber</span>
+                        }
+                        else
+                        {
+                            <a class="cms-posts-page-btn" href="@Model.ListUrl(page: pageNumber)">@pageNumber</a>
+                        }
+                    }
+                    @if (Model.CurrentPage < Model.PageCount)
+                    {
+                        <a class="cms-posts-page-btn" href="@Model.ListUrl(page: Model.CurrentPage + 1)" rel="next" aria-label="Trang sau"><span class="material-symbols-outlined" aria-hidden="true">chevron_right</span></a>
+                    }
+                    else
+                    {
+                        <span class="cms-posts-page-btn is-disabled" aria-hidden="true"><span class="material-symbols-outlined">chevron_right</span></span>
+                    }
+                </nav>
+            </div>
+        </footer>
+    </section>
 </section>
-@await Html.PartialAsync("/Pages/Shared/_PublicPager.cshtml", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))
+
+@if (showModal)
+{
+    <dialog class="crm-modal" open data-close-href="/admin/cms/van-ban" aria-labelledby="document-modal-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel crm-modal-wide">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Văn bản</p><h2 id="document-modal-title">Tải văn bản nháp</h2></div>
+                <a class="crm-modal-close" href="/admin/cms/van-ban" aria-label="Đóng">×</a>
+            </header>
+            <form method="post" enctype="multipart/form-data" class="crm-modal-body">
+                <div class="education-form-field"><label for="title">Tiêu đề <span>*</span></label><input id="title" name="Title" required maxlength="300" /></div>
+                <div class="education-form-field"><label for="symbol">Số ký hiệu</label><input id="symbol" name="Symbol" maxlength="100" /></div>
+                <div class="education-form-field"><label for="issuer">Cơ quan ban hành</label><input id="issuer" name="Issuer" maxlength="200" /></div>
+                <div class="education-form-field"><label for="issued-on">Ngày ban hành</label><input id="issued-on" name="IssuedOn" type="date" /></div>
+                <div class="education-form-field"><label for="field">Lĩnh vực</label><input id="field" name="Field" maxlength="120" /></div>
+                <div class="education-form-field"><label for="effective-from">Có hiệu lực từ</label><input id="effective-from" name="EffectiveFrom" type="date" /></div>
+                <div class="education-form-field"><label for="expires-on">Có hiệu lực đến</label><input id="expires-on" name="ExpiresOn" type="date" /></div>
+                <div class="education-form-field">
+                    <label for="upload">Tệp PDF, Word, Excel (tối đa 20 MiB) <span>*</span></label>
+                    <input id="upload" name="Upload" type="file" data-file-preview="20971520" accept=".pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required />
+                    <small data-file-preview-status aria-live="polite"></small>
+                </div>
+                <div class="education-form-field">
+                    <label for="view-mode">Quyền xem tệp công khai</label>
+                    <select id="view-mode" name="ViewMode">
+                        <option value="AUTO">Tự động (PDF xem trực tiếp, định dạng khác tải xuống)</option>
+                        <option value="INLINE">Cho xem trực tiếp (PDF)</option>
+                        <option value="DOWNLOAD_ONLY">Chỉ tải xuống</option>
+                    </select>
+                </div>
+                <footer class="crm-modal-actions">
+                    <a class="education-cancel-button" href="/admin/cms/van-ban">Hủy</a>
+                    <button class="crm-primary-button" type="submit">Lưu nháp</button>
+                </footer>
+            </form>
+        </section>
+    </dialog>
+}
+
+<script src="~/js/admin-cms-list.js" asp-append-version="true" defer></script>

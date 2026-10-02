@@ -85,24 +85,8 @@ public class LienHeModel : PageModel
         Hotline = Read(config, "org.hotline");
         Email = Read(config, "org.email");
         var maps = Read(config, "maps.url");
-        if (Uri.TryCreate(maps, UriKind.Absolute, out var uri) && uri!.Scheme == Uri.UriSchemeHttps)
-        {
-            MapsUrl = uri.AbsoluteUri;
-            if (IsGoogleMapsEmbed(uri)) MapsEmbedUrl = uri.AbsoluteUri;
-        }
-    }
-
-    private static bool IsGoogleMapsEmbed(Uri uri)
-    {
-        var host = uri.IdnHost.ToLowerInvariant();
-        if (host is not ("maps.google.com" or "www.google.com" or "www.google.com.vn")) return false;
-        if (uri.AbsolutePath.StartsWith("/maps/embed", StringComparison.OrdinalIgnoreCase)) return true;
-
-        return uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries)
-            .Select(part => part.Split('=', 2))
-            .Any(parts => parts.Length == 2
-                && Uri.UnescapeDataString(parts[0]).Equals("output", StringComparison.OrdinalIgnoreCase)
-                && Uri.UnescapeDataString(parts[1]).Equals("embed", StringComparison.OrdinalIgnoreCase));
+        MapsUrl = GoogleMapsUrl.Link(maps, Address);
+        MapsEmbedUrl = GoogleMapsUrl.Embed(maps);
     }
 
     private static string Read(GioiThieuModel.ConfigEnvelope? config, string key) =>

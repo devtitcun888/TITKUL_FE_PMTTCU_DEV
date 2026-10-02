@@ -3,51 +3,109 @@
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.KhaoSatModel
 @{
     ViewData["Title"] = "Khảo sát";
+    var showModal = Model.CanManage && (Request.Query.ContainsKey("create") || Request.HasFormContentType);
 }
-<section class="card stack">
-    <h1>Khảo sát</h1>
-    @if (Model.CanViewResults)
-    {
-        <p><a class="button button-quiet" href="/admin/khao-sat/so-sanh">So sánh kết quả nhiều khảo sát</a></p>
-    }
-    @if (!string.IsNullOrEmpty(Model.ErrorMessage)) { <p class="alert" role="alert">@Model.ErrorMessage</p> }
-    @if (Model.CanManage)
-    {
-        <form method="post" class="stack">
-            <div><label for="title">Tiêu đề</label><input id="title" name="Title" required maxlength="250" /></div>
-            <div><label for="startAt">Bắt đầu</label><input id="startAt" name="StartAt" type="datetime-local" required /></div>
-            <div><label for="endAt">Kết thúc</label><input id="endAt" name="EndAt" type="datetime-local" required /></div>
-            <div><label for="thanks">Lời cảm ơn</label><input id="thanks" name="Thanks" maxlength="1000" /></div>
-            <div><label for="requirePhone"><input id="requirePhone" name="RequirePhone" type="checkbox" value="true" /> Yêu cầu người tham gia nhập số điện thoại</label></div>
-            <div><label for="limitOnePerPhone"><input id="limitOnePerPhone" name="LimitOnePerPhone" type="checkbox" value="true" /> Mỗi số điện thoại chỉ gửi một lần (tự yêu cầu số điện thoại)</label></div>
-            <button type="submit">Tạo nháp</button>
-        </form>
-    }
-    <form class="public-filter" method="get" action="/admin/khao-sat" role="search">
-        <label for="survey-query">Tìm và lọc khảo sát</label>
+
+<section class="crm-page">
+    <header class="crm-page-heading">
         <div>
-            <input id="survey-query" name="q" type="search" value="@Model.Query" placeholder="Tên hoặc mã khảo sát" />
-            <select name="status" aria-label="Trạng thái khảo sát">
-                <option value="">Tất cả trạng thái</option>
-                <option value="DRAFT" selected="@(Model.Status == "DRAFT")">Bản nháp</option>
-                <option value="OPEN" selected="@(Model.Status == "OPEN")">Đang mở</option>
-                <option value="CLOSED" selected="@(Model.Status == "CLOSED")">Đã đóng</option>
-            </select>
-            <button class="button" type="submit">Lọc</button>
+            <p class="crm-eyebrow">Khảo sát &amp; báo cáo</p>
+            <h1>Khảo sát</h1>
+            <p class="crm-page-description">Tạo đợt nháp, thiết kế câu hỏi rồi mở thu phiếu.</p>
         </div>
-    </form>
-    @if (Model.Items.Count == 0)
-    {
-        <p class="empty">Chưa có đợt khảo sát.</p>
-    }
-    else
-    {
-        <ul class="stack">
-            @foreach (var item in Model.Items)
+        <div class="crm-heading-actions">
+            @if (Model.CanViewResults)
             {
-                <li><a href="/admin/khao-sat/@item.Id/thiet-ke">@item.Title</a> · @EducationUi.Status(item.Status)</li>
+                <a class="education-cancel-button" href="/admin/khao-sat/so-sanh">So sánh kết quả</a>
             }
-        </ul>
-    }
+            @if (Model.CanManage)
+            {
+                <a class="crm-primary-button" href="/admin/khao-sat?create=true"><span aria-hidden="true">＋</span> Tạo nháp</a>
+            }
+        </div>
+    </header>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage)) { <p class="crm-alert" role="alert">@Model.ErrorMessage</p> }
+
+    <section class="crm-toolbar" aria-label="Tìm khảo sát">
+        <form class="crm-filter" method="get" action="/admin/khao-sat" role="search">
+            <label class="crm-search" for="survey-query">
+                <span aria-hidden="true">⌕</span>
+                <span class="visually-hidden">Tìm khảo sát</span>
+                <input id="survey-query" name="q" type="search" value="@Model.Query" placeholder="Tên hoặc mã khảo sát" />
+            </label>
+            <label for="survey-status">Trạng thái
+                <select id="survey-status" name="status">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="DRAFT" selected="@(Model.Status == "DRAFT")">Bản nháp</option>
+                    <option value="OPEN" selected="@(Model.Status == "OPEN")">Đang mở</option>
+                    <option value="CLOSED" selected="@(Model.Status == "CLOSED")">Đã đóng</option>
+                </select>
+            </label>
+            <button class="crm-primary-button" type="submit">Lọc</button>
+        </form>
+    </section>
+
+    <section class="crm-table-card" aria-labelledby="survey-table-title">
+        <header class="crm-table-heading">
+            <div>
+                <h2 id="survey-table-title">Danh sách đợt khảo sát</h2>
+                <p>@Model.Total đợt</p>
+            </div>
+        </header>
+        @if (Model.Items.Count == 0)
+        {
+            <div class="crm-empty"><strong>Chưa có đợt khảo sát</strong><p>Tạo bản nháp rồi thêm câu hỏi trước khi mở.</p></div>
+        }
+        else
+        {
+            <div class="crm-table-scroll">
+                <table class="crm-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Tiêu đề</th>
+                            <th scope="col">Trạng thái</th>
+                            <th scope="col" class="education-actions-cell">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td><strong>@item.Title</strong></td>
+                            <td><span class="education-status">@EducationUi.Status(item.Status)</span></td>
+                            <td class="education-actions-cell"><a class="education-edit-button" href="/admin/khao-sat/@item.Id/thiet-ke">Thiết kế</a></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <div class="crm-pager">@await Html.PartialAsync("/Pages/Shared/_PublicPager.cshtml", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))</div>
+        }
+    </section>
 </section>
-@await Html.PartialAsync("/Pages/Shared/_PublicPager.cshtml", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))
+
+@if (showModal)
+{
+    <dialog class="crm-modal" open data-close-href="/admin/khao-sat" aria-labelledby="survey-modal-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Khảo sát</p><h2 id="survey-modal-title">Tạo đợt nháp</h2></div>
+                <a class="crm-modal-close" href="/admin/khao-sat" aria-label="Đóng">×</a>
+            </header>
+            <form method="post" class="crm-modal-body">
+                <div class="education-form-field"><label for="title">Tiêu đề <span>*</span></label><input id="title" name="Title" value="@Model.Title" required maxlength="250" /></div>
+                <div class="education-form-field"><label for="startAt">Bắt đầu <span>*</span></label><input id="startAt" name="StartAt" type="datetime-local" value="@Model.StartAt" required /></div>
+                <div class="education-form-field"><label for="endAt">Kết thúc <span>*</span></label><input id="endAt" name="EndAt" type="datetime-local" value="@Model.EndAt" required /></div>
+                <div class="education-form-field"><label for="thanks">Lời cảm ơn</label><input id="thanks" name="Thanks" value="@Model.Thanks" maxlength="1000" /></div>
+                <label for="requirePhone"><input id="requirePhone" name="RequirePhone" type="checkbox" value="true" checked="@(Model.RequirePhone ? "checked" : null)" /> Yêu cầu người tham gia nhập số điện thoại</label>
+                <label for="limitOnePerPhone"><input id="limitOnePerPhone" name="LimitOnePerPhone" type="checkbox" value="true" checked="@(Model.LimitOnePerPhone ? "checked" : null)" /> Mỗi số điện thoại chỉ gửi một lần</label>
+                <footer class="crm-modal-actions">
+                    <a class="education-cancel-button" href="/admin/khao-sat">Hủy</a>
+                    <button class="crm-primary-button" type="submit">Tạo nháp</button>
+                </footer>
+            </form>
+        </section>
+    </dialog>
+}

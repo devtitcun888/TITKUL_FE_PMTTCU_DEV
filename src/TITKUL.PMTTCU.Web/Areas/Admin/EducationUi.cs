@@ -11,6 +11,7 @@ public static class EducationUi
         "HUY" => "Hủy",
         "DANG_KY" => "Đã đăng ký",
         "DRAFT" => "Nháp",
+        "APPROVED" => "Đã duyệt",
         "PUBLISHED" => "Đã đăng",
         "ARCHIVED" => "Lưu trữ",
         "ACTIVE" => "Đang dùng",
@@ -32,6 +33,8 @@ public static class EducationUi
         "CER_CLASS" => "Lớp chưa đủ điều kiện",
         "TIN_TUC" => "Tin tức",
         "VHTT_DVSN" => "VHTT-DVSN",
+        "HUONG_DAN_SO" => "Bình dân học vụ số",
+        "CHUONG_TRINH_HOC" => "Chương trình học",
         "URGENT" => "Khẩn",
         "NORMAL" => "Thường",
         "IMAGE" => "Hình ảnh",
@@ -65,6 +68,16 @@ public static class EducationUi
         var offset = ((int)day.DayOfWeek + 6) % 7;
         return day.AddDays(-offset);
     }
+
+    public static string SortClass(string? current, string column, string dir) =>
+        string.Equals(current, column, StringComparison.OrdinalIgnoreCase)
+            ? "cms-posts-sort is-active is-" + dir
+            : "cms-posts-sort";
+
+    public static string SortIcon(string? current, string column, string dir) =>
+        string.Equals(current, column, StringComparison.OrdinalIgnoreCase)
+            ? (dir == "desc" ? "expand_more" : "expand_less")
+            : "swap_vert";
 
     public static string Weekday(DateOnly day) => day.DayOfWeek switch
     {

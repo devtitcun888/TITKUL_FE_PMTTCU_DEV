@@ -1,7 +1,7 @@
 @page "/khoa-hoc-nghe/{group?}"
 @model TITKUL.PMTTCU.Web.Pages.KhoaHocNgheModel
 @{
-    ViewData["Title"] = Model.SelectedCategory?.Name ?? "Các khóa học nghề";
+        ViewData["Title"] = Model.SelectedCategory?.Name ?? "Các khóa học nghề";
     ViewData["Description"] = Model.SelectedCategory?.Description ?? "Bài viết, video hướng dẫn và thông tin học nghề tại Trung tâm.";
 }
 
@@ -32,30 +32,59 @@
     }
     else if (Model.IsGroupPage)
     {
-        if (Model.Items.Count == 0)
+        if (Model.Items.Count == 0 && Model.Programs.Count == 0)
         {
             <p class="empty" role="status">@(string.IsNullOrWhiteSpace(Model.Query) ? "Nhóm nghề này chưa có nội dung công khai." : "Không tìm thấy nội dung phù hợp.")</p>
         }
         else
         {
+            @if (Model.Programs.Count > 0)
+            {
+                <section class="public-learning-feed" aria-labelledby="vocational-programs-title">
+                    <div class="public-learning-feed-heading"><h2 id="vocational-programs-title">Chương trình đào tạo</h2></div>
+                    <div class="public-learning-grid">
+                        @foreach (var program in Model.Programs)
+                        {
+                            <article class="public-learning-card">
+                                <a class="public-learning-card-image" href="/khoa-hoc-nghe/chuong-trinh/@Uri.EscapeDataString(program.Slug)">
+                                    @if (!string.IsNullOrWhiteSpace(program.CoverUrl)) { <img src="@program.CoverUrl" alt="" loading="lazy" decoding="async" /> }
+                                    else { <span aria-hidden="true">▤</span> }
+                                </a>
+                                <div class="public-learning-card-copy">
+                                    <span class="public-learning-category">@program.CategoryName</span>
+                                    <h2><a href="/khoa-hoc-nghe/chuong-trinh/@Uri.EscapeDataString(program.Slug)">@program.Name</a></h2>
+                                    @if (!string.IsNullOrWhiteSpace(program.Summary)) { <p>@program.Summary</p> }
+                                    @if (program.OpenClasses?.FirstOrDefault(item => item.CanRegister) is { } openClass)
+                                    {
+                                        <a class="button" href="/dang-ky/@Uri.EscapeDataString(openClass.Code)">Đăng ký lớp sắp khai giảng</a>
+                                    }
+                                </div>
+                            </article>
+                        }
+                    </div>
+                </section>
+            }
+            @if (Model.Items.Count > 0)
+            {
             <div class="public-learning-grid">
                 @foreach (var item in Model.Items)
                 {
                     var imageUrl = item.ThumbnailUrl ?? item.CoverUrl;
                     <article class="public-learning-card">
-                        <a class="public-learning-card-image" href="/tin-tuc/@Uri.EscapeDataString(item.Slug)">
+                        <a class="public-learning-card-image" href="/khoa-hoc-nghe/bai-viet/@Uri.EscapeDataString(item.Slug)">
                             @if (!string.IsNullOrWhiteSpace(imageUrl)) { <img src="@imageUrl" alt="" loading="lazy" decoding="async" /> }
                             else { <span aria-hidden="true">✦</span> }
                         </a>
                         <div class="public-learning-card-copy">
                             <span class="public-learning-category">@item.CategoryName</span>
-                            <h2><a href="/tin-tuc/@Uri.EscapeDataString(item.Slug)">@item.Title</a></h2>
+                            <h2><a href="/khoa-hoc-nghe/bai-viet/@Uri.EscapeDataString(item.Slug)">@item.Title</a></h2>
                             @if (!string.IsNullOrWhiteSpace(item.Summary)) { <p>@item.Summary</p> }
                             @if (item.PublishedAt is DateTimeOffset publishedAt) { <time datetime="@publishedAt.ToString("O")">@publishedAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</time> }
                         </div>
                     </article>
                 }
             </div>
+            }
         }
         @await Html.PartialAsync("_PublicPager", new TITKUL.PMTTCU.Web.Pages.PublicPagerModel(Model.CurrentPage, Model.PageSize, Model.Total))
     }
@@ -72,23 +101,51 @@
                     <h2 id="@($"feed-{feed.Category.Slug}")">@feed.Category.Name</h2>
                     <a href="@KhoaHocNgheModel.GroupPath(feed.Category)">Xem nhóm này <span aria-hidden="true">→</span></a>
                 </div>
+                @if (feed.Programs.Count > 0)
+                {
+                    <h3>Chương trình đào tạo</h3>
+                    <div class="public-learning-grid">
+                        @foreach (var program in feed.Programs)
+                        {
+                            <article class="public-learning-card">
+                                <a class="public-learning-card-image" href="/khoa-hoc-nghe/chuong-trinh/@Uri.EscapeDataString(program.Slug)">
+                                    @if (!string.IsNullOrWhiteSpace(program.CoverUrl)) { <img src="@program.CoverUrl" alt="" loading="lazy" decoding="async" /> }
+                                    else { <span aria-hidden="true">▤</span> }
+                                </a>
+                                <div class="public-learning-card-copy">
+                                    <span class="public-learning-category">@program.CategoryName</span>
+                                    <h3><a href="/khoa-hoc-nghe/chuong-trinh/@Uri.EscapeDataString(program.Slug)">@program.Name</a></h3>
+                                    @if (!string.IsNullOrWhiteSpace(program.Summary)) { <p>@program.Summary</p> }
+                                    @if (program.OpenClasses?.FirstOrDefault(item => item.CanRegister) is { } openClass)
+                                    {
+                                        <a class="button" href="/dang-ky/@Uri.EscapeDataString(openClass.Code)">Đăng ký lớp sắp khai giảng</a>
+                                    }
+                                </div>
+                            </article>
+                        }
+                    </div>
+                }
+                @if (feed.Items.Count > 0)
+                {
+                <h3>Bài viết giới thiệu</h3>
                 <div class="public-learning-grid">
                     @foreach (var item in feed.Items)
                     {
                         var imageUrl = item.ThumbnailUrl ?? item.CoverUrl;
                         <article class="public-learning-card">
-                            <a class="public-learning-card-image" href="/tin-tuc/@Uri.EscapeDataString(item.Slug)">
+                            <a class="public-learning-card-image" href="/khoa-hoc-nghe/bai-viet/@Uri.EscapeDataString(item.Slug)">
                                 @if (!string.IsNullOrWhiteSpace(imageUrl)) { <img src="@imageUrl" alt="" loading="lazy" decoding="async" /> }
                                 else { <span aria-hidden="true">✦</span> }
                             </a>
                             <div class="public-learning-card-copy">
-                                <h3><a href="/tin-tuc/@Uri.EscapeDataString(item.Slug)">@item.Title</a></h3>
+                                <h3><a href="/khoa-hoc-nghe/bai-viet/@Uri.EscapeDataString(item.Slug)">@item.Title</a></h3>
                                 @if (!string.IsNullOrWhiteSpace(item.Summary)) { <p>@item.Summary</p> }
                                 @if (item.PublishedAt is DateTimeOffset publishedAt) { <time datetime="@publishedAt.ToString("O")">@publishedAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm")</time> }
                             </div>
                         </article>
                     }
                 </div>
+                }
             </section>
         }
     }

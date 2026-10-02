@@ -72,7 +72,7 @@ public class NhatKyModel : PageModel
         return File(file.Bytes, "text/csv; charset=utf-8", "nhat-ky-quan-tri.csv");
     }
 
-    public sealed record AuditRow(DateTimeOffset OccurredAt, string Username, string Action, string Module, string TraceId, string? EntityType, Guid? EntityId);
+    public sealed record AuditRow(DateTimeOffset OccurredAt, string Username, string Action, string Module, string TraceId, string? EntityType, Guid? EntityId, string? BeforeData, string? AfterData);
 
     private sealed record AuditList(IReadOnlyList<AuditRow>? Items, int? Page, int? PageSize, int? Total);
 }

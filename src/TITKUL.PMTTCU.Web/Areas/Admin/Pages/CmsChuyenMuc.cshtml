@@ -1,90 +1,184 @@
 @page "/admin/cms/chuyen-muc"
+@using TITKUL.PMTTCU.Web.Areas.Admin
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CmsChuyenMucModel
 @{
     ViewData["Title"] = "Chuyên mục";
+    var showModal = (Model.CanCreate && Request.Query.ContainsKey("create"))
+        || (Model.CanUpdate && Model.EditingCategory is not null)
+        || (Request.HasFormContentType && ((Model.CanCreate && Model.EditingCategory is null) || (Model.CanUpdate && Model.EditingCategory is not null)));
 }
 
-<section class="card stack">
-    <h1>Chuyên mục</h1>
+<section class="crm-page cms-posts-page cms-list-page">
+
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <p class="alert" role="alert">@Model.ErrorMessage</p>
+        <p class="crm-alert" role="alert">@Model.ErrorMessage</p>
     }
-    @if (Model.Items.Count == 0)
-    {
-        <p class="empty">Chưa có chuyên mục.</p>
-    }
-    else
-    {
-        <div class="table-scroll">
-            <table>
-                <caption>Danh mục bài viết</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">Tên</th>
-                        <th scope="col">Đường dẫn</th>
-                        <th scope="col">Loại</th>
-                        <th scope="col">Thứ tự</th>
-                        <th scope="col">Trạng thái</th>
-                        @if (Model.CanUpdate) { <th scope="col">Thao tác</th> }
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var item in Model.Items)
-                {
-                    <tr>
-                        <td>@item.Name</td>
-                        <td>@item.Slug</td>
-                        <td>@item.Kind</td>
-                        <td>@item.Sort</td>
-                        <td>@(item.Active ? "Đang dùng" : "Đã ẩn")</td>
-                        @if (Model.CanUpdate)
-                        {
-                            <td class="row-actions">
-                                <a class="button-quiet" href="/admin/cms/chuyen-muc?edit=@item.Id">Sửa</a>
-                                <form method="post" asp-page-handler="Delete" onsubmit="return confirm('Xóa chuyên mục này? Nếu còn bài viết, hệ thống sẽ từ chối xóa.');">
-                                    <input type="hidden" name="id" value="@item.Id" />
-                                    <button type="submit" class="button-quiet">Xóa</button>
-                                </form>
-                            </td>
-                        }
-                    </tr>
-                }
-                </tbody>
-            </table>
-        </div>
-    }
-    @if ((Model.CanCreate && Model.EditingCategory is null) || (Model.CanUpdate && Model.EditingCategory is not null))
-    {
-        <form method="post" asp-page-handler="@(Model.EditingCategory is null ? "Create" : "Update")" class="stack">
-            @if (Model.EditingCategory is not null) { <input type="hidden" name="id" value="@Model.EditingCategory.Id" /> }
-            <h2>@(Model.EditingCategory is null ? "Thêm chuyên mục" : "Sửa chuyên mục")</h2>
-            <div>
-                <label for="name">Tên chuyên mục</label>
-                <input id="name" name="Name" value="@Model.Name" required maxlength="160" data-slug-source />
-            </div>
-            <div>
-                <label for="slug">Đường dẫn (tự gợi ý từ tên, có thể chỉnh)</label>
-                <input id="slug" name="Slug" value="@Model.Slug" maxlength="180" data-slug-target />
-            </div>
-            <div>
-                <label for="kind">Loại</label>
-                <select id="kind" name="Kind">
-                    <option value="TIN_TUC" selected="@(Model.Kind == "TIN_TUC" ? "selected" : null)">Tin tức</option>
-                    <option value="VHTT_DVSN" selected="@(Model.Kind == "VHTT_DVSN" ? "selected" : null)">VHTT-DVSN</option>
+
+    <form class="cms-posts-toolbar" method="get" action="/admin/cms/chuyen-muc" role="search" data-cms-autofilter data-cols="2">
+        @await Html.PartialAsync("Shared/_CmsSortHidden", (Model.SortBy, Model.Dir))
+        <button class="cms-posts-filter-toggle @(Model.FiltersActive ? "has-active-filters" : null)" type="button" aria-label="Bộ lọc" aria-expanded="false" aria-controls="cms-category-filter-fields" data-cms-filter-toggle>
+            <svg class="cms-posts-filter-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                <path d="M4 5h16l-6.5 7.5v5l-3 1.5v-6.5L4 5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </button>
+        <div class="cms-posts-filter-fields" id="cms-category-filter-fields">
+            <label class="cms-posts-field">
+                <span>Từ khóa</span>
+                <span class="cms-posts-search">
+                    <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                    <input id="admin-category-query" name="q" type="search" value="@Model.Query" placeholder="Tên hoặc đường dẫn" />
+                </span>
+            </label>
+            <label class="cms-posts-field">
+                <span>Trạng thái</span>
+                <select name="active" data-cms-filter>
+                    <option value="">Tất cả</option>
+                    <option value="1" selected="@(Model.ActiveFilter == true ? "selected" : null)">Đang dùng</option>
+                    <option value="0" selected="@(Model.ActiveFilter == false ? "selected" : null)">Đã ẩn</option>
                 </select>
+            </label>
+            <div class="cms-posts-toolbar-actions">
+                <a class="cms-posts-reset" href="/admin/cms/chuyen-muc">
+                    <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
+                    Xóa lọc
+                </a>
             </div>
+        </div>
+    </form>
+
+    <section class="cms-posts-kpis" data-cols="3" aria-label="Thống kê chuyên mục">
+        <a class="cms-posts-kpi is-all @(Model.ActiveFilter is null ? "is-current" : null)" href="@Model.ListUrl(active: "")">
+            <span class="cms-posts-kpi-icon" aria-hidden="true"><span class="material-symbols-outlined">category</span></span>
+            <span>
+                <span class="cms-posts-kpi-label">Tất cả</span>
+                <strong>@Model.TotalAll.ToString("N0")</strong>
+            </span>
+        </a>
+        <a class="cms-posts-kpi is-published @(Model.ActiveFilter == true ? "is-current" : null)" href="@Model.ListUrl(active: "1")">
+            <span class="cms-posts-kpi-icon" aria-hidden="true"><span class="cms-posts-dot"></span></span>
+            <span>
+                <span class="cms-posts-kpi-label">Đang dùng</span>
+                <strong>@Model.TotalActive.ToString("N0")</strong>
+            </span>
+        </a>
+        <a class="cms-posts-kpi is-cancelled @(Model.ActiveFilter == false ? "is-current" : null)" href="@Model.ListUrl(active: "0")">
+            <span class="cms-posts-kpi-icon" aria-hidden="true"><span class="material-symbols-outlined">visibility</span></span>
+            <span>
+                <span class="cms-posts-kpi-label">Đã ẩn</span>
+                <strong>@Model.TotalHidden.ToString("N0")</strong>
+            </span>
+        </a>
+    </section>
+
+    <section class="cms-posts-list" aria-labelledby="category-table-title">
+        <header class="cms-posts-list-heading">
             <div>
-                <label for="description">Mô tả</label>
-                <textarea id="description" name="Description" rows="2" maxlength="500">@Model.Description</textarea>
+                <h2 id="category-table-title">Danh mục bài viết</h2>
+                <p>@Model.Items.Count.ToString("N0") chuyên mục</p>
             </div>
-            <div>
-                <label for="sort">Thứ tự hiển thị</label>
-                <input id="sort" name="Sort" type="number" value="@Model.Sort" min="0" max="100000" />
+            <div class="cms-posts-list-actions">
+                @if (Model.CanCreate)
+                {
+                    <a class="crm-primary-button cms-posts-create" href="/admin/cms/chuyen-muc?create=true"><span class="material-symbols-outlined" aria-hidden="true">add</span> Thêm chuyên mục</a>
+                }
             </div>
-            <label for="active"><input id="active" name="Active" type="checkbox" value="true" checked="@(Model.Active ? "checked" : null)" /> Đang hoạt động</label>
-            @if (Model.EditingCategory is not null) { <a class="button-quiet" href="/admin/cms/chuyen-muc">Hủy sửa</a> }
-            <button type="submit">@(Model.EditingCategory is null ? "Thêm chuyên mục" : "Lưu thay đổi")</button>
-        </form>
-    }
+        </header>
+
+        @if (Model.Items.Count == 0)
+        {
+            <div class="cms-posts-empty">
+                <span class="material-symbols-outlined" aria-hidden="true">category</span>
+                <strong>@(Model.FiltersActive ? "Không tìm thấy chuyên mục phù hợp" : "Chưa có chuyên mục")</strong>
+                <p>@(Model.FiltersActive ? "Thử xóa bộ lọc hoặc đổi từ khóa." : "Thêm chuyên mục trước khi viết bài.")</p>
+            </div>
+        }
+        else
+        {
+            <div class="cms-posts-table-scroll">
+                <table class="cms-posts-table">
+                    <thead>
+                        <tr>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.SortBy, "name", Model.Dir)" href="@Model.SortUrl("name")">Tên <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.SortBy, "name", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.SortBy, "slug", Model.Dir)" href="@Model.SortUrl("slug")">Đường dẫn <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.SortBy, "slug", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.SortBy, "kind", Model.Dir)" href="@Model.SortUrl("kind")">Loại <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.SortBy, "kind", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.SortBy, "order", Model.Dir)" href="@Model.SortUrl("order")">Thứ tự <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.SortBy, "order", Model.Dir)</span></a></th>
+                            <th scope="col"><a class="@EducationUi.SortClass(Model.SortBy, "status", Model.Dir)" href="@Model.SortUrl("status")">Trạng thái <span class="material-symbols-outlined" aria-hidden="true">@EducationUi.SortIcon(Model.SortBy, "status", Model.Dir)</span></a></th>
+                            @if (Model.CanUpdate || Model.CanDelete) { <th class="cms-posts-actions-col" scope="col">Thao tác</th> }
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td class="cms-posts-title-cell"><a href="/admin/cms/chuyen-muc?edit=@item.Id">@item.Name</a></td>
+                            <td><span class="cms-posts-category">@item.Slug</span></td>
+                            <td>@EducationUi.Status(item.Kind)</td>
+                            <td class="cms-posts-stamp">@item.Sort</td>
+                            <td>
+                                <span class="cms-posts-status @(item.Active ? "is-published" : "is-archived")"><i aria-hidden="true"></i>@(item.Active ? "Đang dùng" : "Đã ẩn")</span>
+                            </td>
+                            @if (Model.CanUpdate || Model.CanDelete)
+                            {
+                                <td class="cms-posts-actions-col">
+                                    <details class="cms-posts-row-menu">
+                                        <summary aria-label="Thao tác @item.Name"><span class="material-symbols-outlined" aria-hidden="true">more_horiz</span></summary>
+                                        <div class="cms-posts-row-panel" role="menu">
+                                            @if (Model.CanUpdate) { <a role="menuitem" href="/admin/cms/chuyen-muc?edit=@item.Id">Sửa</a> }
+                                            @if (Model.CanDelete) { <button class="cms-posts-menu-btn" type="submit" form="cms-category-delete-@item.Id" role="menuitem">Xóa</button> }
+                                        </div>
+                                    </details>
+                                    @if (Model.CanDelete)
+                                    {
+                                        <form id="cms-category-delete-@item.Id" method="post" asp-page-handler="Delete" hidden onsubmit="return confirm('Xóa chuyên mục này? Nếu còn bài viết, hệ thống sẽ từ chối xóa.');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                        </form>
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
 </section>
+
+@if (showModal)
+{
+    var editing = Model.EditingCategory is not null;
+    <dialog class="crm-modal" open data-close-href="/admin/cms/chuyen-muc" aria-labelledby="category-modal-title">
+        <div class="crm-modal-backdrop"></div>
+        <section class="crm-modal-panel">
+            <header class="crm-modal-heading">
+                <div><p class="crm-eyebrow">Nội dung cổng</p><h2 id="category-modal-title">@(editing ? "Sửa chuyên mục" : "Thêm chuyên mục")</h2></div>
+                <a class="crm-modal-close" href="/admin/cms/chuyen-muc" aria-label="Đóng">×</a>
+            </header>
+            <form method="post" asp-page-handler="@(editing ? "Update" : "Create")" class="crm-modal-body">
+                @if (Model.EditingCategory is not null) { <input type="hidden" name="id" value="@Model.EditingCategory.Id" /> }
+                <div class="education-form-field"><label for="name">Tên chuyên mục <span>*</span></label><input id="name" name="Name" value="@Model.Name" required maxlength="160" data-slug-source /></div>
+                <div class="education-form-field"><label for="slug">Đường dẫn</label><input id="slug" name="Slug" value="@Model.Slug" maxlength="180" data-slug-target /><p class="education-field-hint">Tự gợi ý từ tên, có thể chỉnh.</p></div>
+                <div class="education-form-field">
+                    <label for="kind">Loại</label>
+                    <select id="kind" name="Kind">
+                        <option value="TIN_TUC" selected="@(Model.Kind == "TIN_TUC" ? "selected" : null)">Tin tức</option>
+                        <option value="VHTT_DVSN" selected="@(Model.Kind == "VHTT_DVSN" ? "selected" : null)">VHTT-DVSN</option>
+                        <option value="HUONG_DAN_SO" selected="@(Model.Kind == "HUONG_DAN_SO" ? "selected" : null)">Bình dân học vụ số</option>
+                        <option value="CHUONG_TRINH_HOC" selected="@(Model.Kind == "CHUONG_TRINH_HOC" ? "selected" : null)">Chương trình học</option>
+                    </select>
+                </div>
+                <div class="education-form-field"><label for="description">Mô tả</label><textarea id="description" name="Description" rows="2" maxlength="500">@Model.Description</textarea></div>
+                <div class="education-form-field"><label for="sort">Thứ tự hiển thị</label><input id="sort" name="Sort" type="number" value="@Model.Sort" min="0" max="100000" /></div>
+                <label for="active"><input id="active" name="Active" type="checkbox" value="true" checked="@(Model.Active ? "checked" : null)" /> Đang hoạt động</label>
+                <footer class="crm-modal-actions">
+                    <a class="education-cancel-button" href="/admin/cms/chuyen-muc">Hủy</a>
+                    <button class="crm-primary-button" type="submit">@(editing ? "Lưu thay đổi" : "Thêm chuyên mục")</button>
+                </footer>
+            </form>
+        </section>
+    </dialog>
+}
+
+<script src="~/js/admin-cms-list.js" asp-append-version="true" defer></script>

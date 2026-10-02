@@ -1,45 +1,95 @@
-﻿@page "/admin/cau-hinh"
+@page "/admin/cau-hinh"
 @model TITKUL.PMTTCU.Web.Areas.Admin.Pages.CauHinhModel
 @{
     ViewData["UseCmsEditor"] = true;
     ViewData["Title"] = "Cấu hình cổng";
-    var labels = new Dictionary<string, string>
+    var shortFields = new Dictionary<string, string>
     {
         ["org.name"] = "Tên đơn vị",
-        ["org.address"] = "Địa chỉ",
+        ["org.address"] = "Địa chỉ Trung tâm",
+        ["org.commune"] = "Xã",
+        ["org.province"] = "Tỉnh",
         ["org.hotline"] = "Điện thoại",
         ["org.email"] = "Email",
-        ["maps.url"] = "URL bản đồ Google (https)",
+        ["org.hours"] = "Giờ làm việc",
+        ["maps.url"] = "URL bản đồ Google (https)"
+    };
+    var pageFields = new Dictionary<string, string>
+    {
         ["page.gioi-thieu"] = "Giới thiệu",
         ["page.co-cau"] = "Cơ cấu tổ chức",
         ["page.van-hoa"] = "Văn hóa - Thể thao"
     };
 }
-<section class="card stack">
-    <h1>Cấu hình cổng</h1>
-    <p>Sửa tại đây thì trang công khai đổi theo, không cần sửa mã nguồn.</p>
-    @if (!string.IsNullOrEmpty(Model.Message)) { <p role="status">@Model.Message</p> }
+
+<section class="crm-page cms-admin-page cms-compose">
+    <header class="cms-compose-head">
+        <div>
+            <p class="cms-compose-eyebrow">Nội dung &amp; dịch vụ công</p>
+            <h1>Cấu hình cổng</h1>
+            <p class="cms-compose-sub">Sửa tại đây thì trang công khai đổi theo, không cần sửa mã nguồn.</p>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrEmpty(Model.Message)) { <p class="crm-ok" role="status">@Model.Message</p> }
     @if (!string.IsNullOrEmpty(Model.ErrorMessage)) { <p class="alert" role="alert">@Model.ErrorMessage</p> }
-    @foreach (var pair in labels)
-    {
-        var current = Model.Values.TryGetValue(pair.Key, out var value) ? value : "";
-        <form method="post" class="stack">
-            <input type="hidden" name="Key" value="@pair.Key" />
-            <div>
-                <label for="@pair.Key">@pair.Value</label>
-                @if (pair.Key.StartsWith("page."))
-                {
-                    <textarea id="@pair.Key" name="Value" rows="6" data-editor="@(pair.Key.StartsWith("page.", StringComparison.Ordinal) ? "cms" : null)">@current</textarea>
-                }
-                else
-                {
-                    <input id="@pair.Key" name="Value" value="@current" />
-                }
-            </div>
-            @if (Model.CanEdit)
+
+    <div class="cms-compose-grid">
+        <div class="cms-compose-main">
+            <section class="cms-compose-card">
+                <header class="cms-compose-card-head">
+                    <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">tune</span></span>
+                    <h2>Thông tin đơn vị</h2>
+                </header>
+                <div class="cms-compose-config">
+                    @foreach (var pair in shortFields)
+                    {
+                        var current = Model.Values.TryGetValue(pair.Key, out var value) ? value : "";
+                        var wide = pair.Key is "maps.url" or "org.address";
+                        <form method="post" class="@(wide ? "cms-compose-config-wide" : null)">
+                            <input type="hidden" name="Key" value="@pair.Key" />
+                            <div class="cms-compose-field">
+                                <label for="@pair.Key">@pair.Value</label>
+                                <input id="@pair.Key" name="Value" value="@current" />
+                            </div>
+                            @if (Model.CanEdit)
+                            {
+                                <button class="cms-btn cms-btn-primary" type="submit">Lưu</button>
+                            }
+                        </form>
+                    }
+                </div>
+            </section>
+
+            @foreach (var pair in pageFields)
             {
-                <button type="submit">Lưu @pair.Value</button>
+                var current = Model.Values.TryGetValue(pair.Key, out var value) ? value : "";
+                <form method="post" class="cms-compose-card">
+                    <input type="hidden" name="Key" value="@pair.Key" />
+                    <header class="cms-compose-card-head">
+                        <span class="cms-compose-card-icon" aria-hidden="true"><span class="material-symbols-outlined">article</span></span>
+                        <h2>@pair.Value</h2>
+                    </header>
+                    <div class="cms-compose-editor">
+                        <label class="visually-hidden" for="@pair.Key">Nội dung trang công khai</label>
+                        <textarea id="@pair.Key" name="Value" rows="8" data-editor="cms">@current</textarea>
+                    </div>
+                    @if (Model.CanEdit)
+                    {
+                        <div class="cms-compose-actions">
+                            <button class="cms-btn cms-btn-primary" type="submit">Lưu</button>
+                        </div>
+                    }
+                </form>
             }
-        </form>
-    }
+        </div>
+        <aside class="cms-compose-side">
+            <section class="cms-compose-card">
+                <header class="cms-compose-card-head cms-compose-card-head-plain">
+                    <h2>Ghi chú</h2>
+                </header>
+                <p class="cms-compose-hint">Mỗi trường lưu riêng. Local một xã: ấp chọn từ danh mục Thôn/ấp; xã và tỉnh cố định; địa chỉ Trung tâm ghi đủ Số nhà, đường, ấp, xã, tỉnh.</p>
+            </section>
+        </aside>
+    </div>
 </section>

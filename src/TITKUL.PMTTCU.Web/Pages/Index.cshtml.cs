@@ -40,6 +40,7 @@ public class IndexModel : PageModel
     public string Hotline { get; private set; } = "";
     public string? TelephoneHref { get; private set; }
     public string? MapsUrl { get; private set; }
+    public string? MapsEmbedUrl { get; private set; }
     public string WorkingHours { get; private set; } = "";
 
     public async Task OnGetAsync()
@@ -73,15 +74,14 @@ public class IndexModel : PageModel
                 ? _api.GetPublicJsonAsync<CategoryEnvelope>("/api/v1/public/categories")
                 : Task.FromResult<CategoryEnvelope?>(null);
             var digitalPostsTask = needsDigitalFallback
-                ? GetCategoryPostsAsync("binh-dan-hoc-vu-so", 4)
+                ? GetCategoryPostsAsync("binh-dan-hoc-vu-so", 4, "HUONG_DAN_SO")
                 : Task.FromResult<PostListEnvelope?>(null);
             await Task.WhenAll(categoriesTask, digitalPostsTask);
 
             DigitalLiteracyPosts = item.DigitalLiteracyPosts ?? digitalPostsTask.Result?.Items ?? [];
             VocationalCategories = item.VocationalCategories ?? (categoriesTask.Result?.Items ?? [])
                 .Where(category => category.Active
-                    && category.Kind == "TIN_TUC"
-                    && category.Slug.StartsWith("khoa-hoc-nghe-", StringComparison.Ordinal))
+                    && (category.Kind == "CHUONG_TRINH_HOC" || (category.Kind == "TIN_TUC" && category.Slug.StartsWith("khoa-hoc-nghe-", StringComparison.Ordinal))))
                 .OrderBy(category => category.Sort)
                 .ThenBy(category => category.Name, StringComparer.CurrentCulture)
                 .Take(8)
@@ -89,7 +89,7 @@ public class IndexModel : PageModel
             if (needsVocationalFallback && VocationalCategories.Count > 0)
             {
                 var vocationalFeeds = await Task.WhenAll(VocationalCategories.Select(category =>
-                    GetCategoryPostsAsync(category.Slug, 4)));
+                    GetCategoryPostsAsync(category.Slug, 4, category.Kind)));
                 VocationalPosts = vocationalFeeds
                     .Where(feed => feed is not null)
                     .SelectMany(feed => feed!.Items ?? [])
@@ -122,26 +122,51 @@ public class IndexModel : PageModel
             : new string(Hotline.Where(character => char.IsDigit(character) || character == '+').ToArray());
         WorkingHours = Setting(settings, "org.hours");
         var maps = Setting(settings, "maps.url");
-        MapsUrl = Uri.TryCreate(maps, UriKind.Absolute, out var mapUri) && mapUri.Scheme == Uri.UriSchemeHttps ? mapUri.AbsoluteUri : null;
+        MapsUrl = GoogleMapsUrl.Link(maps, Address);
+        MapsEmbedUrl = GoogleMapsUrl.Embed(maps);
     }
 
     public async Task<IActionResult> OnGetMediaAsync(Guid id)
     {
-        var file = await _api.GetFileResultAsync("/api/v1/public/files/media/" + id);
+        var file = await _api.GetFileResultAsync("/api/v1/public/files/media/" + id + "?inline=true");
+        if (HostFile.RedirectIfPublic(file.RedirectUrl) is { } redirect) return redirect;
         if (!file.IsSuccess) return file.IsNotFound ? NotFound() : StatusCode(503);
-        return File(file.Bytes!, file.ContentType ?? "image/jpeg");
+        if (file.ContentType is not ("image/jpeg" or "image/png")) return StatusCode(415);
+        var bytes = file.Bytes!;
+        var validJpeg = bytes.Length >= 3 && bytes[0] == 0xff && bytes[1] == 0xd8 && bytes[2] == 0xff;
+        var validPng = bytes.Length >= 8 && bytes.AsSpan(0, 8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 });
+        if (!(file.ContentType == "image/jpeg" ? validJpeg : validPng)) return StatusCode(415);
+        Response.Headers["Content-Disposition"] = "inline";
+        Response.Headers["Cache-Control"] = "private, no-store";
+        return File(bytes, file.ContentType);
+    }
+
+    public async Task<IActionResult> OnGetTaiMediaAsync(Guid id)
+    {
+        var file = await _api.GetFileResultAsync("/api/v1/public/files/media/" + id);
+        if (HostFile.RedirectIfPublic(file.RedirectUrl) is { } redirect) return redirect;
+        if (!file.IsSuccess) return file.IsNotFound ? NotFound() : StatusCode(503);
+        if (file.ContentType is not ("image/jpeg" or "image/png")) return StatusCode(415);
+        return File(file.Bytes!, file.ContentType, file.FileName ?? "hinh-anh");
     }
 
     public static string FormatVisitCount(long count) => count.ToString("N0", CultureInfo.GetCultureInfo("vi-VN"));
     private static string Setting(IReadOnlyDictionary<string, string> settings, string key) =>
         settings.TryGetValue(key, out var value) ? value?.Trim() ?? "" : "";
 
-    private Task<PostListEnvelope?> GetCategoryPostsAsync(string categorySlug, int pageSize) =>
+    private Task<PostListEnvelope?> GetCategoryPostsAsync(string categorySlug, int pageSize, string kind) =>
         _api.GetPublicJsonAsync<PostListEnvelope>(
-            $"/api/v1/public/posts?page=1&pageSize={pageSize}&categorySlug={Uri.EscapeDataString(categorySlug)}");
+            $"/api/v1/public/posts?page=1&pageSize={pageSize}&kind={Uri.EscapeDataString(kind)}&categorySlug={Uri.EscapeDataString(categorySlug)}");
 
     public sealed record NoticeItem(string Title, string Slug, string Level);
-    public sealed record PostItem(string Title, string Slug, string? Summary, DateTimeOffset? PublishedAt, string? CoverUrl, string? ThumbnailUrl = null);
+    public string ArticlePath(PostItem item) => (item.CategoryKind switch
+    {
+        "HUONG_DAN_SO" => "/binh-dan-hoc-vu-so/bai-viet/",
+        "CHUONG_TRINH_HOC" => "/khoa-hoc-nghe/bai-viet/",
+        _ => "/tin-tuc/"
+    }) + Uri.EscapeDataString(item.Slug);
+
+    public sealed record PostItem(string Title, string Slug, string? Summary, DateTimeOffset? PublishedAt, string? CoverUrl, string? ThumbnailUrl = null, string CategoryKind = "TIN_TUC");
     public sealed record EventItem(string Title, string Slug, DateTimeOffset StartAt, DateTimeOffset EndAt, string? Location);
     public sealed record ActivityItem(
         string Kind,
@@ -169,7 +194,7 @@ public class IndexModel : PageModel
         string? ClosedReason,
         DateTimeOffset? RegistrationClosesAt = null);
     public sealed record SurveyItem(string Code, string Title, string? Summary, DateTimeOffset EndAt);
-    public sealed record GalleryMedia(string Kind, string? Title, string? AltText, string? ExternalUrl, Guid? FileId);
+    public sealed record GalleryMedia(string Kind, string? Title, string? AltText, string? ExternalUrl, Guid? FileId, string? MimeType = null, long? Size = null, string ViewMode = "AUTO", string? FileUrl = null);
     public sealed record GalleryItem(string Title, string Slug, string? Summary, GalleryMedia? Cover);
     public sealed record ContentCategoryItem(Guid Id, string Kind, string Name, string Slug, string? Description, int Sort, bool Active);
     public sealed record DocumentItem(Guid Id, string? Symbol, string Title, string? Issuer, DateOnly? IssuedOn);
